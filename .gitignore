@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# Python
+venv/
+__pycache__/
+
+# Private
+private*.*
+private*/
+*key*.*
+
+# Tests
+test*.*
+test*/
