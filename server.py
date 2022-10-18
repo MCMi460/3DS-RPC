@@ -46,9 +46,8 @@ async def main():
 						rotation = lst[i:i+100]
 
 						removeList = []
-						for friend in rotation:
-							time.sleep(delay)
-							await friends_client.add_friend_by_principal_id(0, friend)
+						time.sleep(delay)
+						await friends_client.add_friend_by_principal_ids(0, rotation)
 
 						time.sleep(delay)
 						t = await friends_client.get_all_friends()
@@ -66,8 +65,8 @@ async def main():
 							print(game.presence.__dict__)
 							print(game.presence.game_key.__dict__)
 
+						time.sleep(delay)
 						for friend in rotation:
-							time.sleep(delay)
 							await friends_client.remove_friend_by_principal_id(friend)
 
 						# for remover in removeList:
