@@ -4,7 +4,7 @@ from nintendo import nasc
 from nintendo.nex import backend, friends, settings, streams
 from nintendo.games import Friends3DS
 import anyio, time, sqlite3
-from private import SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME, REGION, LANGUAGE, PID, PID_HMAC, NEX_PASSWORD, privFriend
+from .private import SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME, REGION, LANGUAGE, PID, PID_HMAC, NEX_PASSWORD, privFriend
 from . import *
 
 import logging
@@ -32,15 +32,21 @@ async def main():
 				since = time.time()
 
 				while True:
+					if time.time() - since > 3600:
+						break
 					time.sleep(delay)
 
-					# con = sqlite3.connect('fcLibrary.db')
-					# cursor = con.cursor()
+					con = sqlite3.connect('sqlite/fcLibrary.db')
+					cursor = con.cursor()
 
-					# cursor.execute('SELECT friendCode FROM friends')
-					# lst = cursor.fetchall()
+					cursor.execute('SELECT friendCode FROM friends')
+					result = cursor.fetchall()
+					if not result:
+						continue
+					lst = [ convertFriendCodeToPrincipalId(f) for f in result[0] ]
 					# Obviously change the above lines, but the premise remains
-					lst = [ convertFriendCodeToPrincipalId(privFriend), ] # Debug purposes currently
+					#lst = [ convertFriendCodeToPrincipalId(privFriend), ] # Debug purposes currently
+					#print(lst)
 
 					for i in range(0, len(lst), 100):
 						rotation = lst[i:i+100]
@@ -56,25 +62,26 @@ async def main():
 								if ID not in [ f.unk1 for f in t ]:
 									removeList.append(ID)
 
-						time.sleep(delay)
+						for remover in removeList:
+							cursor.execute('DELETE FROM friends WHERE friendCode = %s' % convertPrincipalIdtoFriendCode(remover))
+						con.commit()
 						if len(t) < 1:
-							continue
+							break
+
+						time.sleep(delay)
 						f = await friends_client.get_friend_presence([ e.unk1 for e in t ])
+						users = []
 						for game in f:
 							# game.unk == principalId
-							print(game.__dict__)
-							print(game.presence.__dict__)
-							print(game.presence.game_key.__dict__)
+							users.append(game.unk)
+							cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s WHERE friendCode = %s' % (True, game.presence.game_key.title_id, game.presence.game_key.title_version, convertPrincipalIdtoFriendCode(users[-1])))
+						for user in [ h for h in rotation if not h in users ]:
+							cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s WHERE friendCode = %s' % (False, 0, 0, convertPrincipalIdtoFriendCode(user)))
+						con.commit()
 
 						time.sleep(delay)
 						for friend in rotation:
 							await friends_client.remove_friend_by_principal_id(friend)
 
-						# for remover in removeList:
-						# 	cursor.execute('DELETE FROM friends WHERE friendCode = %s' % remover)
-						#	con.commit()
-
-					if time.time() - since > 3600:
-						break
-
-anyio.run(main)
+if __name__ == '__main__':
+	anyio.run(main)

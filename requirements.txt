@@ -1,3 +1,4 @@
 requests
 flask
-nintendoclients
+nintendoclients>0.0.3
+xmltodict
