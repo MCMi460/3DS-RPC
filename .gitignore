@@ -13,3 +13,6 @@ private*/
 # Tests
 test*.*
 test*/
+
+# DB
+sqlite/*.db
