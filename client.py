@@ -1,7 +1,6 @@
 import requests, os, sys, time
 import xmltodict, json
 from api import *
-from api.private import *
 import pypresence
 from typing import Literal, get_args
 
