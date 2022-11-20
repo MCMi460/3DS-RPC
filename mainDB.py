@@ -1,4 +1,4 @@
-from api import *
+from api.main import *
 import anyio
 
 if __name__ == '__main__':

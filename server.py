@@ -1,5 +1,5 @@
-from flask import Flask
-import sqlite3
+from flask import Flask, make_response
+import sqlite3, requests
 from api import *
 
 app = Flask(__name__)
@@ -9,6 +9,7 @@ def accessDB():
     cursor = con.cursor()
     return con, cursor
 
+# Grab presence from friendCode
 @app.route('/user/<int:friendCode>/', methods=['GET'])
 def userPresence(friendCode:int):
     con, cursor = accessDB()
@@ -41,6 +42,7 @@ def userPresence(friendCode:int):
             }
         }
 
+# Create entry in database with friendCode
 @app.route('/user/c/<int:friendCode>/', methods=['POST'])
 def createUser(friendCode:int):
     con, cursor = accessDB()
@@ -61,5 +63,12 @@ def createUser(friendCode:int):
             }
         }
 
+# Make Nintendo's cert a 'secure' cert
+@app.route('/cdn/i/<string:file>/', methods=['GET'])
+def cdnImage(file:str):
+    response = make_response(requests.get('https://kanzashi-ctr.cdn.nintendo.net/i/%s' % file, verify = False).content)
+    response.headers['Content-Type'] = 'image/jpeg'
+    return response
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=2277)
+    app.run(host = '0.0.0.0', port = 2277)

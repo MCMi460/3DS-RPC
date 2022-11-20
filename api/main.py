@@ -23,12 +23,12 @@ async def main():
 
 		response = await client.login(Friends3DS.GAME_SERVER_ID)
 
-		s = settings.load("friends")
+		s = settings.load('friends')
 		s.configure(Friends3DS.ACCESS_KEY, Friends3DS.NEX_VERSION)
 		async with backend.connect(s, response.host, response.port) as be:
 			async with be.login(str(PID), NEX_PASSWORD) as client:
 				friends_client = friends.FriendsClientV1(client)
-				await friends_client.update_comment("github/MCMi460")
+				await friends_client.update_comment('github/MCMi460')
 				since = time.time()
 
 				while True:
@@ -36,6 +36,7 @@ async def main():
 						break
 					time.sleep(delay)
 
+					print('Grabbing new friends...')
 					con = sqlite3.connect('sqlite/fcLibrary.db')
 					cursor = con.cursor()
 
@@ -65,19 +66,18 @@ async def main():
 						for remover in removeList:
 							cursor.execute('DELETE FROM friends WHERE friendCode = %s' % convertPrincipalIdtoFriendCode(remover))
 						con.commit()
-						if len(t) < 1:
-							break
 
-						time.sleep(delay)
-						f = await friends_client.get_friend_presence([ e.unk1 for e in t ])
-						users = []
-						for game in f:
-							# game.unk == principalId
-							users.append(game.unk)
-							cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s WHERE friendCode = %s' % (True, game.presence.game_key.title_id, game.presence.game_key.title_version, convertPrincipalIdtoFriendCode(users[-1])))
-						for user in [ h for h in rotation if not h in users ]:
-							cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s WHERE friendCode = %s' % (False, 0, 0, convertPrincipalIdtoFriendCode(user)))
-						con.commit()
+						if len(t) > 0:
+							time.sleep(delay)
+							f = await friends_client.get_friend_presence([ e.unk1 for e in t ])
+							users = []
+							for game in f:
+								# game.unk == principalId
+								users.append(game.unk)
+								cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s WHERE friendCode = %s' % (True, game.presence.game_key.title_id, game.presence.game_key.title_version, convertPrincipalIdtoFriendCode(users[-1])))
+							for user in [ h for h in rotation if not h in users ]:
+								cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s WHERE friendCode = %s' % (False, 0, 0, convertPrincipalIdtoFriendCode(user)))
+							con.commit()
 
 						time.sleep(delay)
 						for friend in rotation:

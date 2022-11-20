@@ -2,3 +2,5 @@ requests
 flask
 nintendoclients>0.0.3
 xmltodict
+requests
+pypresence
