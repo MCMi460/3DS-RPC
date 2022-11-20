@@ -109,7 +109,6 @@ class Client():
                 raise TitleIDMatchError('unknown title id: %s' % tid)
 
             game = None
-            #print(self.titleDatabase)
             for title in self.titleDatabase['eshop']['contents']['content']:
                 if title['title']['@id'] == uid:
                     game = title['title']
@@ -136,7 +135,6 @@ class Client():
             print('Clear [%s -> %s]' % (self.currentGame['@id'], None))
             self.currentGame = {'@id': None}
             self.rpc.clear()
-        time.sleep(30)
 
 def main():
     # Create directory for logging and friend code saving
@@ -157,6 +155,7 @@ def main():
     client = Client('US', friendCode)
     while True:
         client.loop()
+        time.sleep(30)
 
 if __name__ == '__main__':
     main()
