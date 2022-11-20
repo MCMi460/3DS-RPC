@@ -5,8 +5,8 @@ from api.private import *
 import pypresence
 from typing import Literal, get_args
 
-port = '2277'
-host = 'http://127.0.0.1' + (':' + port if port else '')
+port = ''
+host = 'https://3ds.mi460.dev' + (':' + port if port else '')
 
 def getAppPath(): # Credit to @HotaruBlaze
     applicationPath = os.path.expanduser('~/Documents/3DS-RPC')
