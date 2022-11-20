@@ -1,8 +1,15 @@
 from flask import Flask, make_response
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import sqlite3, requests
 from api import *
 
 app = Flask(__name__)
+limiter = Limiter(app, key_func = get_remote_address)
+
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return 'You have exceeded your rate-limit'
 
 def accessDB():
     con = sqlite3.connect('sqlite/fcLibrary.db')
@@ -11,6 +18,7 @@ def accessDB():
 
 # Grab presence from friendCode
 @app.route('/user/<int:friendCode>/', methods=['GET'])
+@limiter.limit('3/minute')
 def userPresence(friendCode:int):
     con, cursor = accessDB()
     try:
@@ -44,6 +52,7 @@ def userPresence(friendCode:int):
 
 # Create entry in database with friendCode
 @app.route('/user/c/<int:friendCode>/', methods=['POST'])
+@limiter.limit('3/minute')
 def createUser(friendCode:int):
     con, cursor = accessDB()
     try:
@@ -65,6 +74,7 @@ def createUser(friendCode:int):
 
 # Make Nintendo's cert a 'secure' cert
 @app.route('/cdn/i/<string:file>/', methods=['GET'])
+@limiter.limit('1/minute')
 def cdnImage(file:str):
     response = make_response(requests.get('https://kanzashi-ctr.cdn.nintendo.net/i/%s' % file, verify = False).content)
     response.headers['Content-Type'] = 'image/jpeg'

@@ -60,7 +60,7 @@ class Client():
         # Connect to Discord
         self.connect()
         # Discord-related variables
-        self.currentGame = None
+        self.currentGame = {'@id': None}
 
     # Get from API
     def APIget(self, route:str, content:dict = {}):
@@ -76,12 +76,20 @@ class Client():
         self.rpc.connect()
 
     def signUp(self):
-        r = self.APIpost('user/c/%s' % self.friendCode).json()
+        r = self.APIpost('user/c/%s' % self.friendCode)
+        try:
+            r = r.json()
+        except:
+            raise APIException(r.content)
         if r['Exception']:
             raise APIException(r['Exception'])
 
     def fetch(self):
-        r = self.APIget('user/%s' % self.friendCode).json()
+        r = self.APIget('user/%s' % self.friendCode)
+        try:
+            r = r.json()
+        except:
+            raise APIException(r.content)
         if r['Exception']:
             raise APIException(r['Exception'])
         return r
@@ -109,9 +117,12 @@ class Client():
             if not game:
                 raise GameMatchError('unknown game: %s' % uid)
 
+            print('Update', end = '')
             if self.currentGame != game:
+                print(' [%s -> %s]' % (self.currentGame['@id'], game['@id']), end = '')
                 self.currentGame = game
                 self.start = int(time.time())
+            print()
             self.rpc.update(
                 details = game['name'],
                 large_image = game['icon_url'].replace('https://kanzashi-ctr.cdn.nintendo.net/i/', host + '/cdn/i/'),
@@ -122,7 +133,8 @@ class Client():
                 # But that's dumb so no
             )
         else:
-            self.currentGame = None
+            print('Clear [%s -> %s]' % (self.currentGame['@id'], None))
+            self.currentGame = {'@id': None}
             self.rpc.clear()
         time.sleep(30)
 
