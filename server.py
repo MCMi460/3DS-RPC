@@ -52,7 +52,7 @@ def userPresence(friendCode:int):
 
 # Create entry in database with friendCode
 @app.route('/user/c/<int:friendCode>/', methods=['POST'])
-@limiter.limit('3/minute')
+@limiter.limit('2/minute')
 def createUser(friendCode:int):
     con, cursor = accessDB()
     try:

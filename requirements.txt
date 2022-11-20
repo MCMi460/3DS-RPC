@@ -1,6 +1,6 @@
 requests
 flask
-nintendoclients>0.0.3
+nintendoclients>=0.0.5
 xmltodict
 pypresence
 flask-limiter

@@ -5,8 +5,11 @@ from api.private import *
 import pypresence
 from typing import Literal, get_args
 
-port = ''
-host = 'https://3ds.mi460.dev' + (':' + port if port else '')
+local = False
+
+host = 'https://3ds.mi460.dev'
+if local:
+    host = 'http://127.0.0.1:2277'
 
 def getAppPath(): # Credit to @HotaruBlaze
     applicationPath = os.path.expanduser('~/Documents/3DS-RPC')
@@ -98,15 +101,26 @@ class Client():
         userData = self.fetch()
         presence = userData['User']['Presence']
 
+        _pass = None
         if userData['User']['online'] and presence:
             uid = None
             tid = hex(int(presence['titleID']))[2:].zfill(16).upper()
+            _template = {
+                'name': 'Unknown 3DS App',
+                'icon_url': 'logo',
+                '@id': tid,
+            }
             for game in self.titlesToUID:
                 if game['TitleID'] == tid:
                     uid = game['UID']
                     break
             if not uid:
-                raise TitleIDMatchError('unknown title id: %s' % tid)
+                if tid == ''.zfill(16):
+                    _pass = _template
+                    _pass['name'] = 'Home Screen'
+                else:
+                    _pass = _template
+                # raise TitleIDMatchError('unknown title id: %s' % tid)
 
             game = None
             for title in self.titleDatabase['eshop']['contents']['content']:
@@ -114,7 +128,10 @@ class Client():
                     game = title['title']
                     break
             if not game:
-                raise GameMatchError('unknown game: %s' % uid)
+                _pass = _template
+                # raise GameMatchError('unknown game: %s' % uid)
+            if _pass:
+                game = _pass
 
             print('Update', end = '')
             if self.currentGame != game:
