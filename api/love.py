@@ -1,3 +1,4 @@
+# Created by Deltaion Lee (MCMi460) on Github
 # Convert `friendCode` into `principalId`
 
 # This method took two weeks to figure out and five minutes to code

@@ -1,3 +1,5 @@
+# Created by Deltaion Lee (MCMi460) on Github
+
 import requests, os, sys, time
 import xmltodict, json
 sys.path.append('../')

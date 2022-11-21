@@ -1,3 +1,4 @@
+# Created by Deltaion Lee (MCMi460) on Github
 # This is my private file, but with all of the dangerous stuff removed
 # You can use it as a template for yours
 

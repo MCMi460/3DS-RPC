@@ -1,3 +1,4 @@
+# Created by Deltaion Lee (MCMi460) on Github
 # Based from NintendoClients' `examples/3ds/friends.py`
 
 from nintendo import nasc
