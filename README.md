@@ -18,7 +18,7 @@ I'd like to thank:
 <h1 id = 'quick'>Quickstart Guide</h1>
 
 Download the app from the [latest release](https://github.com/MCMi460/3DS-RPC/releases) and run!  
-Once ran, the app will ask for you to add a friend on your Nintendo 3DS. This is for the express purpose of pulling your currently playing Nintendo game, so be mindful that you may need to enable "Show friends what you're playing?" on your 3DS' friends app.
+Once ran, the app will ask for you to add a friend on your Nintendo 3DS. This is for the express purpose of pulling your currently playing Nintendo game.
 
 1. Open Discord and 3DS-RPC
 
@@ -43,6 +43,9 @@ Once ran, the app will ask for you to add a friend on your Nintendo 3DS. This is
 **A:** And this is an answer.
 
 -->
+
+***Q: Whenever I play a game, 3DS-RPC won't change from the home screen!***  
+**A:** Firstly, try waiting ~30 seconds, as the application has a fairly slow response time. Secondly, make sure that you've enabled "Show friends what you're playing?" on your 3DS' friends app.
 
 *Please don't DDoS me...*
 
