@@ -44,7 +44,7 @@ async def main():
 					result = cursor.fetchall()
 					if not result:
 						continue
-					lst = [ convertFriendCodeToPrincipalId(f) for f in result[0] ]
+					lst = [ convertFriendCodeToPrincipalId(f[0]) for f in result ]
 					# Obviously change the above lines, but the premise remains
 					#lst = [ convertFriendCodeToPrincipalId(privFriend), ] # Debug purposes currently
 					#print(lst)
