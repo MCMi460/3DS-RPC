@@ -7,9 +7,15 @@ from typing import Literal, get_args
 
 local = False
 
-host = 'https://3ds.mi460.dev'
+host = 'https://3ds.mi460.dev' # Change the host as you'd wish
 if local:
     host = 'http://127.0.0.1:2277'
+
+## The below contains 3ds.mi460.dev-specific information
+## You will have to provide your own 'bot' FC if you are planning
+## on running your own front and backend.
+botFC = str(233790548638) # FC == Friendcode
+convertFriendCodeToPrincipalId(botFC) # A quick verification check
 
 def getAppPath(): # Credit to @HotaruBlaze
     applicationPath = os.path.expanduser('~/Documents/3DS-RPC')
@@ -65,6 +71,8 @@ class Client():
         # Pull databases
         self.titleDatabase = xmltodict.parse(requests.get('https://samurai.ctr.shop.nintendo.net/samurai/ws/%s/titles?shop_id=1&limit=5000&offset=0' % self.region, verify = False).text)
         self.titlesToUID = requests.get('https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_%s.json' % self.region).json()
+        ## Warning; the above does not account for games being played by a user who has removed the region lock on their system
+        ## Please consider fixing this in the future, @MCMi460
 
         # Connect to Discord
         self.connect()
@@ -168,6 +176,8 @@ def main():
         os.mkdir(path)
     privateFile = os.path.join(path, 'private.txt')
     if not os.path.isfile(privateFile):
+        print('Please take this time to add the bot\'s FC to your target 3DS\' friends list.\nBot FC: %s' % '-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4)))
+        input('[Press enter to continue]')
         friendCode = input('Please enter your 3DS\' friend code\n> ')
     else:
         with open(privateFile, 'r') as file:
