@@ -17,7 +17,3 @@ NEX_PASSWORD = ""
 
 REGION = 1 # USA
 LANGUAGE = 1
-
-localFriendCode = 0
-code = 0
-privFriend = ''
