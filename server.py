@@ -26,7 +26,7 @@ def userPresence(friendCode:int):
         cursor.execute('SELECT * FROM friends WHERE friendCode = %s' % friendCode)
         result = cursor.fetchone()
         if not result:
-            raise Exception('friendCode not recognized')
+            raise Exception('friendCode not recognized\nHint: You may not have added the bot as a friend')
         if result[1] != 0:
             presence = {
                 'titleID': result[2],
@@ -57,9 +57,6 @@ def createUser(friendCode:int):
     con, cursor = accessDB()
     try:
         convertFriendCodeToPrincipalId(friendCode)
-        #cursor.execute('SELECT COUNT(1) FROM friends WHERE friendCode = %s' % friendCode)
-        #if cursor.fetchone()[0] != 0:
-            #raise Exception()
         cursor.execute('INSERT INTO friends (friendCode, online, titleID, updID) VALUES (%s, %s, %s, %s)' % (friendCode, False, '0', '0'))
         con.commit()
         return {
@@ -74,7 +71,7 @@ def createUser(friendCode:int):
 
 # Make Nintendo's cert a 'secure' cert
 @app.route('/cdn/i/<string:file>/', methods=['GET'])
-@limiter.limit('1/minute')
+@limiter.limit('5/minute')
 def cdnImage(file:str):
     response = make_response(requests.get('https://kanzashi-ctr.cdn.nintendo.net/i/%s' % file, verify = False).content)
     response.headers['Content-Type'] = 'image/jpeg'

@@ -27,6 +27,7 @@ def getAppPath(): # Credit to @HotaruBlaze
     return applicationPath
 
 _REGION = Literal['US', 'JP', 'GB', 'KR', 'TW']
+path = getAppPath()
 
 class APIException(Exception):
     pass
@@ -42,6 +43,11 @@ class Client():
         ### Maintain typing ###
         assert region in get_args(_REGION), '\'%s\' does not match _REGION' % region # Region assertion
         convertFriendCodeToPrincipalId(friendCode) # Friend Code check
+        with open(os.path.join(path, 'private.txt'), 'w') as file: # Save FC to file
+            file.write(json.dumps({
+                'friendCode': friendCode,
+                'region': region,
+            }))
 
         # Region and FC variables
         self.region = region
@@ -153,22 +159,24 @@ class Client():
             self.rpc.clear()
 
 def main():
+    friendCode = None
+    region = None
+
     # Create directory for logging and friend code saving
-    path = getAppPath()
     if not os.path.isdir(path):
         os.mkdir(path)
     privateFile = os.path.join(path, 'private.txt')
     if not os.path.isfile(privateFile):
         friendCode = input('Please enter your 3DS\' friend code\n> ')
-        with open(privateFile, 'w') as file:
-            file.write(json.dumps({
-                'friendCode': friendCode,
-            }))
     else:
         with open(privateFile, 'r') as file:
-            friendCode = json.loads(file.read())['friendCode']
+            js = json.loads(file.read())
+            friendCode = js['friendCode']
+            region = js.get('region')
+    if not region:
+        region = input('Please enter your 3DS\' region [%s]\n> ' % ', '.join(get_args(_REGION)))
 
-    client = Client('US', friendCode)
+    client = Client(region, friendCode)
     while True:
         client.loop()
         time.sleep(30)
