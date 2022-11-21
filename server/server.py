@@ -4,11 +4,15 @@ from flask import Flask, make_response
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import sqlite3, requests, sys
+import gevent.pywsgi
 sys.path.append('../')
 from api import *
 
 app = Flask(__name__)
 limiter = Limiter(app, key_func = get_remote_address)
+
+local = False
+port = 2277
 
 @app.errorhandler(429)
 def ratelimit_handler(e):
@@ -81,4 +85,8 @@ def cdnImage(file:str):
     return response
 
 if __name__ == '__main__':
-    app.run(host = '0.0.0.0', port = 2277)
+    if local:
+        app.run(host = '0.0.0.0', port = port)
+    else:
+        server = gevent.pywsgi.WSGIServer(('0.0.0.0', port), app)
+        server.serve_forever()
