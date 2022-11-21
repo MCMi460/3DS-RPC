@@ -25,11 +25,11 @@ def convertFriendCodeToPrincipalId(friendCode:str) -> int:
 def checkPrincipalIdValidity(checksumByte:int, principalId:int) -> bool:
     return generateChecksumByte(principalId) == checksumByte # Check to match
 
-def generateChecksumByte(principalId:int):
-    sha1 = hashlib.sha1(principalId.to_bytes(16, 'little')) # Little endian sha1 of principalId
-    return hex(int(sha1.hexdigest()[2:][:2], 16) >> 1) # Shift first byte to the right by one
+def generateChecksumByte(principalId:int) -> str: # https://www.3dbrew.org/wiki/FRDU:PrincipalIdToFriendCode
+    sha1 = hashlib.sha1(principalId.to_bytes(4, byteorder = 'little')) # Little endian sha1 of principalId
+    return hex(int(sha1.hexdigest(), 16) >> 1)[:4] # Shift first byte to the right by one
 
-def convertPrincipalIdtoFriendCode(principalId:int) -> str:
+def convertPrincipalIdtoFriendCode(principalId:int) -> int:
     if not isinstance(principalId, int): raise PrincipalIDValidityError('an invalid principal id was passed')
     checksumByte = generateChecksumByte(principalId)
     friendCode = checksumByte + hex(principalId)
