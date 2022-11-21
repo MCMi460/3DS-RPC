@@ -1,7 +1,8 @@
 from flask import Flask, make_response
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import sqlite3, requests
+import sqlite3, requests, sys
+sys.path.append('../')
 from api import *
 
 app = Flask(__name__)

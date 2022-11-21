@@ -3,9 +3,10 @@
 from nintendo import nasc
 from nintendo.nex import backend, friends, settings, streams
 from nintendo.games import Friends3DS
-import anyio, time, sqlite3
-from .private import SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME, REGION, LANGUAGE, PID, PID_HMAC, NEX_PASSWORD
-from . import *
+import anyio, time, sqlite3, sys
+sys.path.append('../')
+from api.private import SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME, REGION, LANGUAGE, PID, PID_HMAC, NEX_PASSWORD
+from api import *
 
 import logging
 logging.basicConfig(level=logging.INFO)
