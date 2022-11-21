@@ -108,6 +108,8 @@ class Client():
         except:
             raise APIException(r.content)
         if r['Exception']:
+            if 'not recognized' in r['Exception']['Error']:
+                print('\033[93mRemember, the bot\'s friend code is as follows:\n%s\033[0m' % '-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4)))
             raise APIException(r['Exception'])
         return r
 
