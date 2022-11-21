@@ -1,5 +1,6 @@
 import requests, os, sys, time
 import xmltodict, json
+sys.path.append('../')
 from api import *
 import pypresence
 from typing import Literal, get_args
