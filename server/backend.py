@@ -43,6 +43,18 @@ async def main():
 						con = sqlite3.connect('sqlite/fcLibrary.db')
 						cursor = con.cursor()
 
+						cursor.execute('SELECT friendCode, lastAccessed FROM friends')
+						result = cursor.fetchall()
+						if not result:
+							continue
+						removeList = []
+						for row in result:
+							if time.time() - row[1] > 31:
+								removeList.append(row[0])
+						for remover in removeList:
+							cursor.execute('DELETE FROM friends WHERE friendCode = %s' % remover)
+						con.commit()
+
 						cursor.execute('SELECT friendCode FROM friends')
 						result = cursor.fetchall()
 						if not result:

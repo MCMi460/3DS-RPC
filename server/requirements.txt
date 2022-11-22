@@ -3,3 +3,4 @@ flask
 nintendoclients>=0.0.5
 flask-limiter
 gevent
+Flask-SQLAlchemy

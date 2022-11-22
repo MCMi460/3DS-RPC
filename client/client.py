@@ -8,6 +8,7 @@ import pypresence
 from typing import Literal, get_args
 
 local = False
+version = 0.1
 
 host = 'https://3ds.mi460.dev' # Change the host as you'd wish
 if local:
@@ -62,14 +63,6 @@ class Client():
         self.region = region
         self.friendCode = friendCode
 
-        # Try signing in
-        ## If there is an error other than the user's account not existing, then error
-        try:
-            self.signUp()
-        except APIException as ex:
-            if not 'UNIQUE constraint failed: friends.friendCode' in str(ex):
-                raise ex
-
         # Pull databases
         self.titleDatabase = xmltodict.parse(requests.get('https://samurai.ctr.shop.nintendo.net/samurai/ws/%s/titles?shop_id=1&limit=5000&offset=0' % self.region, verify = False).text)
         self.titlesToUID = requests.get('https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_%s.json' % self.region).json()
@@ -83,25 +76,12 @@ class Client():
 
     # Get from API
     def APIget(self, route:str, content:dict = {}):
-        return requests.get(host + '/' + route, data = content)
-
-    # Post to API
-    def APIpost(self, route:str, content:dict = {}):
-        return requests.post(host + '/' + route, data = content)
+        return requests.get(host + '/' + route, data = content, headers = {'User-Agent':'3DS-RPC/%s' % version,})
 
     # Connect to PyPresence
     def connect(self):
         self.rpc = pypresence.Presence('1023094010383970304')
         self.rpc.connect()
-
-    def signUp(self):
-        r = self.APIpost('user/c/%s' % self.friendCode)
-        try:
-            r = r.json()
-        except:
-            raise APIException(r.content)
-        if r['Exception']:
-            raise APIException(r['Exception'])
 
     def fetch(self):
         r = self.APIget('user/%s' % self.friendCode)
