@@ -63,16 +63,16 @@ class Client():
         self.region = region
         self.friendCode = friendCode
 
+        # Connect to Discord
+        self.connect()
+        # Discord-related variables
+        self.currentGame = {'@id': None}
+
         # Pull databases
         self.titleDatabase = xmltodict.parse(requests.get('https://samurai.ctr.shop.nintendo.net/samurai/ws/%s/titles?shop_id=1&limit=5000&offset=0' % self.region, verify = False).text)
         self.titlesToUID = requests.get('https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_%s.json' % self.region).json()
         ## Warning; the above does not account for games being played by a user who has removed the region lock on their system
         ## Please consider fixing this in the future, @MCMi460
-
-        # Connect to Discord
-        self.connect()
-        # Discord-related variables
-        self.currentGame = {'@id': None}
 
     # Get from API
     def APIget(self, route:str, content:dict = {}):
