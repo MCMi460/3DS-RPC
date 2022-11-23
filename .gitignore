@@ -16,3 +16,7 @@ test*/
 
 # DB
 *.db
+
+# NPM
+node_modules
+.DS_Store

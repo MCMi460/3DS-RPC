@@ -1,0 +1,70 @@
+extends ../layouts/dashboard.pug
+
+block config
+    - var bodyClass = 'sb-nav-fixed'
+    - var pageTitle = 'Home';
+    - var index = true;
+    - var sidenavStyle = 'sb-sidenav-dark'
+
+prepend css
+    //- Load Simple DataTables Stylesheet
+    link(href='https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css', rel='stylesheet')
+
+block content
+    .container-fluid.px-4
+        include includes/page-header.pug
+        h1.text-center
+          | These will soon contain cool surprises!
+        .row
+            .col-xl-3.col-md-6
+              .card.bg-success.text-white.mb-4
+                  .card-body
+                      | Static Join Card
+                  .card-footer.d-flex.align-items-center.justify-content-between
+                      a(href='#').small.text-white.stretched-link
+                          | View Details
+                      .small.text-white
+                          i.fas.fa-angle-right
+            .col-xl-3.col-md-6
+                .card.text-white.mb-4(style='background: rgb(236,227,102);background: radial-gradient(circle, rgba(236,227,102,1) 0%, rgba(236,196,102,1) 100%);')
+                    .card-body
+                        | Join Requests
+                    .card-footer.d-flex.align-items-center.justify-content-between
+                        a(href='#').small.text-white.stretched-link
+                            | View Details
+                        .small.text-white
+                            i.fas.fa-angle-right
+            .col-xl-3.col-md-6
+              .card.text-white.mb-4(style='background-color:#dc3545;')
+                  .card-body
+                      | Notification Card
+                  .card-footer.d-flex.align-items-center.justify-content-between
+                      a(href='#').small.text-white.stretched-link
+                          | View Details
+                      .small.text-white
+                          i.fas.fa-angle-right
+            .col-xl-3.col-md-6
+              .card.bg-primary.text-white.mb-4
+                  .card-body
+                      | I have no friends card
+                  .card-footer.d-flex.align-items-center.justify-content-between
+                      a(href='#').small.text-white.stretched-link
+                          | View Details
+                      .small.text-white
+                          i.fas.fa-angle-right
+        .row
+
+            .col-xl-6
+                .card.mb-4
+                    .card-header
+                        i.fas.fa-chart-area.me-1
+                        | Actively Playing Users...
+                    .card-body
+
+
+            .col-xl-6
+                .card.mb-4
+                    .card-header
+                        i.fas.fa-chart-bar.me-1
+                        | Your Account
+                    .card-body

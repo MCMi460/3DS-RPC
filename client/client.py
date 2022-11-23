@@ -7,8 +7,8 @@ from api import *
 import pypresence
 from typing import Literal, get_args
 
-local = False
-version = 0.1
+local = True
+version = 0.2
 
 host = 'https://3ds.mi460.dev' # Change the host as you'd wish
 if local:
@@ -98,6 +98,10 @@ class Client():
     def loop(self):
         userData = self.fetch()
         presence = userData['User']['Presence']
+        if userData['User']['notifications']:
+            notifications = [ json.loads(n) for n in userData['User']['notifications'].split('|') ]
+        else:
+            notifications = []
 
         _pass = None
         if userData['User']['online'] and presence:

@@ -1,0 +1,27 @@
+nav(class=['sb-sidenav', 'accordion'] class=sidenavStyle)#sidenavAccordion
+
+    .sb-sidenav-menu
+
+        .nav
+
+            .sb-sidenav-menu-heading
+                | Dashboard
+
+            a.nav-link(href='index.html')
+                .sb-nav-link-icon
+                    i.fas.fa-house-user
+                | Home
+
+            .sb-sidenav-menu-heading
+                | Preferences
+
+            a.nav-link(href='settings.html')
+                .sb-nav-link-icon
+                    i.fas.fa-tachometer-alt
+                | Settings
+
+    .sb-sidenav-footer
+
+        html
+          <p class = 'small'>{{ data['registered'].split('|')[0] }}</p>
+          | {{ data['registered'].split('|')[1] }}

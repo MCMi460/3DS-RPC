@@ -1,0 +1,23 @@
+extends ../layouts/dashboard.pug
+
+block config
+    - var bodyClass = 'sb-nav-fixed'
+    - var pageTitle = 'Settings'
+    - var sidenavStyle = 'sb-sidenav-dark'
+
+block content
+    .container-fluid.px-4.justify-content-between.align-items-center
+        include includes/page-header.pug
+        .card.mb-4#secrety
+            .card-body.
+              You are currently logged in as XXXX-XXXX-XXXX ({{ data['registered'].split('|')[1] }}).
+        .row.align-items-center.align-content-center
+          div(style='align-items:center;align-content:center;')
+            .col-xl-2
+              a(href='/logout' style='text-decoration:none;color:inherit;')
+                .card.bg-danger.text-white.mb-4
+                    .card-body
+                      h2(style='text-align:center;') Logout
+
+append scripts
+    script(src='{{ url_for(\'static\',filename=\'js/settings.js\') }}')
