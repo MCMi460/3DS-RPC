@@ -218,7 +218,7 @@ def login():
     except:
         return 'wat'
     try:
-        convertFriendCodeToPrincipalId(fc)
+        fc = convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(fc))
         createUser(fc)
         response = make_response(redirect('/'))
         response.set_cookie('friendCode', fc)
