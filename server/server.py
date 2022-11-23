@@ -221,7 +221,7 @@ def login():
         fc = convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(fc))
         createUser(fc)
         response = make_response(redirect('/'))
-        response.set_cookie('friendCode', fc)
+        response.set_cookie('friendCode', str(fc))
         return response
     except:
         return redirect('/invalid.html')
