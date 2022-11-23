@@ -14,7 +14,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 limiter = Limiter(app, key_func = get_remote_address)
 
-local = True
+local = False
 port = 2277
 version = 0.2
 agent = '3DS-RPC/'

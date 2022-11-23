@@ -7,7 +7,7 @@ from api import *
 import pypresence
 from typing import Literal, get_args
 
-local = True
+local = False
 version = 0.2
 
 host = 'https://3ds.mi460.dev' # Change the host as you'd wish
@@ -146,7 +146,7 @@ class Client():
                 large_image = game['icon_url'].replace('https://kanzashi-ctr.cdn.nintendo.net/i/', host + '/cdn/i/'),
                 large_text = game['name'],
                 start = self.start,
-                #buttons = [{'label': 'Nintendo eShop', 'url': game[]},]
+                buttons = [{'label': 'Add Friend', 'url': host + '/f/%s' % convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(self.friendCode))},]
                 # eShop URL could be https://api.qrserver.com/v1/create-qr-code/?data=ESHOP://{uid}
                 # But that's dumb so no
             )
