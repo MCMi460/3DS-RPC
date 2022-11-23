@@ -14,6 +14,8 @@ I'd like to thank:
   - NintendoClients is what this program uses to pretend to be a real 3DS.
 - [hax0kartik](https://github.com/hax0kartik) and his [3dsdb](https://github.com/hax0kartik/3dsdb)
   - 3dsdb is an open-source project that includes data about games on the eShop. It is used to retrieve the game's name and icon url.
+- [StartBootstrap](https://github.com/StartBootstrap) for their [startbootstrap-sb-admin](https://github.com/StartBootstrap/startbootstrap-sb-admin)
+  - startbootstrap-sb-admin is a template using [bootstrap](https://github.com/twbs/bootstrap) which is how I created the friends network website!
 
 <h1 id = 'quick'>Quickstart Guide</h1>
 
