@@ -163,6 +163,7 @@ def main():
         print('Please take this time to add the bot\'s FC to your target 3DS\' friends list.\nBot FC: %s' % '-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4)))
         input('[Press enter to continue]')
         friendCode = input('Please enter your 3DS\' friend code\n> ')
+        friendCode = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12) # Check validity to prevent writing invalid FC
     else:
         with open(privateFile, 'r') as file:
             js = json.loads(file.read())
