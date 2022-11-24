@@ -4,7 +4,7 @@ from flask import Flask, make_response, request, redirect, render_template
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
-import sqlite3, requests, sys, os, time, json
+import sqlite3, requests, sys, os, time, json, random, string, hashlib, secrets
 sys.path.append('../')
 from api import *
 
@@ -19,9 +19,16 @@ port = 2277
 version = 0.2
 agent = '3DS-RPC/'
 
+notificationTypes = (
+    'friendRequest',
+    'friendRequestResponse',
+    'gameInvite',
+    'gameInviteResponse',
+)
+
 @app.errorhandler(429)
 def ratelimit_handler(e):
-    return 'You have exceeded your rate-limit'
+    return 'You have exceeded your rate-limit. Please wait a bit before trying that again.'
 
 # Create entry in database with friendCode
 def createUser(friendCode:int):
@@ -31,45 +38,116 @@ def createUser(friendCode:int):
         db.session.commit()
     except Exception as e:
         if 'UNIQUE constraint failed: friends.friendCode' in str(e):
-            db.session.execute('UPDATE friends SET lastAccessed = %s WHERE friendCode = \'%s\'' % (time.time(), friendCode))
+            db.session.execute('UPDATE friends SET lastAccessed = %s WHERE friendCode = \'%s\'' % (time.time(), str(friendCode).zfill(12)))
             db.session.commit()
 
 def sendNotification(notification:dict, friendCode:int):
-    result = db.session.execute('SELECT notifications FROM friends WHERE friendCode = \'%s\'' % friendCode)
+    result = db.session.execute('SELECT notifications FROM friends WHERE friendCode = \'%s\'' % str(friendCode).zfill(12))
     result = result.fetchone()
     if result[0]:
-        result = result[0] + '|'
+        result = ('' if not result[0] else result[0]) + '|'
+        if json.dumps(notification) in result:
+            return
     else:
         result = ''
     result = result + json.dumps(notification)
-    db.session.execute('UPDATE friends SET notifications = \'%s\' WHERE friendCode = \'%s\'' % (result, friendCode))
+    db.session.execute('UPDATE friends SET notifications = \'%s\' WHERE friendCode = \'%s\'' % (result, str(friendCode).zfill(12)))
     db.session.commit()
 
+def authentication(friendCode:int):
+    createUser(friendCode)
+    authString = ''.join(random.choice(string.ascii_letters) for i in range(16))
+    try:
+        convertFriendCodeToPrincipalId(friendCode)
+        db.session.execute('INSERT INTO auth (friendCode, tempAuth) VALUES (\'%s\', \'%s\')' % (str(friendCode).zfill(12), authString))
+        db.session.commit()
+    except Exception as e:
+        if 'UNIQUE constraint failed: auth.friendCode' in str(e):
+            db.session.execute('UPDATE auth SET tempAuth = \'%s\' WHERE friendCode = \'%s\'' % (authString, str(friendCode).zfill(12)))
+            db.session.commit()
+    return authString
+
+def checkAuthentication(friendCode:int, authString:str):
+    createUser(friendCode)
+    result = db.session.execute('SELECT tempAuth FROM auth WHERE friendCode = \'%s\'' % str(friendCode).zfill(12))
+    result = result.fetchone()
+    if not result or result[0] != authString:
+        return False
+    result2 = db.session.execute('SELECT message FROM friends WHERE friendCode = \'%s\'' % str(friendCode).zfill(12))
+    result2 = result2.fetchone()
+    if result[0] == result2[0] == authString:
+        return True
+    return False
+
+def checkVerification(friendCode:int):
+    result = db.session.execute('SELECT password FROM auth WHERE friendCode = \'%s\'' % str(friendCode).zfill(12))
+    result = result.fetchone()
+    if not result:
+        return False
+    if not result[0]:
+        return False
+    return True
+
 def clearNotifications(friendCode:int):
-    db.session.execute('UPDATE friends SET notifications = NULL WHERE friendCode = \'%s\'' % friendCode)
+    db.session.execute('UPDATE friends SET notifications = NULL WHERE friendCode = \'%s\'' % str(friendCode).zfill(12))
     db.session.commit()
 
 def checkUser(friendCode:int):
-    result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % friendCode)
+    result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % str(friendCode).zfill(12))
     result = result.fetchone()
     if not result:
         return False
     return True
 
+def createAccount(friendCode:int, password:str):
+    h = hashlib.md5(password.encode('utf-8')).hexdigest()
+    key = secrets.token_urlsafe(64)
+    db.session.execute('UPDATE auth SET password = \'%s\', token = \'%s\', tempAuth = NULL WHERE friendCode = \'%s\'' % (h, key,str(friendCode).zfill(12)))
+    db.session.commit()
+    return key
+
+def updateToken(friendCode:int):
+    key = secrets.token_urlsafe(64)
+    db.session.execute('UPDATE auth SET token = \'%s\' WHERE friendCode = \'%s\'' % (key, str(friendCode).zfill(12)))
+    db.session.commit()
+    return key
+
+def verifyAccount(friendCode:int, password:str):
+    h = hashlib.md5(password.encode('utf-8')).hexdigest()
+    result = db.session.execute('SELECT password FROM auth WHERE friendCode = \'%s\'' % str(friendCode).zfill(12))
+    result = result.fetchone()
+    print(password)
+    print(result,h)
+    if not result:
+        return False
+    if not result[0]:
+        return False
+    if result[0] == h:
+        return updateToken(friendCode)
+    return False
+
+def getFCFromKey(key):
+    result = db.session.execute('SELECT friendCode FROM auth WHERE token = \'%s\'' % str(key))
+    return result.fetchone()[0]
+
 # Index page
 @app.route('/')
 def index():
-    fc = request.cookies.get('friendCode')
+    key = request.cookies.get('token')
     data = {
         'registered': '|Not logged in',
     }
-    if fc:
-        result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % fc)
-        result = result.fetchone()
-        data['registered'] = (('Logged in as|%s' % (result[6] if result[6] else 'Loading...')) if result != None else '|Not logged in')
-    response = make_response(render_template('dist/index.html', data = data))
-    if fc and not result:
-        response.set_cookie('friendCode', '')
+    if key:
+        fc = getFCFromKey(key)
+        if fc:
+            result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % fc)
+            result = result.fetchone()
+            data['registered'] = (('Logged in as|%s' % (result[6] if result[6] else 'Loading...')) if result != None else '|Not logged in')
+        response = make_response(render_template('dist/index.html', data = data))
+        if fc and not result:
+            response.set_cookie('token', '')
+    else:
+        response = make_response(render_template('dist/index.html', data = data))
     return response
 
 # Index page
@@ -80,57 +158,109 @@ def index2():
 # Settings page
 @app.route('/settings.html')
 def settings():
-    fc = request.cookies.get('friendCode')
+    key = request.cookies.get('token')
     data = {
         'registered': '|Not logged in',
+        'fc': 0,
     }
-    if fc:
-        result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % fc)
-        result = result.fetchone()
-        data['registered'] = (('Logged in as|%s' % (result[6] if result[6] else 'Loading...')) if result != None else '|Not logged in')
+    if key:
+        fc = getFCFromKey(key)
+        if fc:
+            result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % fc)
+            result = result.fetchone()
+            data['registered'] = (('Logged in as|%s' % (result[6] if result[6] else 'Loading...')) if result != None else '|Not logged in')
+            data['fc'] = '-'.join(str(fc)[i:i+4] for i in range(0, len(str(fc)), 4))
+        else:
+            return redirect('/login.html')
+        if fc and not result:
+            response = make_response(redirect('/login.html'))
+            response.set_cookie('token', '')
+            return response
+        response = make_response(render_template('dist/settings.html', data = data))
     else:
         return redirect('/login.html')
-    if fc and not result:
-        response = make_response(redirect('/login.html'))
-        response.set_cookie('friendCode', '')
-        return response
-    response = make_response(render_template('dist/settings.html', data = data))
     return response
 
 # Login page
 @app.route('/login.html')
 def loginPage():
-    fc = request.cookies.get('friendCode')
-    response = make_response(render_template('dist/login.html'))
-    if fc and not checkUser(fc):
-        response.set_cookie('friendCode', '')
-    return response
+    key = request.cookies.get('token')
+    if key:
+        return redirect('/')
+    return render_template('dist/login.html')
 
 # Register page
 @app.route('/register.html')
-def register():
-    fc = request.cookies.get('friendCode')
-    response = make_response(render_template('dist/register.html'))
-    if fc and not checkUser(fc):
-        response.set_cookie('friendCode', '')
+def registerPage():
+    key = request.cookies.get('token')
+    if key:
+        return redirect('/settings.html')
+    return render_template('dist/register.html')
+
+# Auth page
+@app.route('/auth.html', methods=['POST'])
+@limiter.limit('2/minute')
+def authPage():
+    try:
+        fc = request.form['fc']
+        fc = convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(fc))
+        if checkVerification(fc):
+            raise Exception()
+    except:
+        return redirect('/invalid.html')
+    try:
+        authString = authentication(fc)
+        data = {
+            'fc': fc,
+            'authString': authString,
+            'nextPage': '/password.html?fc=%s&authString=%s' % (fc, authString),
+        }
+        response = make_response(render_template('dist/auth.html', data = data))
+    except:
+        return redirect('/500.html')
+    return response
+
+# Auth page
+@app.route('/password.html')
+#@limiter.limit('1/minute')
+def passPage():
+    try:
+        fc = request.args['fc']
+        fc = convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(fc))
+        authString = request.args['authString']
+    except:
+        return redirect('/invalid.html')
+    try:
+        if not checkAuthentication(fc, authString):
+            raise Exception()
+        data = {
+            'nextPage': '/register?authString=%s&fc=%s' % (authString, fc),
+        }
+        response = make_response(render_template('dist/password.html', data = data))
+    except:
+        return redirect('/invalid2.html')
     return response
 
 # Activity page
 @app.route('/activity.html')
 def activity():
-    fc = request.cookies.get('friendCode')
+    key = request.cookies.get('token')
     data = {
         'registered': '|Not logged in',
     }
-    if fc:
-        result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % fc)
-        result = result.fetchone()
-        data['registered'] = (('Logged in as|%s' % (result[6] if result[6] else 'Loading...')) if result != None else '|Not logged in')
+    if key:
+        fc = getFCFromKey(key)
+        if fc:
+            result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % fc)
+            result = result.fetchone()
+            data['registered'] = (('Logged in as|%s' % (result[6] if result[6] else 'Loading...')) if result != None else '|Not logged in')
+        else:
+            return redirect('/login.html')
     else:
         return redirect('/login.html')
     if fc and not result:
         response = make_response(redirect('/login.html'))
-        response.set_cookie('friendCode', '')
+        response.set_cookie('token', '')
         return response
     response = make_response(render_template('dist/activity.html', data = data))
     return response
@@ -139,6 +269,26 @@ def activity():
 @app.route('/invalid.html')
 def invalid():
     return render_template('dist/invalid.html')
+
+# Invalid2 page
+@app.route('/invalid2.html')
+def invalid2():
+    return render_template('dist/invalid2.html')
+
+# Invalid3 page
+@app.route('/invalid3.html')
+def invalid3():
+    return render_template('dist/invalid3.html')
+
+# 500 page
+@app.route('/500.html')
+def fiveHundred():
+    return render_template('dist/500.html')
+
+# Terms page
+@app.route('/terms.html')
+def terms():
+    return redirect('https://github.com/MCMi460/3DS-RPC/blob/main/TERMS.md')
 
 # Grab presence from friendCode
 @app.route('/user/<int:friendCode>/', methods=['GET'])
@@ -195,17 +345,19 @@ def cdnImage(file:str):
 @app.route('/f/<int:friendCode>', methods=['GET'])
 @limiter.limit('2/minute')
 def addFriend(friendCode:int):
-    fc = request.cookies.get('friendCode')
-    if not fc:
+    key = request.cookies.get('token')
+    if not key:
         response = make_response(redirect('/login.html'))
         response.headers['redirectFrom'] = friendCode
         return response
     try:
-        convertFriendCodeToPrincipalId(fc)
+        fc = getFCFromKey(key)
+        fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(fc))).zfill(12)
     except:
         return redirect('/invalid.html')
     sendNotification({
         'sender': fc,
+        'type': notificationTypes.index('friendRequest'),
     }, friendCode)
     return 'Successfully sent friend request from %s to %s' % (fc, friendCode)
 
@@ -215,14 +367,40 @@ def addFriend(friendCode:int):
 def login():
     try:
         fc = request.form['fc']
+        password = request.form['password']
     except:
         return 'wat'
     try:
         fc = convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(fc))
         createUser(fc)
+        key = verifyAccount(fc, password)
+        if not key:
+            raise Exception()
         response = make_response(redirect('/'))
-        response.set_cookie('friendCode', str(fc))
+        response.set_cookie('token', str(key))
         return response
+    except:
+        return redirect('/invalid.html')
+
+# Register
+@app.route('/register', methods=['POST'])
+@limiter.limit('2/minute')
+def register():
+    try:
+        password = request.form['password']
+        fc = request.args['fc']
+        authString = request.args['authString']
+        fc = convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(fc))
+        if checkVerification(fc):
+            return redirect('/invalid2.html')
+        if len(password) < 5 or len(password) > 32 or not password.isalnum():
+            return redirect('/invalid3.html')
+        createAccount(fc, password)
+    except Exception as e:
+        print(e)
+        return 'Invalid registration'
+    try:
+        return redirect('/login.html')
     except:
         return redirect('/invalid.html')
 
@@ -230,7 +408,7 @@ def login():
 @app.route('/logout')
 def logout():
     response = make_response(redirect('/'))
-    response.set_cookie('friendCode', '')
+    response.set_cookie('token', '')
     return response
 
 if __name__ == '__main__':

@@ -1,0 +1,27 @@
+extends ../layouts/authentication.pug
+
+block config
+    - var pageTitle = 'Register'
+
+block content
+    .container
+        .row.justify-content-center
+            .col-lg-7
+                .card.shadow-lg.border-0.rounded-lg.mt-5
+                    .card-header
+                        h3.text-center.font-weight-light.my-4 Authentication
+                    .card-body.text-center
+                        h4 Prove this is your account
+                        p(style='font-weight:bold;') Prove that you own the account {{ data['fc'] }}.
+                        | On your 3DS, please change your profile status' message to:
+                        br
+                        p(style='font-weight:bold;') {{ data['authString'] }}
+                        .small
+                          | (Please keep in mind that the fetch time make take a few minutes. Please wait a few minutes before pressing Continue)
+                        .mt-4.mb-0
+                            .d-grid
+                                a.btn.btn-primary.btn-block(href='{{ data["nextPage"] }}') Continue
+                    .card-footer.text-center
+                      .small
+                        | By using this service, you agree to the
+                        a(href='/terms.html') Terms and Services

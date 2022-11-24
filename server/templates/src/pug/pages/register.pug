@@ -12,10 +12,15 @@ block content
                         h3.text-center.font-weight-light.my-4 Registering
                     .card-body.text-center
                         h4 In order to use this service, you must first add a bot account to your friends roster.
-                        p#botFC The account's friend code is X. Please add it before continuing to the login page.
-                        .small
-                          | By using this service, you agree to the
-                          a(href='/terms.html') Terms and Services
-                        .mt-4.mb-0
-                            .d-grid
-                                a.btn.btn-primary.btn-block(href='login.html') Register
+                        p#botFC(style='font-weight:bold;') The account's friend code is X. Please add it before continuing.
+                        form(action='/auth.html', method='POST')
+                            .form-floating.mb-3
+                                input#inputFC.form-control(type='text', placeholder='1234-5678-9012', name='fc', value='')
+                                label(for='inputFC') Friend Code
+                            .mt-4.mb-0
+                                .d-grid
+                                    input.btn.btn-primary.btn-block(type='submit', value='Continue')
+                    .card-footer.text-center
+                      .small
+                        | By using this service, you agree to the
+                        a(href='/terms.html') Terms and Services

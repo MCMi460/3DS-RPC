@@ -21,13 +21,21 @@
                                     <div class="card-header"><h3 class="text-center font-weight-light my-4">Registering</h3></div>
                                     <div class="card-body text-center">
                                         <h4>In order to use this service, you must first add a bot account to your friends roster.</h4>
-                                        <p id="botFC">The account's friend code is X. Please add it before continuing to the login page.</p>
+                                        <p id="botFC" style="font-weight: bold">The account's friend code is X. Please add it before continuing.</p>
+                                        <form action="/auth.html" method="POST">
+                                            <div class="form-floating mb-3">
+                                                <input class="form-control" id="inputFC" type="text" placeholder="1234-5678-9012" name="fc" value="" />
+                                                <label for="inputFC">Friend Code</label>
+                                            </div>
+                                            <div class="mt-4 mb-0">
+                                                <div class="d-grid"><input class="btn btn-primary btn-block" type="submit" value="Continue" /></div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="card-footer text-center">
                                         <div class="small">
                                             By using this service, you agree to the
                                             <a href="/terms.html">Terms and Services</a>
-                                        </div>
-                                        <div class="mt-4 mb-0">
-                                            <div class="d-grid"><a class="btn btn-primary btn-block" href="login.html">Register</a></div>
                                         </div>
                                     </div>
                                 </div>

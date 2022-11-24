@@ -18,7 +18,7 @@ function getCookie(cname) {
 }
 
 var accountList = document.getElementById('accountSymbol');
-if (!getCookie('friendCode') && accountList)
+if (!getCookie('token') && accountList)
 {
   var child = accountList.lastElementChild; 
   for (let i = 0; i < 3; i++)
@@ -35,6 +35,13 @@ if (fcItem)
 {
   fcItem.innerHTML = fcItem.innerHTML.replace('X', '2337-9054-8638');
 }
+
+/*
+let fcItem2 = document.getElementById('userFC');
+if (fcItem2)
+{
+  fcItem2.innerHTML = fcItem2.innerHTML.replace('X', getCookie('fc'));
+}*/
 
 window.addEventListener('DOMContentLoaded', event => {
 

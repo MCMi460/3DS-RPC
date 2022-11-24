@@ -74,24 +74,27 @@ async def main():
 
 								for remover in removeList:
 									cursor.execute('DELETE FROM friends WHERE friendCode = \'%s\'' % str(convertPrincipalIdtoFriendCode(remover)).zfill(12))
+									cursor.execute('DELETE FROM auth WHERE friendCode = \'%s\'' % str(convertPrincipalIdtoFriendCode(remover)).zfill(12))
 								con.commit()
 
 								if len(t) > 0:
-									time.sleep(delay)
-									for ti in t:
-										m = await friends_client.get_friend_mii([ti,])
-										for mi in m:
-											cursor.execute('UPDATE friends SET username = \'%s\' WHERE friendCode = \'%s\'' % (mi.mii.unk1, convertPrincipalIdtoFriendCode(mi.unk1)))
-
 									time.sleep(delay)
 									f = await friends_client.get_friend_presence([ e.unk1 for e in t ])
 									users = []
 									for game in f:
 										# game.unk == principalId
 										users.append(game.unk)
-										cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s WHERE friendCode = \'%s\'' % (True, game.presence.game_key.title_id, game.presence.game_key.title_version, convertPrincipalIdtoFriendCode(users[-1])))
+										print(game.presence.game_mode_description)
+										cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s WHERE friendCode = \'%s\'' % (True, game.presence.game_key.title_id, game.presence.game_key.title_version, str(convertPrincipalIdtoFriendCode(users[-1])).zfill(12)))
 									for user in [ h for h in rotation if not h in users ]:
-										cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s WHERE friendCode = \'%s\'' % (False, 0, 0, convertPrincipalIdtoFriendCode(user)))
+										cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s WHERE friendCode = \'%s\'' % (False, 0, 0, str(convertPrincipalIdtoFriendCode(user)).zfill(12)))
+
+									for ti in t:
+										time.sleep(delay)
+										m = await friends_client.get_friend_mii([ti,]) # I can't figure out get_friend_mii_list :(
+										j1 = await friends_client.get_friend_comment([ti,])
+										cursor.execute('UPDATE friends SET username = \'%s\', message = \'%s\' WHERE friendCode = \'%s\'' % (m[0].mii.unk1, j1[0].comment, str(convertPrincipalIdtoFriendCode(m[0].unk1)).zfill(12)))
+
 									con.commit()
 
 								time.sleep(delay)

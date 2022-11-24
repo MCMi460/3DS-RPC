@@ -6,7 +6,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
         <meta name="description" content="" />
         <meta name="author" content="" />
-        <title>Login | 3DS-RPC</title>
+        <title>Register | 3DS-RPC</title>
         <link href="{{ url_for('static',filename='css/styles.css') }}" rel="stylesheet" />
         <script src="https://use.fontawesome.com/releases/v6.1.0/js/all.js" crossorigin="anonymous"></script>
     </head>
@@ -16,24 +16,19 @@
                 <main>
                     <div class="container">
                         <div class="row justify-content-center">
-                            <div class="col-lg-5">
+                            <div class="col-lg-7">
                                 <div class="card shadow-lg border-0 rounded-lg mt-5">
-                                    <div class="card-header"><h3 class="text-center font-weight-light my-4">Login</h3></div>
-                                    <div class="card-body">
-                                        <form action="/login" method="POST">
-                                            <div class="form-floating mb-3">
-                                                <input class="form-control" id="inputFC" type="text" placeholder="1234-5678-9012" name="fc" value="" />
-                                                <label for="inputFC">Friend Code</label>
-                                            </div>
-                                            <div class="form-floating mb-3">
-                                                <input class="form-control" id="inputPassword" type="password" placeholder="" name="password" value="" />
-                                                <label for="inputPassword">Password</label>
-                                            </div>
-                                            <div class="d-flex align-items-center justify-content-between mt-4 mb-0">
-                                                <a class="small" href="register.html">Don't have an account?</a>
-                                                <input class="btn btn-primary" type="submit" value="Login" />
-                                            </div>
-                                        </form>
+                                    <div class="card-header"><h3 class="text-center font-weight-light my-4">Authentication</h3></div>
+                                    <div class="card-body text-center">
+                                        <h4>Prove this is your account</h4>
+                                        <p style="font-weight: bold">Prove that you own the account {{ data['fc'] }}.</p>
+                                        On your 3DS, please change your profile status' message to:
+                                        <br />
+                                        <p style="font-weight: bold">{{ data['authString'] }}</p>
+                                        <div class="small">(Please keep in mind that the fetch time make take a few minutes. Please wait a few minutes before pressing Continue)</div>
+                                        <div class="mt-4 mb-0">
+                                            <div class="d-grid"><a class="btn btn-primary btn-block" href='{{ data["nextPage"] }}'>Continue</a></div>
+                                        </div>
                                     </div>
                                     <div class="card-footer text-center">
                                         <div class="small">
