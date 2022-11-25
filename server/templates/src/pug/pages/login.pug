@@ -11,7 +11,7 @@ block content
                     .card-header
                         h3.text-center.font-weight-light.my-4 Login
                     .card-body
-                        form(action='/login', method='POST')
+                        form(action='/login{{ data["redirectFrom"] }}', method='POST')
                             .form-floating.mb-3
                                 input#inputFC.form-control(type='text', placeholder='1234-5678-9012', name='fc', value='')
                                 label(for='inputFC') Friend Code

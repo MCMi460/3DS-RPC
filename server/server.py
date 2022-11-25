@@ -4,7 +4,7 @@ from flask import Flask, make_response, request, redirect, render_template
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
-import sqlite3, requests, sys, os, time, json, random, string, hashlib, secrets
+import sqlite3, requests, sys, os, time, json, random, string, hashlib, secrets, urllib
 sys.path.append('../')
 from api import *
 
@@ -116,8 +116,6 @@ def verifyAccount(friendCode:int, password:str):
     h = hashlib.md5(password.encode('utf-8')).hexdigest()
     result = db.session.execute('SELECT password FROM auth WHERE friendCode = \'%s\'' % str(friendCode).zfill(12))
     result = result.fetchone()
-    print(password)
-    print(result,h)
     if not result:
         return False
     if not result[0]:
@@ -187,7 +185,13 @@ def loginPage():
     key = request.cookies.get('token')
     if key:
         return redirect('/')
-    return render_template('dist/login.html')
+    redirectURL = request.args.get('redirectFrom')
+    data = {}
+    if redirectURL:
+        data = {
+            'redirectFrom': '?redirectFrom=' + urllib.parse.quote_plus(redirectURL),
+        }
+    return render_template('dist/login.html', data = data)
 
 # Register page
 @app.route('/register.html')
@@ -203,7 +207,7 @@ def registerPage():
 def authPage():
     try:
         fc = request.form['fc']
-        fc = convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(fc))
+        fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(fc))).zfill(12)
         if checkVerification(fc):
             raise Exception()
     except:
@@ -222,7 +226,7 @@ def authPage():
 
 # Auth page
 @app.route('/password.html')
-#@limiter.limit('1/minute')
+@limiter.limit('1/minute')
 def passPage():
     try:
         fc = request.args['fc']
@@ -279,6 +283,11 @@ def invalid2():
 @app.route('/invalid3.html')
 def invalid3():
     return render_template('dist/invalid3.html')
+
+# Invalid4 page
+@app.route('/invalid4.html')
+def invalid4():
+    return render_template('dist/invalid4.html')
 
 # 500 page
 @app.route('/500.html')
@@ -347,8 +356,7 @@ def cdnImage(file:str):
 def addFriend(friendCode:int):
     key = request.cookies.get('token')
     if not key:
-        response = make_response(redirect('/login.html'))
-        response.headers['redirectFrom'] = friendCode
+        response = make_response(redirect('/login.html' + '?redirectFrom=' + urllib.parse.quote_plus('f/' + str(friendCode))))
         return response
     try:
         fc = getFCFromKey(key)
@@ -373,18 +381,25 @@ def login():
     try:
         fc = convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(fc))
         createUser(fc)
+    except:
+        return redirect('/invalid.html')
+    try:
         key = verifyAccount(fc, password)
         if not key:
             raise Exception()
-        response = make_response(redirect('/'))
+        redirectURL = request.args.get('redirectFrom')
+        url = '/'
+        if redirectURL:
+            url = url + redirectURL
+        response = make_response(redirect(url))
         response.set_cookie('token', str(key))
         return response
     except:
-        return redirect('/invalid.html')
+        return redirect('/invalid4.html')
 
 # Register
 @app.route('/register', methods=['POST'])
-@limiter.limit('2/minute')
+@limiter.limit('1/minute')
 def register():
     try:
         password = request.form['password']
@@ -396,8 +411,7 @@ def register():
         if len(password) < 5 or len(password) > 32 or not password.isalnum():
             return redirect('/invalid3.html')
         createAccount(fc, password)
-    except Exception as e:
-        print(e)
+    except:
         return 'Invalid registration'
     try:
         return redirect('/login.html')
