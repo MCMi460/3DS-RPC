@@ -13,8 +13,10 @@ prepend css
 block content
     .container-fluid.px-4
         include includes/page-header.pug
-        h1.text-center
-          | These will soon contain cool surprises!
+        .card.mb-2
+            .card-body
+              h1.text-center
+                | These will soon contain cool surprises!
         .row
             .col-xl-3.col-md-6
               .card.bg-success.text-white.mb-4

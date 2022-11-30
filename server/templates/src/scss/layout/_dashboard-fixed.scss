@@ -1,8 +1,9 @@
-// 
+//
 // Fixed dashboard layout
-// 
+//
 
 .sb-nav-fixed {
+  background-color: #D3D3D0;
     .sb-topnav {
         @extend .fixed-top;
         z-index: $zindex-topnav;

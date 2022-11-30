@@ -1,6 +1,6 @@
-// 
+//
 // Topnav
-// 
+//
 
 .sb-topnav {
     padding-left: 0;
@@ -15,6 +15,7 @@
     }
 
     &.navbar-dark {
+        background-color: #d95d07;
         #sidebarToggle {
             color: $topnav-dark-toggler-color;
         }

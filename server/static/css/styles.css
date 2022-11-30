@@ -11361,6 +11361,9 @@ body {
     display: none;
   }
 }
+.sb-nav-fixed {
+  background-color: #D3D3D0;
+}
 .sb-nav-fixed .sb-topnav {
   z-index: 1039;
 }
@@ -11410,6 +11413,9 @@ body {
 .sb-topnav .navbar-brand {
   width: 225px;
   margin: 0;
+}
+.sb-topnav.navbar-dark {
+  background-color: #d95d07;
 }
 .sb-topnav.navbar-dark #sidebarToggle {
   color: rgba(255, 255, 255, 0.5);
@@ -11465,20 +11471,20 @@ body {
 }
 
 .sb-sidenav-dark {
-  background-color: #212529;
+  background-color: #ff6d08;
   color: rgba(255, 255, 255, 0.5);
 }
 .sb-sidenav-dark .sb-sidenav-menu .sb-sidenav-menu-heading {
-  color: rgba(255, 255, 255, 0.25);
+  color: #fff;
 }
 .sb-sidenav-dark .sb-sidenav-menu .nav-link {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.8);
 }
 .sb-sidenav-dark .sb-sidenav-menu .nav-link .sb-nav-link-icon {
-  color: rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.8);
 }
 .sb-sidenav-dark .sb-sidenav-menu .nav-link .sb-sidenav-collapse-arrow {
-  color: rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.8);
 }
 .sb-sidenav-dark .sb-sidenav-menu .nav-link:hover {
   color: #fff;
@@ -11490,7 +11496,7 @@ body {
   color: #fff;
 }
 .sb-sidenav-dark .sb-sidenav-footer {
-  background-color: #343a40;
+  background-color: #de5f07;
 }
 
 .sb-sidenav-light {
