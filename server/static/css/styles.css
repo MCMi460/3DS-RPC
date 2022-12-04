@@ -11362,7 +11362,7 @@ body {
   }
 }
 .sb-nav-fixed {
-  background-color: #D3D3D0;
+  background: repeating-linear-gradient(0deg, #DADAD7, #DADAD7 2px, #E2E2E7 2px, #E2E2E7 4px);
 }
 .sb-nav-fixed .sb-topnav {
   z-index: 1039;
