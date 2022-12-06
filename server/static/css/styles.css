@@ -11415,7 +11415,7 @@ body {
   margin: 0;
 }
 .sb-topnav.navbar-dark {
-  background-color: #d95d07;
+  background-color: #ff6d08;
 }
 .sb-topnav.navbar-dark #sidebarToggle {
   color: rgba(255, 255, 255, 0.5);
@@ -11471,7 +11471,7 @@ body {
 }
 
 .sb-sidenav-dark {
-  background-color: #ff6d08;
+  background-color: #FC8C2C;
   color: rgba(255, 255, 255, 0.5);
 }
 .sb-sidenav-dark .sb-sidenav-menu .sb-sidenav-menu-heading {
@@ -11496,7 +11496,7 @@ body {
   color: #fff;
 }
 .sb-sidenav-dark .sb-sidenav-footer {
-  background-color: #de5f07;
+  background-color: #ff6d08;
 }
 
 .sb-sidenav-light {
