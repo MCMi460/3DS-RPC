@@ -303,6 +303,7 @@ def terms():
 @app.route('/user/<int:friendCode>/', methods=['GET'])
 @limiter.limit('3/minute')
 def userPresence(friendCode:int):
+    friendCode = str(friendCode).zfill(12)
     createUser(friendCode)
     try:
         userAgent = request.headers['User-Agent']
