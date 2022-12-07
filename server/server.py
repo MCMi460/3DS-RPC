@@ -310,8 +310,6 @@ def terms():
 @app.route('/user/<int:friendCode>/', methods=['GET'])
 @limiter.limit('3/minute')
 def userPresence(friendCode:int):
-    friendCode = str(friendCode).zfill(12)
-    createUser(friendCode)
     try:
         userAgent = request.headers['User-Agent']
         try:
@@ -319,6 +317,8 @@ def userPresence(friendCode:int):
                 raise Exception('client is behind v%s' % version)
         except:
             raise Exception('this client is invalid')
+        friendCode = str(friendCode).zfill(12)
+        createUser(friendCode)
         principalId = convertFriendCodeToPrincipalId(friendCode)
         result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % friendCode)
         result = result.fetchone()
