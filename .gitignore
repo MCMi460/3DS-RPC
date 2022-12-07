@@ -20,3 +20,7 @@ test*/
 # NPM
 node_modules
 .DS_Store
+
+# Templates/static
+server/static/
+server/templates/dist/
