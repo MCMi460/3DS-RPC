@@ -12,18 +12,18 @@ html(lang='en')
         include includes/head/css.pug
         include includes/head/icons.pug
 
-    body(style='background-color:#058b00;')
+    body(style="background-image: url({{ url_for('static',filename='assets/img/background.png') }}); background-repeat: no-repeat; background-size: cover;")
 
         #layoutAuthentication
-            
+
             #layoutAuthentication_content
 
                 main
-                    
+
                     block content
 
             #layoutAuthentication_footer
-                    
+
                 include includes/footer.pug
 
         include includes/scripts.pug
