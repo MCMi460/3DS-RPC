@@ -17,7 +17,6 @@ if local:
 ## The below contains 3ds.mi460.dev-specific information
 ## You will have to provide your own 'bot' FC if you are planning
 ## on running your own front and backend.
-botFC = str(233790548638) # FC == Friendcode
 convertFriendCodeToPrincipalId(botFC) # A quick verification check
 
 def getAppPath(): # Credit to @HotaruBlaze
@@ -146,7 +145,7 @@ class Client():
                 large_image = game['icon_url'].replace('https://kanzashi-ctr.cdn.nintendo.net/i/', host + '/cdn/i/'),
                 large_text = game['name'],
                 start = self.start,
-                buttons = [{'label': 'Add Friend', 'url': host + '/f/%s' % convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(self.friendCode))},]
+                # buttons = [{'label': 'Add Friend', 'url': host + '/f/%s' % convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(self.friendCode))},]
                 # eShop URL could be https://api.qrserver.com/v1/create-qr-code/?data=ESHOP://{uid}
                 # But that's dumb so no
             )

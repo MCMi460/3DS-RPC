@@ -38,7 +38,7 @@ if (!getCookie('token') && accountList)
 let fcItem = document.getElementById('botFC');
 if (fcItem)
 {
-  fcItem.innerHTML = fcItem.innerHTML.replace('X', '2337-9054-8638');
+  fcItem.innerHTML = fcItem.innerHTML.replace('X', '2337-9054-8638'); // Put your own botFC here
 }
 
 /*

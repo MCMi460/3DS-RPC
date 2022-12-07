@@ -8,6 +8,8 @@
 
 import hashlib
 
+botFC = str(233790548638).zfill(12) # FC == Friendcode
+
 class FriendCodeValidityError(Exception):
     pass
 

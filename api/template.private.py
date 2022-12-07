@@ -17,4 +17,4 @@ PID_HMAC = "" # Sniff console traffic or dump from friends title save (bytes 66-
 NEX_PASSWORD = ""
 
 REGION = 1 # USA
-LANGUAGE = 1
+LANGUAGE = 1 # English

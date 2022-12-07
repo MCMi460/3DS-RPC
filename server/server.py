@@ -32,6 +32,8 @@ def ratelimit_handler(e):
 
 # Create entry in database with friendCode
 def createUser(friendCode:int):
+    if int(friendCode) == int(botFC):
+        raise Exception('invalid FC')
     try:
         convertFriendCodeToPrincipalId(friendCode)
         db.session.execute('INSERT INTO friends (friendCode, online, titleID, updID, lastAccessed) VALUES (\'%s\', %s, %s, %s, %s)' % (str(friendCode).zfill(12), False, '0', '0', time.time() + 300))
@@ -48,8 +50,10 @@ def sendNotification(notification:dict, friendCode:int):
         result = ('' if not result[0] else result[0]) + '|'
         if json.dumps(notification) in result:
             return
-    else:
+    elif not result[0]:
         result = ''
+    else:
+        raise Exception()
     result = result + json.dumps(notification)
     db.session.execute('UPDATE friends SET notifications = \'%s\' WHERE friendCode = \'%s\'' % (result, str(friendCode).zfill(12)))
     db.session.commit()
@@ -126,7 +130,10 @@ def verifyAccount(friendCode:int, password:str):
 
 def getFCFromKey(key):
     result = db.session.execute('SELECT friendCode FROM auth WHERE token = \'%s\'' % str(key))
-    return result.fetchone()[0]
+    try:
+        return result.fetchone()[0]
+    except:
+        return None
 
 # Index page
 @app.route('/')
@@ -183,7 +190,7 @@ def settings():
 @app.route('/login.html')
 def loginPage():
     key = request.cookies.get('token')
-    if key:
+    if key and getFCFromKey(key):
         return redirect('/')
     redirectURL = request.args.get('redirectFrom')
     data = {}
@@ -197,7 +204,7 @@ def loginPage():
 @app.route('/register.html')
 def registerPage():
     key = request.cookies.get('token')
-    if key:
+    if key and getFCFromKey(key):
         return redirect('/settings.html')
     return render_template('dist/register.html')
 
@@ -352,7 +359,7 @@ def cdnImage(file:str):
     return response
 
 # Send friend request notification to user
-@app.route('/f/<int:friendCode>', methods=['GET'])
+@app.route('/f/<int:friendCode>/', methods=['GET'])
 @limiter.limit('2/minute')
 def addFriend(friendCode:int):
     key = request.cookies.get('token')
@@ -362,12 +369,16 @@ def addFriend(friendCode:int):
     try:
         fc = getFCFromKey(key)
         fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(fc))).zfill(12)
+        friendCode = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
     except:
         return redirect('/invalid.html')
-    sendNotification({
-        'sender': fc,
-        'type': notificationTypes.index('friendRequest'),
-    }, friendCode)
+    try:
+        sendNotification({
+            'sender': fc,
+            'type': notificationTypes.index('friendRequest'),
+        }, friendCode)
+    except:
+        return 'Failed'
     return 'Successfully sent friend request from %s to %s' % (fc, friendCode)
 
 # Login

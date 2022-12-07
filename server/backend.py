@@ -84,7 +84,7 @@ async def main():
 									for game in f:
 										# game.unk == principalId
 										users.append(game.unk)
-										print(game.presence.game_mode_description)
+										#print(game.presence.game_mode_description)
 										cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s WHERE friendCode = \'%s\'' % (True, game.presence.game_key.title_id, game.presence.game_key.title_version, str(convertPrincipalIdtoFriendCode(users[-1])).zfill(12)))
 									for user in [ h for h in rotation if not h in users ]:
 										cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s WHERE friendCode = \'%s\'' % (False, 0, 0, str(convertPrincipalIdtoFriendCode(user)).zfill(12)))
