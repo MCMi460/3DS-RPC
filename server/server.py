@@ -149,7 +149,7 @@ def index():
             result = result.fetchone()
             data['registered'] = (('Logged in as|%s' % (result[6] if result[6] else 'Loading...')) if result != None else '|Not logged in')
         response = make_response(render_template('dist/index.html', data = data))
-        if fc and not result:
+        if (fc and not result) or not fc:
             response.set_cookie('token', '')
     else:
         response = make_response(render_template('dist/index.html', data = data))
@@ -177,7 +177,7 @@ def settings():
             data['fc'] = '-'.join(str(fc)[i:i+4] for i in range(0, len(str(fc)), 4))
         else:
             return redirect('/login.html')
-        if fc and not result:
+        if (fc and not result) or not fc:
             response = make_response(redirect('/login.html'))
             response.set_cookie('token', '')
             return response
@@ -266,13 +266,11 @@ def activity():
             result = result.fetchone()
             data['registered'] = (('Logged in as|%s' % (result[6] if result[6] else 'Loading...')) if result != None else '|Not logged in')
         else:
-            return redirect('/login.html')
+            response = make_response(redirect('/login.html'))
+            response.set_cookie('token', '')
+            return response
     else:
         return redirect('/login.html')
-    if fc and not result:
-        response = make_response(redirect('/login.html'))
-        response.set_cookie('token', '')
-        return response
     response = make_response(render_template('dist/activity.html', data = data))
     return response
 
@@ -337,7 +335,7 @@ def userPresence(friendCode:int):
             'Exception': False,
             'User': {
                 'principalId': principalId,
-                'friendCode': convertPrincipalIdtoFriendCode(principalId),
+                'friendCode': str(convertPrincipalIdtoFriendCode(principalId)).zfill(12),
                 'online': bool(result[1]),
                 'Presence': presence,
                 'notifications': result[5],
@@ -404,7 +402,7 @@ def login():
         if redirectURL:
             url = url + redirectURL
         response = make_response(redirect(url))
-        response.set_cookie('token', str(key))
+        response.set_cookie('token', str(key), expires=time.time()+2629743)
         return response
     except:
         return redirect('/invalid4.html')
