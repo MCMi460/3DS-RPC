@@ -70,7 +70,7 @@ class Client():
             self.titleDatabase = []
             self.titlesToUID = []
 
-            bar = ProgressBar(40) # Create progress bar
+            bar = ProgressBar() # Create progress bar
 
             for region in self.region:
                 self.titleDatabase.append(

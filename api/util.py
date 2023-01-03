@@ -26,17 +26,29 @@ def startDBTime(time):
     	cursor.execute('INSERT INTO config (BACKEND_UPTIME) VALUES (%s)' % (time,))
     	con.commit()
 
+try:
+    terminalSize = os.get_terminal_size().columns - 2
+except OSError:
+    terminalSize = 40
+
 class ProgressBar(): # Written with help from https://stackoverflow.com/a/3160819/11042767
-    def __init__(self, width:int):
+    def __init__(self, width:int = terminalSize):
         self.width = width
-        sys.stdout.write('[%s]' % (' ' * width))
+        sys.stdout.write('[%s]' % (' ' * self.width))
         sys.stdout.flush()
-        sys.stdout.write('\b' * (width + 1))
+        sys.stdout.write('\r[')
+
+        self.progress = 0
 
     def update(self, fraction:float):
-        for n in range(int(fraction * self.width)):
+        fraction = int(fraction * self.width)
+        self.progress += fraction
+        for n in range(fraction):
             sys.stdout.write('-')
             sys.stdout.flush()
 
     def end(self):
+        for n in range(self.width - self.progress):
+            sys.stdout.write('-')
+            sys.stdout.flush()
         sys.stdout.write(']\n')
