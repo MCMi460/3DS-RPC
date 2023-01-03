@@ -28,7 +28,7 @@ def ratelimit_handler(e):
     return 'You have exceeded your rate-limit. Please wait a bit before trying that again.'
 
 @app.errorhandler(404)
-def ratelimit_handler(e):
+def handler404(e):
     return render_template('dist/404.html')
 
 # Create entry in database with friendCode
