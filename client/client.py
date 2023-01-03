@@ -2,13 +2,16 @@
 
 import requests, os, sys, time
 import xmltodict, json
+import pickle
 sys.path.append('../')
 from api import *
 import pypresence
 from typing import Literal, get_args
 
+requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
+
 local = False
-version = 0.2
+version = 0.21
 
 host = 'https://3ds.mi460.dev' # Change the host as you'd wish
 if local:
@@ -19,24 +22,9 @@ if local:
 ## on running your own front and backend.
 convertFriendCodeToPrincipalId(botFC) # A quick verification check
 
-def getAppPath(): # Credit to @HotaruBlaze
-    applicationPath = os.path.expanduser('~/Documents/3DS-RPC')
-    # Windows allows you to move your UserProfile subfolders, Such as Documents, Videos, Music etc.
-    # However os.path.expanduser does not actually check and assumes it's in the default location.
-    # This tries to correctly resolve the Documents path and fallbacks to default if it fails.
-    if os.name == 'nt':
-        try:
-            import ctypes.wintypes
-            CSIDL_PERSONAL = 5 # My Documents
-            SHGFP_TYPE_CURRENT = 0 # Get current, not default value
-            buf=ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
-            ctypes.windll.shell32.SHGetFolderPathW(None, CSIDL_PERSONAL, None, SHGFP_TYPE_CURRENT, buf)
-            applicationPath = os.path.join(buf.value,'3DS-RPC')
-        except:pass
-    return applicationPath
-
-_REGION = Literal['US', 'JP', 'GB', 'KR', 'TW']
+_REGION = Literal['US', 'JP', 'GB', 'KR', 'TW', 'ALL']
 path = getAppPath()
+privateFile = os.path.join(path, 'private.txt')
 
 class APIException(Exception):
     pass
@@ -48,11 +36,11 @@ class GameMatchError(Exception):
     pass
 
 class Client():
-    def __init__(self, region: _REGION, friendCode: str):
+    def __init__(self, region: _REGION, friendCode: str, saveTitleFiles:bool = True):
         ### Maintain typing ###
         assert region in get_args(_REGION), '\'%s\' does not match _REGION' % region # Region assertion
-        convertFriendCodeToPrincipalId(friendCode) # Friend Code check
-        with open(os.path.join(path, 'private.txt'), 'w') as file: # Save FC to file
+        friendCode = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12) # Friend Code check
+        with open(privateFile, 'w') as file: # Save FC to file
             file.write(json.dumps({
                 'friendCode': friendCode,
                 'region': region,
@@ -68,14 +56,44 @@ class Client():
         self.currentGame = {'@id': None}
 
         # Pull databases
-        self.titleDatabase = xmltodict.parse(requests.get('https://samurai.ctr.shop.nintendo.net/samurai/ws/%s/titles?shop_id=1&limit=5000&offset=0' % self.region, verify = False).text)
-        self.titlesToUID = requests.get('https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_%s.json' % self.region).json()
-        ## Warning; the above does not account for games being played by a user who has removed the region lock on their system
-        ## Please consider fixing this in the future, @MCMi460
+        self.region = (self.region,)
+        if self.region[0] == 'ALL':
+            self.region = list(get_args(_REGION))
+            del self.region[-1]
+        databasePath = os.path.join(path, 'databases.dat')
+        if os.path.isfile(databasePath):
+            with open(databasePath, 'rb') as file:
+                t = pickle.loads(file.read())
+                self.titleDatabase = t[0]
+                self.titlesToUID = t[1]
+        else:
+            self.titleDatabase = []
+            self.titlesToUID = []
+
+            bar = ProgressBar(40) # Create progress bar
+
+            for region in self.region:
+                self.titleDatabase.append(
+                    xmltodict.parse(requests.get('https://samurai.ctr.shop.nintendo.net/samurai/ws/%s/titles?shop_id=1&limit=5000&offset=0' % region, verify = False).text)
+                )
+                bar.update(.5 / len(self.region)) # Update progress bar
+                self.titlesToUID += requests.get('https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_%s.json' % region, stream = True).json()
+                bar.update(.5 / len(self.region)) # Update progress bar
+
+            bar.end() # End the progress bar
+
+        # Save databases to file
+        if saveTitleFiles and not os.path.isfile(databasePath):
+            with open(databasePath, 'wb') as file:
+                file.write(pickle.dumps(
+                    (self.titleDatabase,
+                    self.titlesToUID)
+                ))
+            print('[Saved database to file]')
 
     # Get from API
     def APIget(self, route:str, content:dict = {}):
-        return requests.get(host + '/' + route, data = content, headers = {'User-Agent':'3DS-RPC/%s' % version,})
+        return requests.get(host + '/api/' + route, data = content, headers = {'User-Agent':'3DS-RPC/%s' % version,})
 
     # Connect to PyPresence
     def connect(self):
@@ -97,10 +115,6 @@ class Client():
     def loop(self):
         userData = self.fetch()
         presence = userData['User']['Presence']
-        if userData['User']['notifications']:
-            notifications = [ json.loads(n) for n in userData['User']['notifications'].split('|') ]
-        else:
-            notifications = []
 
         _pass = None
         if userData['User']['online'] and presence:
@@ -124,10 +138,11 @@ class Client():
                 # raise TitleIDMatchError('unknown title id: %s' % tid)
 
             game = None
-            for title in self.titleDatabase['eshop']['contents']['content']:
-                if title['title']['@id'] == uid:
-                    game = title['title']
-                    break
+            for region in self.titleDatabase:
+                for title in region['eshop']['contents']['content']:
+                    if title['title']['@id'] == uid:
+                        game = title['title']
+                        break
             if not game:
                 _pass = _template
                 # raise GameMatchError('unknown game: %s' % uid)
@@ -145,9 +160,9 @@ class Client():
                 large_image = game['icon_url'].replace('https://kanzashi-ctr.cdn.nintendo.net/i/', host + '/cdn/i/'),
                 large_text = game['name'],
                 start = self.start,
-                # buttons = [{'label': 'Add Friend', 'url': host + '/f/%s' % convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(self.friendCode))},]
+                # buttons = [{'label': 'Label', 'url': 'http://DOMAIN.WHATEVER'},]
                 # eShop URL could be https://api.qrserver.com/v1/create-qr-code/?data=ESHOP://{uid}
-                # But that's dumb so no
+                # But... that wouldn't be very convenient. It's unfortunate how Nintendo does not have an eShop website for the 3DS
             )
         else:
             print('Clear [%s -> %s]' % (self.currentGame['@id'], None))
@@ -161,21 +176,31 @@ def main():
     # Create directory for logging and friend code saving
     if not os.path.isdir(path):
         os.mkdir(path)
-    privateFile = os.path.join(path, 'private.txt')
     if not os.path.isfile(privateFile):
         print('Please take this time to add the bot\'s FC to your target 3DS\' friends list.\nBot FC: %s' % '-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4)))
         input('[Press enter to continue]')
-        friendCode = input('Please enter your 3DS\' friend code\n> ')
-        friendCode = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12) # Check validity to prevent writing invalid FC
+        friendCode = input('Please enter your 3DS\' friend code\n> \033[0;35m')
+        print('\033[0m', end = '')
     else:
         with open(privateFile, 'r') as file:
             js = json.loads(file.read())
             friendCode = js['friendCode']
             region = js.get('region')
     if not region:
-        region = input('Please enter your 3DS\' region [%s]\n> ' % ', '.join(get_args(_REGION)))
+        region = input('Please enter your 3DS\' region [%s]\n\033[93m(You may enter \'ALL\' if you are planning to play with multiple regions\' games)\033[0m\n> \033[0;35m' % ', '.join(get_args(_REGION)))
+        print('\033[0m', end = '')
+        if region == 'ALL':
+            r = input('- \033[91mEnabling ALL regions may take a few minutes to download. Is this agreeable?\033[0m\n- > \033[0;35m')
+            if not r.lower().startswith('y'):
+                return
+        print('\033[0m')
 
-    client = Client(region, friendCode)
+    try:
+        client = Client(region, friendCode)
+    except (AssertionError, FriendCodeValidityError) as e:
+        if os.path.isfile(privateFile):
+            os.remove(privateFile)
+        raise e
     while True:
         client.loop()
         time.sleep(30)

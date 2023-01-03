@@ -23,5 +23,6 @@ nav(class=['sb-sidenav', 'accordion'] class=sidenavStyle)#sidenavAccordion
     .sb-sidenav-footer
 
         html
-          <p class = 'small'>{{ data['registered'].split('|')[0] }}</p>
-          | {{ data['registered'].split('|')[1] }}
+          <p class = 'small'>Frontend has been up for {{ data['uptime'] }}...</p>
+          <p class = 'small'>{{ data['uptime-backend'] }}</p>
+          <p style = 'color:#fff;'>Status: {{ data['status'] }}</p>

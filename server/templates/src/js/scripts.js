@@ -17,32 +17,6 @@ function getCookie(cname) {
   return "";
 }
 
-var accountList = document.getElementById('accountSymbol');
-if (!getCookie('token') && accountList)
-{
-  var child = accountList.lastElementChild; 
-  for (let i = 0; i < 3; i++)
-  {
-    accountList.removeChild(child);
-    child = accountList.lastElementChild;
-  }
-  child.firstChild.href = '/login.html';
-  child.firstChild.text = 'Login';
-}
-
-let fcItem = document.getElementById('botFC');
-if (fcItem)
-{
-  fcItem.innerHTML = fcItem.innerHTML.replace('X', '2337-9054-8638'); // Put your own botFC here
-}
-
-/*
-let fcItem2 = document.getElementById('userFC');
-if (fcItem2)
-{
-  fcItem2.innerHTML = fcItem2.innerHTML.replace('X', getCookie('fc'));
-}*/
-
 window.addEventListener('DOMContentLoaded', event => {
 
     // Toggle the side navigation

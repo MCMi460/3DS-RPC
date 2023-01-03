@@ -4,14 +4,10 @@ Create Table friends(
   titleID text NOT NULL,
   updID text NOT NULL,
   lastAccessed bigint NOT NULL,
-  notifications text,
   username text,
   message text
 );
 
-Create Table auth(
-  friendCode text NOT NULL UNIQUE,
-  token text UNIQUE,
-  password text,
-  tempAuth text UNIQUE
+Create Table config(
+  BACKEND_UPTIME bigint NOT NULL
 );

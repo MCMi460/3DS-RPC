@@ -10,14 +10,4 @@ block content
         include includes/page-header.pug
         .card.mb-4#secrety
             .card-body.
-              You are currently logged in as {{ data['fc'] }} ({{ data['registered'].split('|')[1] }}).
-        .row.align-items-center.align-content-center
-          div(style='align-items:center;align-content:center;')
-            .col-xl-2
-              a(href='/logout' style='text-decoration:none;color:inherit;')
-                .card.bg-danger.text-white.mb-4
-                    .card-body
-                      h2(style='text-align:center;') Logout
-
-append scripts
-    script(src='{{ url_for(\'static\',filename=\'js/settings.js\') }}')
+              Nothing here at the moment!

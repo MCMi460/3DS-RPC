@@ -14,6 +14,7 @@ logging.basicConfig(level=logging.INFO)
 
 delay = 2
 since = 0
+startDBTime(time.time())
 
 async def main():
 	while True:
@@ -41,65 +42,65 @@ async def main():
 							time.sleep(delay)
 
 							print('Grabbing new friends...')
-							con = sqlite3.connect('sqlite/fcLibrary.db')
-							cursor = con.cursor()
+							with sqlite3.connect('sqlite/fcLibrary.db') as con:
+								cursor = con.cursor()
 
-							cursor.execute('SELECT friendCode, lastAccessed FROM friends')
-							result = cursor.fetchall()
-							if not result:
-								continue
-							list = []
-							for row in result:
-								if time.time() - row[1] <= 30:
-									list.append(row[0])
+								cursor.execute('SELECT friendCode, lastAccessed FROM friends')
+								result = cursor.fetchall()
+								if not result:
+									continue
+								list = []
+								for row in result:
+									if time.time() - row[1] <= 30:
+										list.append(row[0])
 
-							lst = [ convertFriendCodeToPrincipalId(f) for f in list ]
-							# Obviously change the above lines, but the premise remains
-							#lst = [ convertFriendCodeToPrincipalId(privFriend), ] # Debug purposes currently
-							#print(lst)
+								lst = [ convertFriendCodeToPrincipalId(f) for f in list ]
+								# Obviously change the above lines, but the premise remains
+								#lst = [ convertFriendCodeToPrincipalId(privFriend), ] # Debug purposes currently
+								#print(lst)
 
-							for i in range(0, len(lst), 100):
-								rotation = lst[i:i+100]
+								for i in range(0, len(lst), 100):
+									rotation = lst[i:i+100]
 
-								removeList = []
-								time.sleep(delay)
-								await friends_client.add_friend_by_principal_ids(0, rotation)
-
-								time.sleep(delay)
-								t = await friends_client.get_all_friends()
-								if len(t) < len(rotation):
-									for ID in rotation:
-										if ID not in [ f.unk1 for f in t ]:
-											removeList.append(ID)
-
-								for remover in removeList:
-									cursor.execute('DELETE FROM friends WHERE friendCode = \'%s\'' % str(convertPrincipalIdtoFriendCode(remover)).zfill(12))
-									cursor.execute('DELETE FROM auth WHERE friendCode = \'%s\'' % str(convertPrincipalIdtoFriendCode(remover)).zfill(12))
-								con.commit()
-
-								if len(t) > 0:
+									removeList = []
 									time.sleep(delay)
-									f = await friends_client.get_friend_presence([ e.unk1 for e in t ])
-									users = []
-									for game in f:
-										# game.unk == principalId
-										users.append(game.unk)
-										#print(game.presence.game_mode_description)
-										cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s WHERE friendCode = \'%s\'' % (True, game.presence.game_key.title_id, game.presence.game_key.title_version, str(convertPrincipalIdtoFriendCode(users[-1])).zfill(12)))
-									for user in [ h for h in rotation if not h in users ]:
-										cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s WHERE friendCode = \'%s\'' % (False, 0, 0, str(convertPrincipalIdtoFriendCode(user)).zfill(12)))
+									await friends_client.add_friend_by_principal_ids(0, rotation)
 
-									for ti in t:
-										time.sleep(delay)
-										m = await friends_client.get_friend_mii([ti,]) # I can't figure out get_friend_mii_list :(
-										j1 = await friends_client.get_friend_comment([ti,])
-										cursor.execute('UPDATE friends SET username = \'%s\', message = \'%s\' WHERE friendCode = \'%s\'' % (m[0].mii.unk1, j1[0].comment, str(convertPrincipalIdtoFriendCode(m[0].unk1)).zfill(12)))
+									time.sleep(delay)
+									t = await friends_client.get_all_friends()
+									if len(t) < len(rotation):
+										for ID in rotation:
+											if ID not in [ f.unk1 for f in t ]:
+												removeList.append(ID)
 
+									for remover in removeList:
+										cursor.execute('DELETE FROM friends WHERE friendCode = \'%s\'' % str(convertPrincipalIdtoFriendCode(remover)).zfill(12))
+										cursor.execute('DELETE FROM auth WHERE friendCode = \'%s\'' % str(convertPrincipalIdtoFriendCode(remover)).zfill(12))
 									con.commit()
 
-								time.sleep(delay)
-								for friend in rotation:
-									await friends_client.remove_friend_by_principal_id(friend)
+									if len(t) > 0:
+										time.sleep(delay)
+										f = await friends_client.get_friend_presence([ e.unk1 for e in t ])
+										users = []
+										for game in f:
+											# game.unk == principalId
+											users.append(game.unk)
+											#print(game.presence.game_mode_description)
+											cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s WHERE friendCode = \'%s\'' % (True, game.presence.game_key.title_id, game.presence.game_key.title_version, str(convertPrincipalIdtoFriendCode(users[-1])).zfill(12)))
+										for user in [ h for h in rotation if not h in users ]:
+											cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s WHERE friendCode = \'%s\'' % (False, 0, 0, str(convertPrincipalIdtoFriendCode(user)).zfill(12)))
+
+										for ti in t:
+											time.sleep(delay)
+											m = await friends_client.get_friend_mii([ti,]) # I can't figure out get_friend_mii_list :(
+											j1 = await friends_client.get_friend_comment([ti,])
+											cursor.execute('UPDATE friends SET username = \'%s\', message = \'%s\' WHERE friendCode = \'%s\'' % (m[0].mii.unk1, j1[0].comment, str(convertPrincipalIdtoFriendCode(m[0].unk1)).zfill(12)))
+
+										con.commit()
+
+									time.sleep(delay)
+									for friend in rotation:
+										await friends_client.remove_friend_by_principal_id(friend)
 						except RuntimeError as e:
 							print('An error occurred!\n%s' % e)
 							break
@@ -107,4 +108,7 @@ async def main():
 			time.sleep(2)
 
 if __name__ == '__main__':
-	anyio.run(main)
+	try:
+		anyio.run(main)
+	except KeyboardInterrupt:
+		startDBTime(0)
