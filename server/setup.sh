@@ -29,5 +29,9 @@ then
 fi
 ./reset.sh # The user will now have to follow the on-screen directions
 
+# Now build with npm
+npm install .
+npm run build
+
 # Finally, end script
 echo "Script ended"
