@@ -30,6 +30,16 @@ fi
 ./reset.sh # The user will now have to follow the on-screen directions
 
 # Now build with npm
+cd ..
+if [ -d ./static/ ]
+then
+  rm -rf ./static/
+fi
+cd templates
+if [ -d ./dist/ ]
+then
+  rm -rf ./dist/
+fi
 npm install .
 npm run build
 
