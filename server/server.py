@@ -16,7 +16,7 @@ limiter = Limiter(app, key_func = get_remote_address)
 
 local = False
 port = 2277
-version = 0.21
+version = 0.3
 agent = '3DS-RPC/'
 
 startTime = time.time() # Frontend
@@ -32,11 +32,13 @@ def handler404(e):
     return render_template('dist/404.html')
 
 # Create entry in database with friendCode
-def createUser(friendCode:int):
+def createUser(friendCode:int, addNewInstance:bool = False):
     if int(friendCode) == int(botFC):
         raise Exception('invalid FC')
     try:
         convertFriendCodeToPrincipalId(friendCode)
+        if not addNewInstance:
+            raise Exception('UNIQUE constraint failed: friends.friendCode')
         db.session.execute('INSERT INTO friends (friendCode, online, titleID, updID, lastAccessed) VALUES (\'%s\', %s, %s, %s, %s)' % (str(friendCode).zfill(12), False, '0', '0', time.time() + 300))
         db.session.commit()
     except Exception as e:
@@ -72,6 +74,22 @@ def settings():
     response = make_response(render_template('dist/settings.html', data = sidenav()))
     return response
 
+# Create entry in database with friendCode
+@app.route('/api/user/create/<int:friendCode>/', methods=['POST'])
+@limiter.limit('1/minute')
+def newUser(friendCode:int):
+    try:
+        createUser(friendCode, True)
+        return {
+            'Exception': False,
+        }
+    except Exception as e:
+        return {
+            'Exception': {
+                'Error': str(e),
+            }
+        }
+
 # Grab presence from friendCode
 @app.route('/api/user/<int:friendCode>/', methods=['GET'])
 @limiter.limit('3/minute')
@@ -89,7 +107,7 @@ def userPresence(friendCode:int):
         if startTime2 == 0:
             raise Exception('backend currently offline. please try again later')
         friendCode = str(friendCode).zfill(12)
-        createUser(friendCode)
+        createUser(friendCode, False)
         principalId = convertFriendCodeToPrincipalId(friendCode)
         result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % friendCode)
         result = result.fetchone()
