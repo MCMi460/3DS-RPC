@@ -18,6 +18,7 @@ test*/
 build/
 dist/
 setup.py
+*.spec
 
 # DB
 *.db
