@@ -12,7 +12,7 @@ from typing import Literal, get_args
 requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
 local = False
-version = 0.21
+version = 0.3
 
 host = 'https://3ds.mi460.dev' # Change the host as you'd wish
 if local:
@@ -98,10 +98,25 @@ class Client():
     def APIget(self, route:str, content:dict = {}):
         return requests.get(host + '/api/' + route, data = content, headers = {'User-Agent':'3DS-RPC/%s' % version,})
 
+    # Post to API
+    def APIpost(self, route:str, content:dict = {}):
+        return requests.post(host + '/api/' + route, data = content, headers = {'User-Agent':'3DS-RPC/%s' % version,})
+
     # Connect to PyPresence
     def connect(self):
         self.rpc = pypresence.Presence('1023094010383970304')
         self.rpc.connect()
+
+    def login(self):
+        r = self.APIpost('user/create/%s' % self.friendCode)
+        try:
+            r = r.json()
+        except:
+            raise APIException(r.content)
+        if r['Exception']:
+            if not 'UNIQUE constraint failed: friends.friendCode' in r['Exception']['Error']:
+                raise APIException(r['Exception'])
+        return r
 
     def fetch(self):
         r = self.APIget('user/%s' % self.friendCode)
@@ -111,7 +126,7 @@ class Client():
             raise APIException(r.content)
         if r['Exception']:
             if 'not recognized' in r['Exception']['Error']:
-                print('\033[93mRemember, the bot\'s friend code is as follows:\n%s\033[0m' % '-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4)))
+                print('%sRemember, the bot\'s friend code is as follows:\n%s%s' % (Color.YELLOW, '-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4)), Color.DEFAULT))
             raise APIException(r['Exception'])
         return r
 
@@ -180,6 +195,8 @@ class Client():
             nest_asyncio.apply()
             threading.Thread(target = __import__('IPython').embed, daemon = True).start()
         self.connect()
+
+        self.login() # Create account if not yet existent
         while True:
             self.loop()
             time.sleep(30) # Wait 30 seconds between calls
@@ -192,23 +209,23 @@ def main():
     if not os.path.isdir(path):
         os.mkdir(path)
     if not os.path.isfile(privateFile):
-        print('Please take this time to add the bot\'s FC to your target 3DS\' friends list.\nBot FC: %s' % '-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4)))
-        input('[Press enter to continue]')
-        friendCode = input('Please enter your 3DS\' friend code\n> \033[0;35m')
-        print('\033[0m', end = '')
+        print('%sPlease take this time to add the bot\'s FC to your target 3DS\' friends list.\n%sBot FC: %s%s' % (Color.YELLOW, Color.DEFAULT, Color.BLUE, '-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4))))
+        input('%s[Press enter to continue]%s' % (Color.GREEN, Color.DEFAULT))
+        friendCode = input('Please enter your 3DS\' friend code\n> %s' % Color.PURPLE)
+        print(Color.DEFAULT, end = '')
     else:
         with open(privateFile, 'r') as file:
             js = json.loads(file.read())
             friendCode = js['friendCode']
             region = js.get('region')
     if not region:
-        region = input('Please enter your 3DS\' region [%s]\n\033[93m(You may enter \'ALL\' if you are planning to play with multiple regions\' games)\033[0m\n> \033[0;35m' % ', '.join(get_args(_REGION)))
-        print('\033[0m', end = '')
+        region = input('Please enter your 3DS\' region [%s]\n%s(You may enter \'ALL\' if you are planning to play with multiple regions\' games)%s\n> %s' % (', '.join(get_args(_REGION)), Color.YELLOW, Color.DEFAULT, Color.PURPLE))
+        print(Color.DEFAULT, end = '')
         if region == 'ALL':
-            r = input('- \033[91mEnabling ALL regions may take a few minutes to download. Is this agreeable?\033[0m\n- > \033[0;35m')
+            r = input('- %sEnabling ALL regions may take a few minutes to download. Is this agreeable?%s\n- > %s' % (Color.RED, Color.DEFAULT, Color.PURPLE))
             if not r.lower().startswith('y'):
                 return
-        print('\033[0m')
+        print(Color.DEFAULT)
 
     try:
         client = Client(region, friendCode)

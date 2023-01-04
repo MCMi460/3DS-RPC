@@ -2,6 +2,8 @@
 
 import os, sys
 import sqlite3
+import time
+import threading
 
 def getAppPath(): # Credit to @HotaruBlaze
     applicationPath = os.path.expanduser('~/Documents/3DS-RPC')
@@ -31,6 +33,14 @@ try:
 except OSError:
     terminalSize = 40
 
+class Color:
+    DEFAULT = '\033[0m'
+    RED = '\033[91m'
+    PURPLE = '\033[0;35m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+
 class ProgressBar(): # Written with help from https://stackoverflow.com/a/3160819/11042767
     def __init__(self, width:int = terminalSize):
         self.width = width
@@ -39,16 +49,24 @@ class ProgressBar(): # Written with help from https://stackoverflow.com/a/316081
         sys.stdout.write('\r[')
 
         self.progress = 0
+        self.close = True
 
     def update(self, fraction:float):
         fraction = int(fraction * self.width)
         self.progress += fraction
-        for n in range(fraction):
-            sys.stdout.write('-')
-            sys.stdout.flush()
+        def loop(self):
+            for n in range(fraction):
+                self.close = False
+                sys.stdout.write('-')
+                sys.stdout.flush()
+                time.sleep(0.1)
+            self.close = True
+        threading.Thread(target = loop, args = (self,)).start()
 
     def end(self):
         for n in range(self.width - self.progress):
             sys.stdout.write('-')
             sys.stdout.flush()
+        while not self.close:
+            pass
         sys.stdout.write(']\n')
