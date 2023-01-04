@@ -6,9 +6,8 @@
 # for essentially making my efforts have worth
 # I would kiss Meleemeister (https://www.3dbrew.org/wiki/Special:Contributions/Meleemeister)
 
+from . import *
 import hashlib
-
-botFC = str(233790548638).zfill(12) # FC == Friendcode
 
 class FriendCodeValidityError(Exception):
     pass
