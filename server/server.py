@@ -76,7 +76,7 @@ def settings():
 
 # Create entry in database with friendCode
 @app.route('/api/user/create/<int:friendCode>/', methods=['POST'])
-@limiter.limit('1/minute')
+@limiter.limit('2/minute')
 def newUser(friendCode:int):
     try:
         createUser(friendCode, True)
