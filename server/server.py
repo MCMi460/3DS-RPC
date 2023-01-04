@@ -79,10 +79,15 @@ def userPresence(friendCode:int):
     try:
         userAgent = request.headers['User-Agent']
         try:
-            if float(userAgent.replace(agent, '')) < version:
-                raise Exception('client is behind v%s' % version)
+            if float(userAgent.replace(agent, '')) != version:
+                raise Exception('client is not v%s' % version)
         except:
             raise Exception('this client is invalid')
+        result = db.session.execute('SELECT BACKEND_UPTIME FROM config')
+        result = result.fetchone()
+        startTime2 = result[0]
+        if startTime2 == 0:
+            raise Exception('backend currently offline. please try again later')
         friendCode = str(friendCode).zfill(12)
         createUser(friendCode)
         principalId = convertFriendCodeToPrincipalId(friendCode)

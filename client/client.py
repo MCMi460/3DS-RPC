@@ -3,6 +3,7 @@
 import requests, os, sys, time
 import xmltodict, json
 import pickle
+import asyncio, threading
 sys.path.append('../')
 from api import *
 import pypresence
@@ -22,7 +23,7 @@ if local:
 ## on running your own front and backend.
 convertFriendCodeToPrincipalId(botFC) # A quick verification check
 
-_REGION = Literal['US', 'JP', 'GB', 'KR', 'TW', 'ALL']
+_REGION = Literal['ALL', 'US', 'JP', 'GB', 'KR', 'TW']
 path = getAppPath()
 privateFile = os.path.join(path, 'private.txt')
 
@@ -36,7 +37,7 @@ class GameMatchError(Exception):
     pass
 
 class Client():
-    def __init__(self, region: _REGION, friendCode: str, saveTitleFiles:bool = True):
+    def __init__(self, region: _REGION, friendCode: str, *, GUI:bool = False, saveDatabases:bool = True):
         ### Maintain typing ###
         assert region in get_args(_REGION), '\'%s\' does not match _REGION' % region # Region assertion
         friendCode = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12) # Friend Code check
@@ -50,8 +51,10 @@ class Client():
         self.region = region
         self.friendCode = friendCode
 
-        # Connect to Discord
-        self.connect()
+        self.GUI = GUI
+        if not self.GUI:
+            # Connect to Discord
+            self.connect()
         # Discord-related variables
         self.currentGame = {'@id': None}
 
@@ -59,7 +62,7 @@ class Client():
         self.region = (self.region,)
         if self.region[0] == 'ALL':
             self.region = list(get_args(_REGION))
-            del self.region[-1]
+            del self.region[0]
         databasePath = os.path.join(path, 'databases.dat')
         if os.path.isfile(databasePath):
             with open(databasePath, 'rb') as file:
@@ -70,20 +73,20 @@ class Client():
             self.titleDatabase = []
             self.titlesToUID = []
 
-            bar = ProgressBar() # Create progress bar
+            if not self.GUI:bar = ProgressBar() # Create progress bar
 
             for region in self.region:
                 self.titleDatabase.append(
                     xmltodict.parse(requests.get('https://samurai.ctr.shop.nintendo.net/samurai/ws/%s/titles?shop_id=1&limit=5000&offset=0' % region, verify = False).text)
                 )
-                bar.update(.5 / len(self.region)) # Update progress bar
+                if not self.GUI:bar.update(.5 / len(self.region)) # Update progress bar
                 self.titlesToUID += requests.get('https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_%s.json' % region, stream = True).json()
-                bar.update(.5 / len(self.region)) # Update progress bar
+                if not self.GUI:bar.update(.5 / len(self.region)) # Update progress bar
 
-            bar.end() # End the progress bar
+            if not self.GUI:bar.end() # End the progress bar
 
         # Save databases to file
-        if saveTitleFiles and not os.path.isfile(databasePath):
+        if saveDatabases and not os.path.isfile(databasePath):
             with open(databasePath, 'wb') as file:
                 file.write(pickle.dumps(
                     (self.titleDatabase,
@@ -169,6 +172,18 @@ class Client():
             self.currentGame = {'@id': None}
             self.rpc.clear()
 
+    def background(self):
+        if self.GUI:
+            asyncio.set_event_loop(asyncio.new_event_loop())
+
+            import nest_asyncio
+            nest_asyncio.apply()
+            threading.Thread(target = __import__('IPython').embed, daemon = True).start()
+        self.connect()
+        while True:
+            self.loop()
+            time.sleep(30) # Wait 30 seconds between calls
+
 def main():
     friendCode = None
     region = None
@@ -201,9 +216,8 @@ def main():
         if os.path.isfile(privateFile):
             os.remove(privateFile)
         raise e
-    while True:
-        client.loop()
-        time.sleep(30)
+
+    client.background() # Start client background, but leave on main thread
 
 if __name__ == '__main__':
     main()
