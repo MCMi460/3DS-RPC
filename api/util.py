@@ -57,7 +57,7 @@ class ProgressBar(): # Written with help from https://stackoverflow.com/a/316081
         def loop(self):
             for n in range(fraction):
                 self.close = False
-                sys.stdout.write('-')
+                sys.stdout.write('#')
                 sys.stdout.flush()
                 time.sleep(0.1)
             self.close = True
@@ -65,8 +65,8 @@ class ProgressBar(): # Written with help from https://stackoverflow.com/a/316081
 
     def end(self):
         for n in range(self.width - self.progress):
-            sys.stdout.write('-')
+            sys.stdout.write('#')
             sys.stdout.flush()
         while not self.close:
-            pass
+            time.sleep(0.12)
         sys.stdout.write(']\n')
