@@ -14,6 +14,11 @@ private*/
 test*.*
 test*/
 
+# Build files
+build/
+dist/
+setup.py
+
 # DB
 *.db
 
