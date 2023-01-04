@@ -150,23 +150,10 @@ class SystemTrayApp(QSystemTrayIcon):
         QSystemTrayIcon.__init__(self, icon, parent)
         menu = QMenu(parent)
 
-        self.controller = menu.addAction('Discord')
-        self.controller.setCheckable(True)
-        #self.controller.setChecked(client.running)
-        self.controller.toggled.connect(self.switch)
-
         quit = menu.addAction('Quit')
         quit.triggered.connect(sys.exit)
 
         self.setContextMenu(menu)
-
-    def switch(self):
-        if friendCode:
-            pass
-            #client.running = not client.running
-            #self.controller.setChecked(client.running)
-            #if not client.running:
-                #client.rpc.clear()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
