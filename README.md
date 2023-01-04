@@ -13,11 +13,13 @@ I'd like to thank:
 - [kinnay](https://github.com/kinnay) and his [NintendoClients](https://github.com/kinnay/NintendoClients)
   - NintendoClients is what this program uses to pretend to be a real 3DS.
 - [hax0kartik](https://github.com/hax0kartik) and his [3dsdb](https://github.com/hax0kartik/3dsdb)
-  - 3dsdb is an open-source project that includes data about games on the eShop. It is used to retrieve the game's name and icon url.
+  - 3dsdb is an open-source project that includes data about games on the eShop. A modified version of it is used to retrieve the game's name and icon url.
 - [StartBootstrap](https://github.com/StartBootstrap) for their [startbootstrap-sb-admin](https://github.com/StartBootstrap/startbootstrap-sb-admin)
   - startbootstrap-sb-admin is a template using [bootstrap](https://github.com/twbs/bootstrap) which is how I created the friends network website!
 
 <h1 id = 'quick'>Quickstart Guide</h1>
+
+*\*Until this project has an official release, it is recommended to follow the directions written [here](https://github.com/MCMi460/3DS-RPC/issues/2#issuecomment-1345621523).*
 
 Download the app from the [latest release](https://github.com/MCMi460/3DS-RPC/releases) and run!  
 Once ran, the app will ask for you to add a friend on your Nintendo 3DS. This is for the express purpose of pulling your currently playing Nintendo game.
