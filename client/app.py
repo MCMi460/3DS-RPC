@@ -108,7 +108,6 @@ class GUI(Ui_MainWindow):
         event.ignore()
         self.MainWindow.hide()
         tray.show()
-        tray.controller.setChecked(True)
 
     def grabCode(self):
         global friendCode, client
