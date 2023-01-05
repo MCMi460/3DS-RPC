@@ -60,13 +60,15 @@ class ProgressBar(): # Written with help from https://stackoverflow.com/a/316081
                 sys.stdout.write('#')
                 sys.stdout.flush()
                 time.sleep(0.1)
+                self.close = False
             self.close = True
         threading.Thread(target = loop, args = (self,)).start()
 
-    def end(self):
+    def end(self): # Can take up time on main thread to finish
         for n in range(self.width - self.progress):
             sys.stdout.write('#')
             sys.stdout.flush()
-        while not self.close:
-            time.sleep(0.12)
+        for i in range(10):
+            while not self.close:
+                time.sleep(0.2)
         sys.stdout.write(']\n')

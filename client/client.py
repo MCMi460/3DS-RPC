@@ -223,7 +223,8 @@ def main():
         print(Color.DEFAULT, end = '')
         if region == 'ALL':
             r = input('- %sEnabling ALL regions may take a few minutes to download. Is this agreeable?%s\n- > %s' % (Color.RED, Color.DEFAULT, Color.PURPLE))
-            if not r.lower().startswith('y'):
+            r = r.strip().lower()
+            if not r.startswith('y') and not 'yes' in r:
                 return
         print(Color.DEFAULT)
 
