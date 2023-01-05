@@ -14,6 +14,8 @@ I'd like to thank:
   - NintendoClients is what this program uses to pretend to be a real 3DS.
 - [hax0kartik](https://github.com/hax0kartik) and his [3dsdb](https://github.com/hax0kartik/3dsdb)
   - 3dsdb is an open-source project that includes data about games on the eShop. A modified version of it is used to retrieve the game's name and icon url.
+- [qwerty](https://github.com/qwertyquerty) for her [pypresence](https://github.com/qwertyquerty/pypresence)
+  - pypresence is a useful Python module that allows developers to connect their games to Discord via Python. It is how 3DS-RPC sends Rich Presence data to Discord.
 - [StartBootstrap](https://github.com/StartBootstrap) for their [startbootstrap-sb-admin](https://github.com/StartBootstrap/startbootstrap-sb-admin)
   - startbootstrap-sb-admin is a template using [bootstrap](https://github.com/twbs/bootstrap) which is how I created the friends network website!
 
