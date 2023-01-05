@@ -20,17 +20,22 @@ git clone https://github.com/MCMi460/NintendoClients -b update-anynet
 cd NintendoClients && python -m pip install . && cd ..
 rm -rf NintendoClients
 python -m pip install -r requirements.txt
+python -m pip install -U Flask-SQLAlchemy
 
 # and finally, fixing up the database (i.e. restoring it to a clean slate)
-cd sqlite
-if [ -e ./fcLibrary.db ]
+
+if [ $1 = 'reset' ]
 then
-  rm ./fcLibrary.db
+  cd sqlite
+  if [ -e ./fcLibrary.db ]
+  then
+    rm ./fcLibrary.db
+  fi
+  ./reset.sh # The user will now have to follow the on-screen directions
+  cd ..
 fi
-./reset.sh # The user will now have to follow the on-screen directions
 
 # Now build with npm
-cd ..
 if [ -d ./static/ ]
 then
   rm -rf ./static/

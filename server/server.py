@@ -31,6 +31,11 @@ def ratelimit_handler(e):
 def handler404(e):
     return render_template('dist/404.html')
 
+# Limiter limits
+userPresenceLimit = '3/minute'
+newUserLimit = '2/minute'
+cdnLimit = '5/minute'
+
 # Create entry in database with friendCode
 def createUser(friendCode:int, addNewInstance:bool = False):
     if int(friendCode) == int(botFC):
@@ -57,6 +62,14 @@ def sidenav():
     }
     return data
 
+def userAgentCheck():
+    userAgent = request.headers['User-Agent']
+    try:
+        if float(userAgent.replace(agent, '')) != version:
+            raise Exception('client is not v%s' % version)
+    except:
+        raise Exception('this client is invalid')
+
 # Index page
 @app.route('/')
 def index():
@@ -76,9 +89,10 @@ def settings():
 
 # Create entry in database with friendCode
 @app.route('/api/user/create/<int:friendCode>/', methods=['POST'])
-@limiter.limit('2/minute')
+@limiter.limit(newUserLimit)
 def newUser(friendCode:int):
     try:
+        userAgentCheck()
         createUser(friendCode, True)
         return {
             'Exception': False,
@@ -92,15 +106,10 @@ def newUser(friendCode:int):
 
 # Grab presence from friendCode
 @app.route('/api/user/<int:friendCode>/', methods=['GET'])
-@limiter.limit('3/minute')
+@limiter.limit(userPresenceLimit)
 def userPresence(friendCode:int):
     try:
-        userAgent = request.headers['User-Agent']
-        try:
-            if float(userAgent.replace(agent, '')) != version:
-                raise Exception('client is not v%s' % version)
-        except:
-            raise Exception('this client is invalid')
+        userAgentCheck()
         result = db.session.execute('SELECT BACKEND_UPTIME FROM config')
         result = result.fetchone()
         startTime2 = result[0]
@@ -136,9 +145,33 @@ def userPresence(friendCode:int):
             }
         }
 
+# Alias
+@app.route('/api/u/<int:friendCode>/', methods=['GET'])
+@limiter.limit(userPresenceLimit)
+def userAlias(friendCode:int):
+    return userPresence(friendCode)
+
+# Alias
+@app.route('/api/u/c/<int:friendCode>/', methods=['POST'])
+@limiter.limit(newUserLimit)
+def newAlias1(friendCode:int):
+    return newUser(friendCode)
+
+# Alias
+@app.route('/api/user/c/<int:friendCode>/', methods=['POST'])
+@limiter.limit(newUserLimit)
+def newAlias2(friendCode:int):
+    return newUser(friendCode)
+
+# Alias
+@app.route('/api/u/create/<int:friendCode>/', methods=['POST'])
+@limiter.limit(newUserLimit)
+def newAlias3(friendCode:int):
+    return newUser(friendCode)
+
 # Make Nintendo's cert a 'secure' cert
 @app.route('/cdn/i/<string:file>/', methods=['GET'])
-@limiter.limit('5/minute')
+@limiter.limit(cdnLimit)
 def cdnImage(file:str):
     response = make_response(requests.get('https://kanzashi-ctr.cdn.nintendo.net/i/%s' % file, verify = False).content)
     response.headers['Content-Type'] = 'image/jpeg'
