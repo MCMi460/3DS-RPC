@@ -6,6 +6,10 @@ This README will be split into two sections:
   - [The quickstart guide](#quick)
   - [In-depth guide](#depth)
 
+### Notice
+
+*By using this app, you agree to the terms listed in [TERMS.md](/TERMS.md).*
+
 ### Credits
 
 This project connects to a self-hosted API (or one provided by me) and fetches data received by mimicking a real 3DS connecting to the friends service and receiving friend data.  

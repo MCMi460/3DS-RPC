@@ -87,9 +87,12 @@ async def main():
 
 								for ti in t:
 									time.sleep(delay)
-									m = await friends_client.get_friend_mii([ti,]) # I can't figure out get_friend_mii_list :(
 									j1 = await friends_client.get_friend_comment([ti,])
-									cursor.execute('UPDATE friends SET username = \'%s\', message = \'%s\' WHERE friendCode = \'%s\'' % (m[0].mii.unk1, j1[0].comment, str(convertPrincipalIdtoFriendCode(m[0].unk1)).zfill(12)))
+									m = ''
+									if not j1[0].comment.endswith(' '):
+										m = await friends_client.get_friend_mii([ti,]) # I can't figure out get_friend_mii_list :(
+										m = m[0].mii.unk1
+									cursor.execute('UPDATE friends SET username = \'%s\', message = \'%s\' WHERE friendCode = \'%s\'' % (m, j1[0].comment, str(convertPrincipalIdtoFriendCode(ti.unk1)).zfill(12)))
 
 								con.commit()
 
@@ -103,5 +106,6 @@ async def main():
 if __name__ == '__main__':
 	try:
 		anyio.run(main)
-	except KeyboardInterrupt:
+	except (KeyboardInterrupt, Exception) as e:
 		startDBTime(0)
+		print(e)
