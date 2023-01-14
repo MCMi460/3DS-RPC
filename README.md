@@ -18,6 +18,10 @@ I'd like to thank:
   - NintendoClients is what this program uses to pretend to be a real 3DS.
 - [hax0kartik](https://github.com/hax0kartik) and his [3dsdb](https://github.com/hax0kartik/3dsdb)
   - 3dsdb is an open-source project that includes data about games on the eShop. A modified version of it is used to retrieve the game's name and icon url.
+- [HEYimHeroic](https://github.com/HEYimHeroic) and her [mii2studio](https://github.com/HEYimHeroic/mii2studio)
+  - mii2studio is a command line tool written in Python that allows the user to convert between various versions of Nintendo Mii formats. I have created a modified version of it internally to convert CFSD (really, `MiiData`) to Mii Studio code.
+- [jaames](https://github.com/jaames) and his [mii-qr.py](https://gist.github.com/jaames/96ce8daa11b61b758b6b0227b55f9f78)
+  - mii-qr.py is a Python script that converts from the encrypted QR code format to normal CFSD. For whatever reason, a direct connection to the friends service on the 3DS returns a QR code, so this is insanely useful. Thank you.
 - [qwerty](https://github.com/qwertyquerty) for her [pypresence](https://github.com/qwertyquerty/pypresence)
   - pypresence is a useful Python module that allows developers to connect their games to Discord via Python. It is how 3DS-RPC sends Rich Presence data to Discord.
 - [StartBootstrap](https://github.com/StartBootstrap) for their [startbootstrap-sb-admin](https://github.com/StartBootstrap/startbootstrap-sb-admin)

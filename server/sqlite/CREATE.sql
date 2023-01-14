@@ -4,8 +4,12 @@ Create Table friends(
   titleID text NOT NULL,
   updID text NOT NULL,
   lastAccessed bigint NOT NULL,
+  accountCreation bigint NOT NULL,
   username text,
-  message text
+  message text,
+  mii text,
+  joinable boolean,
+  gameDescription text
 );
 
 Create Table config(

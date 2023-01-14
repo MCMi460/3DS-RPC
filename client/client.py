@@ -173,14 +173,18 @@ class Client():
                 self.currentGame = game
                 self.start = int(time.time())
             print()
+            presence['gameDescription'] = presence['gameDescription'] if presence['gameDescription'] else '    '
             self.rpc.update(
                 details = game['name'],
+                state = presence['gameDescription'],
                 large_image = game['icon_url'].replace('https://kanzashi-ctr.cdn.nintendo.net/i/', host + '/cdn/i/'),
                 large_text = game['name'],
                 start = self.start,
                 # buttons = [{'label': 'Label', 'url': 'http://DOMAIN.WHATEVER'},]
                 # eShop URL could be https://api.qrserver.com/v1/create-qr-code/?data=ESHOP://{uid}
                 # But... that wouldn't be very convenient. It's unfortunate how Nintendo does not have an eShop website for the 3DS
+                # Include View Profile setting?
+                # Certainly something when presence['joinable'] == True
             )
         else:
             print('Clear [%s -> %s]' % (self.currentGame['@id'], None))

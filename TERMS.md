@@ -13,17 +13,21 @@ Due to the nature of this app, it constantly scrapes the bot's friend list and s
 
 | Object | Data Type |
 | --- | --- |
+| `friendCode` | `text` |
 | `online` | `boolean` |
 | `titleID` | `text` |
 | `updID` | `text` |
 | `username` | `text` |
 | `message` | `text` |
+| `mii` | `text` |
+| `joinable` | `boolean` |
+| `gameDescription` | text |
 
 The above objects are scraped and stored by the friend bot.
 
 <h3 id = 'article2'>How Do I Opt-Out?</h3>
 
-If you'd like to stop the bot's scraping of your 3DS friend account, simply remove it from your friendlist. This will not only end it from being able to receive your information, it will also *remove all of your user's information from the bot's database[\*](#article3)*. However, this will also disable its ability to scrape your user presence data, which means that it can no longer provide you a Discord status. The solution to this is simple. If the user chooses to do so, they can terminate their account information by ending their friend status message with a ` ` (space) character, and it will not be stored henceforth for so long as the status message ends with that character. Keep in mind that this does not mean information is not scraped, simply not stored -- and friend presence information (`online`, `titleID`, `updID`) are still stored so that the user can still use the presence features of the app.
+If you'd like to stop the bot's scraping of your 3DS friend account, simply remove it from your friendlist. This will not only end it from being able to receive your information, it will also *remove all of your user's information from the bot's database[\*](#article3)*. However, this will also disable its ability to scrape your user presence data, which means that it can no longer provide you a Discord status. The solution to this is simple. If the user chooses to do so, they can terminate their account information by ending their friend status message with a ` ` (space) character, and it will not be stored henceforth for so long as the status message ends with that character. Keep in mind that this does not mean information is not scraped, simply not stored -- and friend presence information (`online`, `titleID`, `updID`, `joinable`, `gameDescription`) as well as the user's friend code (`friendCode`) are still stored so that the user can still use the presence features of the app.
 
 | Status Message | Will Bot Store Data? |
 | --- | --- |
@@ -35,6 +39,4 @@ If you'd like to stop the bot's scraping of your 3DS friend account, simply remo
 
 <h3 id = 'article3'>Deleting From Friend List</h3>
 
-When deleting the bot's account from your friend list, it will no longer be able to receive data from your 3DS, including (but not limited to) the aforementioned scraping objects. But, the bot will only update to see such an option (and then delete stored information) after a successful request sent to the `/api/user/<int:friendCode>` route. This can be easily achieved by the user by visiting your user page at `3ds.mi460.dev/user/<int:friendCode>`. Within the next 10 minutes, the user's data will be removed from the server's databases.
-
-The 'cycling' procedure that the bot undergoes during the process of using this app is very tentative in my plans for continued development. I may remove the feature, and then it will constantly cycle and remove the user's information after a period of approximately 10 minutes, but that is neither here nor there as that has yet to be implemented.
+When deleting the bot's account from your friend list, it will no longer be able to receive data from your 3DS, including (but not limited to) the aforementioned scraping objects. It may take up to approximately ten minutes before the data is deleted from the server due to 'user cycling', in which the bot cycles through all users.

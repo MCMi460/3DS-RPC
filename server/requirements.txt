@@ -3,4 +3,5 @@ flask
 nintendoclients>=0.0.5
 flask-limiter<=2.9.2 # Until 3.0 fixes "multiple values for argument 'key_func'"
 gevent
-Flask-SQLAlchemy
+SQLAlchemy<1.4.46
+Flask-SQLAlchemy # Using deprecated features, apparently

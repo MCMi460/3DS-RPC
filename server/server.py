@@ -44,7 +44,7 @@ def createUser(friendCode:int, addNewInstance:bool = False):
         convertFriendCodeToPrincipalId(friendCode)
         if not addNewInstance:
             raise Exception('UNIQUE constraint failed: friends.friendCode')
-        db.session.execute('INSERT INTO friends (friendCode, online, titleID, updID, lastAccessed) VALUES (\'%s\', %s, %s, %s, %s)' % (str(friendCode).zfill(12), False, '0', '0', time.time() + 300))
+        db.session.execute('INSERT INTO friends (friendCode, online, titleID, updID, lastAccessed, accountCreation) VALUES (\'%s\', %s, %s, %s, %s, %s)' % (str(friendCode).zfill(12), False, '0', '0', time.time() + 300, time.time()))
         db.session.commit()
     except Exception as e:
         if 'UNIQUE constraint failed: friends.friendCode' in str(e):
@@ -126,6 +126,8 @@ def userPresence(friendCode:int):
             presence = {
                 'titleID': result[2],
                 'updateID': result[3],
+                'joinable': bool(result[9]),
+                'gameDescription': result[10],
             }
         else:
             presence = {}
@@ -136,6 +138,9 @@ def userPresence(friendCode:int):
                 'friendCode': str(convertPrincipalIdtoFriendCode(principalId)).zfill(12),
                 'online': bool(result[1]),
                 'Presence': presence,
+                'username': result[6],
+                'message': result[7],
+                'mii': result[8],
             }
         }
     except Exception as e:

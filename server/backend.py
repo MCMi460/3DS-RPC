@@ -4,6 +4,7 @@
 from nintendo import nasc
 from nintendo.nex import backend, friends, settings, streams
 from nintendo.games import Friends3DS
+from nintendo.nex import common
 import anyio, time, sqlite3, sys
 sys.path.append('../')
 from api.private import SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME, REGION, LANGUAGE, PID, PID_HMAC, NEX_PASSWORD
@@ -29,8 +30,9 @@ async def main():
 				continue
 			list = []
 			for row in result:
-				if time.time() - row[1] <= 30:
-					list.append(row[0])
+				# Below is commented out for a constant and continuous loop
+				#if time.time() - row[1] <= 30:
+				list.append(row[0])
 
 			lst = [ convertFriendCodeToPrincipalId(f) for f in list ]
 
@@ -59,6 +61,7 @@ async def main():
 							time.sleep(delay)
 
 							removeList = []
+							cleanUp = []
 							time.sleep(delay)
 							await friends_client.add_friend_by_principal_ids(0, rotation)
 
@@ -68,6 +71,10 @@ async def main():
 								for ID in rotation:
 									if ID not in [ f.unk1 for f in t ]:
 										removeList.append(ID)
+							for t1 in t:
+								if not t1.unk1 in rotation:
+									cleanUp.append(t1.unk1)
+									t.remove(t1)
 
 							for remover in removeList:
 								cursor.execute('DELETE FROM friends WHERE friendCode = \'%s\'' % str(convertPrincipalIdtoFriendCode(remover)).zfill(12))
@@ -80,24 +87,57 @@ async def main():
 								for game in f:
 									# game.unk == principalId
 									users.append(game.unk)
-									#print(game.presence.game_mode_description)
-									cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s WHERE friendCode = \'%s\'' % (True, game.presence.game_key.title_id, game.presence.game_key.title_version, str(convertPrincipalIdtoFriendCode(users[-1])).zfill(12)))
+									#print(game.__dict__)
+									#print(game.presence.__dict__)
+									#print(game.presence.game_key.__dict__)
+									gameDescription = game.presence.game_mode_description
+									joinable = bool(game.presence.join_availability_flag)
+
+									cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s, joinable = %s, gameDescription = \'%s\' WHERE friendCode = \'%s\'' % (True, game.presence.game_key.title_id, game.presence.game_key.title_version, joinable, gameDescription, str(convertPrincipalIdtoFriendCode(users[-1])).zfill(12)))
 								for user in [ h for h in rotation if not h in users ]:
 									cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s WHERE friendCode = \'%s\'' % (False, 0, 0, str(convertPrincipalIdtoFriendCode(user)).zfill(12)))
+
+								con.commit()
+
+								# I just do not understand what I'm doing wrong with get_friend_mii_list
+								# The docs do not specify much
+								# And no matter how many trials I do with varying inputs, nothing works
+								# I do not give up, but until I figure it out, the slower method (get_friend_mii)
+								# will have to do.
+								# Here is where I left off:
+								#
+								#t2 = []
+								#for ti in t:
+								#	fff = FriendInfo()
+								#	fff.unk1 = ti.unk1
+								#	fff.unk2 = common.DateTime(int(time.time()))
+								#	t2.append(fff)
+								#try:
+								#	m = await friends_client.get_friend_mii_list(t2) # PythonCore::ConversionError
+								#except Exception as e:
+								#	print(logging.exception("message"))
+								#
 
 								for ti in t:
 									time.sleep(delay)
 									j1 = await friends_client.get_friend_comment([ti,])
-									m = ''
+									username = ''
+									face = ''
 									if not j1[0].comment.endswith(' '):
-										m = await friends_client.get_friend_mii([ti,]) # I can't figure out get_friend_mii_list :(
-										m = m[0].mii.unk1
-									cursor.execute('UPDATE friends SET username = \'%s\', message = \'%s\' WHERE friendCode = \'%s\'' % (m, j1[0].comment, str(convertPrincipalIdtoFriendCode(ti.unk1)).zfill(12)))
+										m = await friends_client.get_friend_mii([ti,])
+										username = m[0].mii.unk1
+										mii_data = m[0].mii.mii_data
+										obj = MiiData()
+										obj.decode(obj.convert(io.BytesIO(mii_data)))
+										face = obj.mii_studio()['face']
+									else:
+										j1[0].comment = ''
+									cursor.execute('UPDATE friends SET username = \'%s\', message = \'%s\', mii = \'%s\' WHERE friendCode = \'%s\'' % (username, j1[0].comment, face, str(convertPrincipalIdtoFriendCode(ti.unk1)).zfill(12)))
 
 								con.commit()
 
 							time.sleep(delay)
-							for friend in rotation:
+							for friend in rotation + cleanUp:
 								await friends_client.remove_friend_by_principal_id(friend)
 				except Exception as e:
 					print('An error occurred!\n%s' % e)
