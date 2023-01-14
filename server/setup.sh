@@ -24,7 +24,7 @@ python -m pip install -U Flask-SQLAlchemy
 
 # and finally, fixing up the database (i.e. restoring it to a clean slate)
 
-if [ $1 = 'reset' ]
+if [ '$1' = 'reset' ]
 then
   cd sqlite
   if [ -e ./fcLibrary.db ]
