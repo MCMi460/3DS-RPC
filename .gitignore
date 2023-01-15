@@ -9,6 +9,7 @@ __pycache__/
 private*.*
 private*/
 *key*.*
+cache/
 
 # Tests
 test*.*

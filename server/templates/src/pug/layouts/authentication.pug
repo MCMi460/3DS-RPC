@@ -3,6 +3,19 @@ doctype html
 block config
     - var pageTitle = "Page Title"
 
+style.
+  #topnav
+  {
+      background-color: rgba(0,0,0,0.5);
+  }
+  #uptime-section
+  {
+      display: none;
+  }
+  #sidenavAccordion
+  {
+  }
+
 html(lang='en')
 
     head
@@ -11,19 +24,30 @@ html(lang='en')
         include includes/head/title.pug
         include includes/head/css.pug
         include includes/head/icons.pug
+        include includes/navigation/topnav.pug
 
     body(style="background-image: url({{ url_for('static',filename='assets/img/background.png') }}); background-repeat: no-repeat; background-size: cover;")
 
-        #layoutAuthentication
+    #layoutSidenav
+          
+        #layoutSidenav_nav
 
-            #layoutAuthentication_content
+            include includes/navigation/sidenav.pug
 
-                main
+        #layoutSidenav_content
+              
+            main
 
-                    block content
+                #layoutAuthentication
 
-            #layoutAuthentication_footer
+                    #layoutAuthentication_content
 
-                include includes/footer.pug
+                        main
+
+                            block content
+
+                    #layoutAuthentication_footer
+
+                        include includes/footer.pug
 
         include includes/scripts.pug

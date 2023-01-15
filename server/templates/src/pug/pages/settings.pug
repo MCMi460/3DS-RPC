@@ -1,13 +1,17 @@
-extends ../layouts/dashboard.pug
+extends ../layouts/authentication.pug
 
 block config
-    - var bodyClass = 'sb-nav-fixed'
     - var pageTitle = 'Settings'
-    - var sidenavStyle = 'sb-sidenav-dark'
+
+
 
 block content
-    .container-fluid.px-4.justify-content-between.align-items-center
-        include includes/page-header.pug
-        .card.mb-4#secrety
-            .card-body.
-              Nothing here at the moment!
+    .container
+        .row.justify-content-center
+            .col-lg-10
+                .card.shadow-lg.border-0.rounded-lg.mt-5
+                    .card-header
+                        h3.text-center.font-weight-light.my-4 Settings
+                    .card-body
+                        | These are some settings!
+                      

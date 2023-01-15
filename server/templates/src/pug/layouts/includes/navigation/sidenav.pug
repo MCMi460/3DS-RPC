@@ -7,7 +7,7 @@ nav(class=['sb-sidenav', 'accordion'] class=sidenavStyle)#sidenavAccordion
             .sb-sidenav-menu-heading
                 | Dashboard
 
-            a.nav-link(href='index.html')
+            a.nav-link(href='/index.html')
                 .sb-nav-link-icon
                     i.fas.fa-house-user
                 | Home
@@ -15,12 +15,12 @@ nav(class=['sb-sidenav', 'accordion'] class=sidenavStyle)#sidenavAccordion
             .sb-sidenav-menu-heading
                 | Preferences
 
-            a.nav-link(href='settings.html')
+            a.nav-link(href='/settings.html')
                 .sb-nav-link-icon
                     i.fas.fa-tachometer-alt
                 | Settings
 
-    .sb-sidenav-footer
+    .sb-sidenav-footer(id = 'uptime-section')
 
         html
           <p class = 'small'>Frontend has been up for {{ data['uptime'] }}...</p>

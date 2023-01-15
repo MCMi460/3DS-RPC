@@ -21,7 +21,7 @@ Due to the nature of this app, it constantly scrapes the bot's friend list and s
 | `message` | `text` |
 | `mii` | `text` |
 | `joinable` | `boolean` |
-| `gameDescription` | text |
+| `gameDescription` | `text` |
 
 The above objects are scraped and stored by the friend bot.
 

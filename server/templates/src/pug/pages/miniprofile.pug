@@ -1,0 +1,15 @@
+extends ../layouts/authentication.pug
+
+block config
+    - var pageTitle = "{{ data['User']['username'] }}"
+
+block content
+    // Don't use
+    .container
+        .row.justify-content-center
+            .col-lg-5
+                .card.shadow-lg.border-0.rounded-lg.mt-5
+                    .card-header
+                        h3.text-center.font-weight-light.my-4 {{ data['User']['username'] }}
+                    .card-body
+                        img(src = '{{ data["User"]["mii"] }}')

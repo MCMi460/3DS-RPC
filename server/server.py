@@ -4,7 +4,7 @@ from flask import Flask, make_response, request, redirect, render_template
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
-import sqlite3, requests, sys, os, time, json, multiprocessing, datetime
+import sqlite3, requests, sys, os, time, json, multiprocessing, datetime, xmltodict, pickle
 sys.path.append('../')
 from api import *
 
@@ -35,6 +35,87 @@ def handler404(e):
 userPresenceLimit = '3/minute'
 newUserLimit = '2/minute'
 cdnLimit = '5/minute'
+
+# Database files
+titleDatabase = []
+titlesToUID = []
+
+requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
+
+# Create title cache
+def cacheTitles():
+    global titleDatabase, titlesToUID
+
+    # Pull databases
+    databasePath = './cache/'
+    if not os.path.exists(databasePath):
+        os.mkdir(databasePath)
+    databasePath = os.path.join(databasePath, 'databases.dat')
+    if os.path.isfile(databasePath):
+        with open(databasePath, 'rb') as file:
+            t = pickle.loads(file.read())
+            titleDatabase = t[0]
+            titlesToUID = t[1]
+    else:
+        titleDatabase = []
+        titlesToUID = []
+
+        bar = ProgressBar() # Create progress bar
+
+        for region in ['US', 'JP', 'GB', 'KR', 'TW']:
+            titleDatabase.append(
+                xmltodict.parse(requests.get('https://samurai.ctr.shop.nintendo.net/samurai/ws/%s/titles?shop_id=1&limit=5000&offset=0' % region, verify = False).text)
+            )
+            bar.update(.5 / 5) # Update progress bar
+            titlesToUID += requests.get('https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_%s.json' % region).json()
+            bar.update(.5 / 5) # Update progress bar
+
+        bar.end() # End the progress bar
+
+        # Save databases to file
+        with open(databasePath, 'wb') as file:
+            file.write(pickle.dumps(
+                (titleDatabase,
+                titlesToUID)
+            ))
+        print('[Saved database to file]')
+
+# Get image url from title ID
+def getTitle(titleID):
+    _pass = None
+
+    uid = None
+    tid = hex(int(titleID))[2:].zfill(16).upper()
+    _template = {
+        'name': 'Unknown 3DS App',
+        'icon_url': '',
+        '@id': tid,
+    }
+    for game in titlesToUID:
+        if game['TitleID'] == tid:
+            uid = game['UID']
+            break
+    if not uid:
+        if tid == ''.zfill(16):
+            _pass = _template
+            _pass['name'] = 'Home Screen'
+        else:
+            _pass = _template
+        # raise TitleIDMatchError('unknown title id: %s' % tid)
+
+    game = None
+    for region in titleDatabase:
+        for title in region['eshop']['contents']['content']:
+            if title['title']['@id'] == uid:
+                game = title['title']
+                break
+    if not game:
+        _pass = _template
+        # raise GameMatchError('unknown game: %s' % uid)
+    if _pass:
+        game = _pass
+
+    return game
 
 # Create entry in database with friendCode
 def createUser(friendCode:int, addNewInstance:bool = False):
@@ -70,53 +151,18 @@ def userAgentCheck():
     except:
         raise Exception('this client is invalid')
 
-# Index page
-@app.route('/')
-def index():
-    response = make_response(render_template('dist/index.html', data = sidenav()))
-    return response
-
-# Index page
-@app.route('/index.html')
-def indexHTML():
-    return index()
-
-# Index page
-@app.route('/settings.html')
-def settings():
-    response = make_response(render_template('dist/settings.html', data = sidenav()))
-    return response
-
-# Create entry in database with friendCode
-@app.route('/api/user/create/<int:friendCode>/', methods=['POST'])
-@limiter.limit(newUserLimit)
-def newUser(friendCode:int):
+def getPresence(friendCode:int, *, créerCompte:bool = True, ignoreUserAgent = False, ignoreBackend = False):
     try:
-        userAgentCheck()
-        createUser(friendCode, True)
-        return {
-            'Exception': False,
-        }
-    except Exception as e:
-        return {
-            'Exception': {
-                'Error': str(e),
-            }
-        }
-
-# Grab presence from friendCode
-@app.route('/api/user/<int:friendCode>/', methods=['GET'])
-@limiter.limit(userPresenceLimit)
-def userPresence(friendCode:int):
-    try:
-        userAgentCheck()
+        if not ignoreUserAgent:
+            userAgentCheck()
         result = db.session.execute('SELECT BACKEND_UPTIME FROM config')
         result = result.fetchone()
         startTime2 = result[0]
-        if startTime2 == 0:
+        if startTime2 == 0 and not ignoreBackend:
             raise Exception('backend currently offline. please try again later')
         friendCode = str(friendCode).zfill(12)
-        createUser(friendCode, False)
+        if créerCompte:
+            createUser(friendCode, False)
         principalId = convertFriendCodeToPrincipalId(friendCode)
         result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % friendCode)
         result = result.fetchone()
@@ -149,6 +195,76 @@ def userPresence(friendCode:int):
                 'Error': str(e),
             }
         }
+
+##################
+# NON-API ROUTES #
+##################
+
+# Index page
+@app.route('/')
+def index():
+    response = make_response(render_template('dist/index.html', data = sidenav()))
+    return response
+
+# Index page
+@app.route('/index.html')
+def indexHTML():
+    return index()
+
+# Settings page
+@app.route('/settings.html')
+def settings():
+    response = make_response(render_template('dist/settings.html', data = sidenav()))
+    return response
+
+@app.route('/user/<string:friendCode>/')
+def userPage(friendCode:str):
+    try:
+        userData = getPresence(int(friendCode), créerCompte = False, ignoreUserAgent = True, ignoreBackend = True)
+        if userData['Exception'] or not userData['User']['username']:
+            raise Exception(userData['Exception'])
+    except Exception as e:
+        print(e)
+        return redirect('/404.html')
+    if userData['User']['online'] and userData['User']['Presence']:
+        userData['User']['Presence']['game'] = getTitle(userData['User']['Presence']['titleID'])
+    else:
+        userData['User']['Presence']['game'] = None
+    print(userData)
+    userData.update(sidenav())
+    response = make_response(render_template('dist/user.html', data = userData))
+    return response
+
+@app.route('/terms')
+def terms():
+    return redirect('https://github.com/MCMi460/3DS-RPC/blob/main/TERMS.md')
+
+##############
+# API ROUTES #
+##############
+
+# Create entry in database with friendCode
+@app.route('/api/user/create/<int:friendCode>/', methods=['POST'])
+@limiter.limit(newUserLimit)
+def newUser(friendCode:int):
+    try:
+        userAgentCheck()
+        createUser(friendCode, True)
+        return {
+            'Exception': False,
+        }
+    except Exception as e:
+        return {
+            'Exception': {
+                'Error': str(e),
+            }
+        }
+
+# Grab presence from friendCode
+@app.route('/api/user/<int:friendCode>/', methods=['GET'])
+@limiter.limit(userPresenceLimit)
+def userPresence(friendCode:int, *, créerCompte:bool = True, ignoreUserAgent = False, ignoreBackend = False):
+    return getPresence(friendCode, créerCompte = créerCompte, ignoreUserAgent = ignoreUserAgent, ignoreBackend = ignoreBackend)
 
 # Alias
 @app.route('/api/u/<int:friendCode>/', methods=['GET'])
@@ -183,6 +299,7 @@ def cdnImage(file:str):
     return response
 
 if __name__ == '__main__':
+    cacheTitles()
     if local:
         app.run(host = '0.0.0.0', port = port)
     else:

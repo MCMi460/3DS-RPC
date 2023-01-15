@@ -80,7 +80,7 @@ class Client():
                     xmltodict.parse(requests.get('https://samurai.ctr.shop.nintendo.net/samurai/ws/%s/titles?shop_id=1&limit=5000&offset=0' % region, verify = False).text)
                 )
                 if not self.GUI:bar.update(.5 / len(self.region)) # Update progress bar
-                self.titlesToUID += requests.get('https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_%s.json' % region, stream = True).json()
+                self.titlesToUID += requests.get('https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_%s.json' % region).json()
                 if not self.GUI:bar.update(.5 / len(self.region)) # Update progress bar
 
             if not self.GUI:bar.end() # End the progress bar
@@ -230,7 +230,7 @@ def main():
             r = r.strip().lower()
             if not r.startswith('y') and not 'yes' in r:
                 return
-        print(Color.DEFAULT)
+        print(Color.DEFAULT + 'Downloading files...')
 
     try:
         client = Client(region, friendCode)
