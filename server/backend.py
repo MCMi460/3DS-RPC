@@ -15,7 +15,8 @@ logging.basicConfig(level=logging.INFO)
 
 delay = 2
 since = 0
-startDBTime(time.time())
+begun = time.time()
+startDBTime(begun)
 
 async def main():
 	while True:
@@ -53,12 +54,13 @@ async def main():
 					async with backend.connect(s, response.host, response.port) as be:
 						async with be.login(str(PID), NEX_PASSWORD) as client:
 							friends_client = friends.FriendsClientV1(client)
-							await friends_client.update_comment('github/MCMi460')
+							if time.time() - begun < 30:
+								time.sleep(delay)
+								await friends_client.update_comment('github/MCMi460')
 							since = time.time()
 
 							if time.time() - since > 3600:
 								break
-							time.sleep(delay)
 
 							removeList = []
 							cleanUp = []
@@ -120,7 +122,12 @@ async def main():
 
 								for ti in t:
 									time.sleep(delay)
-									j1 = await friends_client.get_friend_comment([ti,])
+
+									ti.unk2 = 0 # A cursed (but operable) 'hack'
+									try:
+										j1 = await friends_client.get_friend_comment([ti,])
+									except:
+										continue
 									username = ''
 									face = ''
 									if not j1[0].comment.endswith(' '):
@@ -136,8 +143,8 @@ async def main():
 
 								con.commit()
 
-							time.sleep(delay)
 							for friend in rotation + cleanUp:
+								time.sleep(delay / 2)
 								await friends_client.remove_friend_by_principal_id(friend)
 				except Exception as e:
 					print('An error occurred!\n%s' % e)
