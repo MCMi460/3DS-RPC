@@ -34,7 +34,7 @@ def handler404(e):
 # Limiter limits
 userPresenceLimit = '3/minute'
 newUserLimit = '2/minute'
-cdnLimit = '5/minute'
+cdnLimit = '10/minute'
 
 # Database files
 titleDatabase = []
@@ -114,6 +114,8 @@ def getTitle(titleID):
         # raise GameMatchError('unknown game: %s' % uid)
     if _pass:
         game = _pass
+
+    game['icon_url'] = game['icon_url'].replace('https://kanzashi-ctr.cdn.nintendo.net/i/', '/cdn/i/') # Support browsers' security stuff
 
     return game
 
