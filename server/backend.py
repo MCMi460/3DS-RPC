@@ -136,12 +136,11 @@ async def main():
 										mii_data = m[0].mii.mii_data
 										obj = MiiData()
 										obj.decode(obj.convert(io.BytesIO(mii_data)))
-										face = obj.mii_studio()['face']
+										face = obj.mii_studio()['data']
 									else:
 										j1[0].comment = ''
 									cursor.execute('UPDATE friends SET username = \'%s\', message = \'%s\', mii = \'%s\' WHERE friendCode = \'%s\'' % (username, j1[0].comment, face, str(convertPrincipalIdtoFriendCode(ti.unk1)).zfill(12)))
-
-								con.commit()
+									con.commit()
 
 							for friend in rotation + cleanUp:
 								time.sleep(delay / 2)

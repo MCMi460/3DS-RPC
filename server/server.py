@@ -177,6 +177,9 @@ def getPresence(friendCode:int, *, créerCompte:bool = True, ignoreUserAgent = F
             }
         else:
             presence = {}
+        mii = result[8]
+        if mii:
+            mii = MiiData().mii_studio_url(mii)
         return {
             'Exception': False,
             'User': {
@@ -186,7 +189,7 @@ def getPresence(friendCode:int, *, créerCompte:bool = True, ignoreUserAgent = F
                 'Presence': presence,
                 'username': result[6],
                 'message': result[7],
-                'mii': result[8],
+                'mii': mii,
             }
         }
     except Exception as e:
@@ -223,14 +226,13 @@ def userPage(friendCode:str):
         userData = getPresence(int(friendCode), créerCompte = False, ignoreUserAgent = True, ignoreBackend = True)
         if userData['Exception'] or not userData['User']['username']:
             raise Exception(userData['Exception'])
-    except Exception as e:
-        print(e)
+    except:
         return redirect('/404.html')
     if userData['User']['online'] and userData['User']['Presence']:
         userData['User']['Presence']['game'] = getTitle(userData['User']['Presence']['titleID'])
     else:
         userData['User']['Presence']['game'] = None
-    print(userData)
+    #print(userData) # COMMENT/DELETE THIS BEFORE COMMITTING
     userData.update(sidenav())
     response = make_response(render_template('dist/user.html', data = userData))
     return response

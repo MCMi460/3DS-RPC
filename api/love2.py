@@ -92,8 +92,14 @@ class MiiData(miis.MiiData):
             n = eo
             mii_data += hexlify(pack('>B', eo))
 
-        base = 'https://studio.mii.nintendo.com/miis/image.png?data=' + mii_data.decode('utf-8')
+        url = self.mii_studio_url(mii_data.decode('utf-8'))
+
+        return url
+
+    def mii_studio_url(self, mii_data):
+        base = 'https://studio.mii.nintendo.com/miis/image.png?data=' + mii_data
         url = {
+            'data': mii_data,
             'face': base + '&type=face&width=512&instanceCount=1',
             'body': base + '&type=all_body&width=512&instanceCount=1',
             'face-16x': base + '&type=face&width=512&instanceCount=16',

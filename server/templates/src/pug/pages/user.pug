@@ -10,7 +10,7 @@ block content
         include includes/page-header.pug
         .row.d-flex.justify-content-space-between
             .col-sm-2.d-flex.align-items-end
-                img(src = "{{ data['User']['mii'] }}", width = '100%', style = 'background: linear-gradient(0deg, rgb(255, 198, 147) 0%, rgb(254, 245, 239, 0.1) 100%);')
+                img(src = "{{ data['User']['mii']['face'] }}", width = '100%', style = 'background: linear-gradient(0deg, rgb(255, 198, 147) 0%, rgb(254, 245, 239, 0.1) 100%);')
             .col-md-5
                 .row
                     h1 {{ data['User']['username'] }}
