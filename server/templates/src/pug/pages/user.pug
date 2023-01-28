@@ -8,21 +8,39 @@ block config
 block content
     .container-fluid.px-4
         include includes/page-header.pug
-        .row.d-flex.justify-content-space-between
+        
+        html {% if data['User']['Presence']['game'] %}
+        .modal.fade#gameInfo(tabindex = '-1', aria-labelledby = 'modelLabel', aria-hidden = 'true')
+            .modal-dialog
+                .modal-content
+                    .modal-header
+                        h5.modal-title#modalLabel
+                            b {{ data['User']['Presence']['game']['name'] }}
+                            | by {{ data['User']['Presence']['game']['publisher']['name'] }}
+                        button.btn-close(type = 'button' data-bs-dismiss = 'modal' aria-label = 'Close')
+                    .modal-body
+                        div
+                            img(src = "{{ data['User']['Presence']['game']['banner_url'] }}", style = "height: 100%; width: 100%;")
+                        div.d-flex.justify-content-between
+                            div Genre: {{ data['User']['Presence']['game']['display_genre'] }}
+                            div Score: {{ data['User']['Presence']['game']['star_rating_info']['score'] }}
+                    .modal-footer
+                        button.btn.btn-primary(type = 'button' data-bs-dismiss = 'modal') Close
+        html {% endif %}
+
+        .row
             .col-sm-2.d-flex.align-items-end
                 img(src = "{{ data['User']['mii']['face'] }}", width = '100%', style = 'background: linear-gradient(0deg, rgb(255, 198, 147) 0%, rgb(254, 245, 239, 0.1) 100%);')
             .col-md-5
                 .row
                     h1 {{ data['User']['username'] }}
                 .row
-                    
-                    
                     .card.text-center
                         html {% if data['User']['Presence']['game'] %}
                         .card-header
                             | Currently playing...
                         html {% endif %}
-                        .card-body.d-flex.align-items-center
+                        a.card-body.d-flex.align-items-center.text-black(style = 'text-decoration: none;', data-bs-toggle="modal", href = '#gameInfo')
                             html {% if data['User']['Presence']['game'] %}
                             .col-md-2
                                 img(src = "{{ data['User']['Presence']['game']['icon_url'] }}", width = '100%')

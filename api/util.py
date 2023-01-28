@@ -82,6 +82,14 @@ def getTitle(titleID, titlesToUID, titleDatabase):
     _template = {
         'name': 'Unknown 3DS App',
         'icon_url': '',
+        'banner_url': '',
+        'publisher': {
+            'name': 'Unknown',
+        },
+        'star_rating_info': {
+            'score': '??',
+        },
+        'display_genre': '??',
         '@id': tid,
     }
     for game in titlesToUID:
@@ -108,7 +116,9 @@ def getTitle(titleID, titlesToUID, titleDatabase):
     if _pass:
         game = _pass
 
-    game['icon_url'] = game['icon_url'].replace('https://kanzashi-ctr.cdn.nintendo.net/i/', '/cdn/i/') # Support browsers' security stuff
+    # Support browsers' security stuff
+    game['icon_url'] = game['icon_url'].replace('https://kanzashi-ctr.cdn.nintendo.net/i/', '/cdn/i/')
+    game['banner_url'] = game['banner_url'].replace('https://kanzashi-ctr.cdn.nintendo.net/i/', '/cdn/i/')
 
     return game
 
