@@ -21,7 +21,17 @@ block content
                         i.fas.fa-chart-area.me-1
                         | Actively Playing Users...
                     .card-body
-
+                        html {% for i in data['active'] %}
+                        a(href = "/user/{{ i['friendCode'] }}", style = 'text-decoration: none; color: #000;').card.mb-4
+                            .card-body.d-flex.justify-content-between.align-items-center
+                                div.d-flex.flex-column.align-items-center(style = 'padding-right: 10px')
+                                    img(src = "{{ i['mii']['face'] }}", width = '100vw', style = 'background: linear-gradient(0deg, rgb(255, 198, 147) 0%, rgb(254, 245, 239, 0.1) 100%);')
+                                    | {{ i['username'] }}
+                                div.d-flex.flex-column.align-items-end.text-right.text-break(style = 'padding-left: 10px')
+                                    img(src = "{{ i['game']['icon_url'] }}", width = '50vw', height = '50vw')
+                                    p {{ i['game']['name'] }}
+                        html {% endfor %}
+                        
 
             .col-xl-6
                 .card.mb-4

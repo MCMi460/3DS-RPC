@@ -34,7 +34,7 @@ def handler404(e):
 # Limiter limits
 userPresenceLimit = '3/minute'
 newUserLimit = '2/minute'
-cdnLimit = '10/minute'
+cdnLimit = '20/minute'
 
 # Database files
 titleDatabase = []
@@ -169,7 +169,21 @@ def getPresence(friendCode:int, *, créerCompte:bool = True, ignoreUserAgent = F
 # Index page
 @app.route('/')
 def index():
-    response = make_response(render_template('dist/index.html', data = sidenav()))
+    results = db.session.execute('SELECT * FROM friends WHERE online = %s ORDER BY lastAccessed DESC LIMIT 3' % True)
+    results = results.fetchall()
+    data = sidenav()
+
+    data['active'] = [ ({
+        'mii':MiiData().mii_studio_url(user[8]),
+        'username':user[6],
+        'game': getTitle(user[2], titlesToUID, titleDatabase),
+        'friendCode': str(user[0]).zfill(12),
+        'joinable': bool(user[9]),
+    }) for user in results if user[6] and int(user[2]) != 0 ]
+    for e in data['active']:
+        if not e['game']['icon_url']:
+            data['active'].remove(e)
+    response = make_response(render_template('dist/index.html', data = data))
     return response
 
 # Index page

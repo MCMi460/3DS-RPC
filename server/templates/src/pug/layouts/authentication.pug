@@ -16,6 +16,9 @@ style.
   {
   }
 
+script.
+  var settings = true;
+
 html(lang='en')
 
     head
@@ -28,26 +31,17 @@ html(lang='en')
 
     body(style="background-image: url({{ url_for('static',filename='assets/img/background.png') }}); background-repeat: no-repeat; background-size: cover;")
 
-    #layoutSidenav
-          
-        #layoutSidenav_nav
+    
+        #layoutAuthentication
 
-            include includes/navigation/sidenav.pug
+            #layoutAuthentication_content
 
-        #layoutSidenav_content
-              
-            main
+                main
 
-                #layoutAuthentication
+                    block content
 
-                    #layoutAuthentication_content
+            #layoutAuthentication_footer
 
-                        main
-
-                            block content
-
-                    #layoutAuthentication_footer
-
-                        include includes/footer.pug
+                include includes/footer.pug
 
         include includes/scripts.pug

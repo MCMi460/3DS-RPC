@@ -17,6 +17,11 @@ function getCookie(cname) {
   return "";
 }
 
+if (settings == true)
+{
+  document.getElementById('topnav').style.position = 'absolute';
+}
+
 window.addEventListener('DOMContentLoaded', event => {
 
     // Toggle the side navigation
@@ -30,6 +35,9 @@ window.addEventListener('DOMContentLoaded', event => {
             event.preventDefault();
             document.body.classList.toggle('sb-sidenav-toggled');
             localStorage.setItem('sb|sidebar-toggle', document.body.classList.contains('sb-sidenav-toggled'));
+            if (settings) {
+                window.location.href = '/';
+            }
         });
     }
 
