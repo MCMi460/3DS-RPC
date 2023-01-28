@@ -27,15 +27,6 @@ _REGION = Literal['ALL', 'US', 'JP', 'GB', 'KR', 'TW']
 path = getAppPath()
 privateFile = os.path.join(path, 'private.txt')
 
-class APIException(Exception):
-    pass
-
-class TitleIDMatchError(Exception):
-    pass
-
-class GameMatchError(Exception):
-    pass
-
 class Client():
     def __init__(self, region: _REGION, friendCode: str, *, GUI:bool = False, saveDatabases:bool = True):
         ### Maintain typing ###
@@ -136,36 +127,10 @@ class Client():
 
         _pass = None
         if userData['User']['online'] and presence:
-            uid = None
-            tid = hex(int(presence['titleID']))[2:].zfill(16).upper()
-            _template = {
-                'name': 'Unknown 3DS App',
-                'icon_url': 'logo',
-                '@id': tid,
-            }
-            for game in self.titlesToUID:
-                if game['TitleID'] == tid:
-                    uid = game['UID']
-                    break
-            if not uid:
-                if tid == ''.zfill(16):
-                    _pass = _template
-                    _pass['name'] = 'Home Screen'
-                else:
-                    _pass = _template
-                # raise TitleIDMatchError('unknown title id: %s' % tid)
 
-            game = None
-            for region in self.titleDatabase:
-                for title in region['eshop']['contents']['content']:
-                    if title['title']['@id'] == uid:
-                        game = title['title']
-                        break
-            if not game:
-                _pass = _template
-                # raise GameMatchError('unknown game: %s' % uid)
-            if _pass:
-                game = _pass
+            game = getTitle(presence['titleID'], self.titlesToUID, self.titleDatabase)
+            if not game['icon_url']:
+                game['icon_url'] = ' '
 
             print('Update', end = '')
             if self.currentGame != game:
@@ -177,7 +142,7 @@ class Client():
             self.rpc.update(
                 details = game['name'],
                 state = presence['gameDescription'],
-                large_image = game['icon_url'].replace('https://kanzashi-ctr.cdn.nintendo.net/i/', host + '/cdn/i/'),
+                large_image = game['icon_url'].replace('/cdn/i/', host + '/cdn/i/'),
                 large_text = game['name'],
                 start = self.start,
                 # buttons = [{'label': 'Label', 'url': 'http://DOMAIN.WHATEVER'},]

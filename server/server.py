@@ -80,45 +80,6 @@ def cacheTitles():
             ))
         print('[Saved database to file]')
 
-# Get image url from title ID
-def getTitle(titleID):
-    _pass = None
-
-    uid = None
-    tid = hex(int(titleID))[2:].zfill(16).upper()
-    _template = {
-        'name': 'Unknown 3DS App',
-        'icon_url': '',
-        '@id': tid,
-    }
-    for game in titlesToUID:
-        if game['TitleID'] == tid:
-            uid = game['UID']
-            break
-    if not uid:
-        if tid == ''.zfill(16):
-            _pass = _template
-            _pass['name'] = 'Home Screen'
-        else:
-            _pass = _template
-        # raise TitleIDMatchError('unknown title id: %s' % tid)
-
-    game = None
-    for region in titleDatabase:
-        for title in region['eshop']['contents']['content']:
-            if title['title']['@id'] == uid:
-                game = title['title']
-                break
-    if not game:
-        _pass = _template
-        # raise GameMatchError('unknown game: %s' % uid)
-    if _pass:
-        game = _pass
-
-    game['icon_url'] = game['icon_url'].replace('https://kanzashi-ctr.cdn.nintendo.net/i/', '/cdn/i/') # Support browsers' security stuff
-
-    return game
-
 # Create entry in database with friendCode
 def createUser(friendCode:int, addNewInstance:bool = False):
     if int(friendCode) == int(botFC):
@@ -231,7 +192,7 @@ def userPage(friendCode:str):
     except:
         return redirect('/404.html')
     if userData['User']['online'] and userData['User']['Presence']:
-        userData['User']['Presence']['game'] = getTitle(userData['User']['Presence']['titleID'])
+        userData['User']['Presence']['game'] = getTitle(userData['User']['Presence']['titleID'], titlesToUID, titleDatabase)
     else:
         userData['User']['Presence']['game'] = None
     #print(userData) # COMMENT/DELETE THIS BEFORE COMMITTING

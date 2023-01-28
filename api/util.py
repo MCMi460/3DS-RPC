@@ -72,3 +72,51 @@ class ProgressBar(): # Written with help from https://stackoverflow.com/a/316081
             while not self.close:
                 time.sleep(0.2)
         sys.stdout.write(']\n')
+
+# Get image url from title ID
+def getTitle(titleID, titlesToUID, titleDatabase):
+    _pass = None
+
+    uid = None
+    tid = hex(int(titleID))[2:].zfill(16).upper()
+    _template = {
+        'name': 'Unknown 3DS App',
+        'icon_url': '',
+        '@id': tid,
+    }
+    for game in titlesToUID:
+        if game['TitleID'] == tid:
+            uid = game['UID']
+            break
+    if not uid:
+        if tid == ''.zfill(16):
+            _pass = _template
+            _pass['name'] = 'Home Screen'
+        else:
+            _pass = _template
+        # raise TitleIDMatchError('unknown title id: %s' % tid)
+
+    game = None
+    for region in titleDatabase:
+        for title in region['eshop']['contents']['content']:
+            if title['title']['@id'] == uid:
+                game = title['title']
+                break
+    if not game:
+        _pass = _template
+        # raise GameMatchError('unknown game: %s' % uid)
+    if _pass:
+        game = _pass
+
+    game['icon_url'] = game['icon_url'].replace('https://kanzashi-ctr.cdn.nintendo.net/i/', '/cdn/i/') # Support browsers' security stuff
+
+    return game
+
+class APIException(Exception):
+    pass
+
+class TitleIDMatchError(Exception):
+    pass
+
+class GameMatchError(Exception):
+    pass
