@@ -23,7 +23,9 @@ block content
                             img(src = "{{ data['User']['Presence']['game']['banner_url'] }}", style = "height: 100%; width: 100%;")
                         div.d-flex.justify-content-between
                             div Genre: {{ data['User']['Presence']['game']['display_genre'] }}
-                            div Score: {{ data['User']['Presence']['game']['star_rating_info']['score'] }}
+                            div Rating:
+                                b {{ data['User']['Presence']['game']['star_rating_info']['score'] }}/5
+                                | Stars
                     .modal-footer
                         button.btn.btn-primary(type = 'button' data-bs-dismiss = 'modal') Close
         html {% endif %}
@@ -32,12 +34,10 @@ block content
             .col-sm-2.d-flex.align-items-end
                 img(src = "{{ data['User']['mii']['face'] }}", width = '100%', style = 'background: linear-gradient(0deg, rgb(255, 198, 147) 0%, rgb(254, 245, 239, 0.1) 100%);')
             .col-md-5
-                .row
-                    h1 {{ data['User']['username'] }}
-                .row
+                .row(style = 'padding-top: 25px')
                     .card.text-center
                         html {% if data['User']['Presence']['game'] %}
-                        .card-header
+                        .card-header(style = 'background-color: inherit;')
                             | Currently playing...
                         html {% endif %}
                         a.card-body.d-flex.align-items-center.text-black(style = 'text-decoration: none;', data-bs-toggle="modal", href = '#gameInfo')
@@ -60,7 +60,7 @@ block content
         .row.d-flex.justify-content-between(style = 'padding-top: 2rem;')
           .col-xl-7
               .card
-                  .card-header
+                  .card-header(style = 'background-color: inherit;')
                       i.fas.fa-chart-area.me-1
                       | Activity Log
                   .card-body
