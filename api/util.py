@@ -112,6 +112,8 @@ def getTitle(titleID, titlesToUID, titleDatabase):
             if title['title']['@id'] == uid:
                 game = title['title']
                 break
+        if game:
+            break
     if not game:
         _pass = _template
         # raise GameMatchError('unknown game: %s' % uid)
