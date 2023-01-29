@@ -26,7 +26,14 @@ block content
                             div Rating:
                                 b {{ data['User']['Presence']['game']['star_rating_info']['score'] }}/5
                                 | Stars
+                        div.d-flex.justify-content-between
+                            div Price: {{ data['User']['Presence']['game']['price_on_retail'] }}
+                            div Released:
+                                b {{ data['User']['Presence']['game']['release_date_on_eshop'] }}
                     .modal-footer
+                        html {% if data['User']['Presence']['game']['name'] != 'Home Screen' %}
+                        button.btn.btn-secondary(type = 'button' onclick = "window.open(`https://www.google.com/search?q={{ '+'.join((data['User']['Presence']['game']['name'] + ' ' + data['User']['Presence']['game']['publisher']['name']).split(' ')) }}`, `_blank`);") Search Online
+                        html {% endif %}
                         button.btn.btn-primary(type = 'button' data-bs-dismiss = 'modal') Close
         html {% endif %}
 
@@ -49,7 +56,7 @@ block content
                             .text-muted.text-center Offline
                             html {% endif %}
                         html {% if data['User']['Presence']['gameDescription'] %}
-                        .card-footer.d-flex.align-items-center
+                        .card-footer.d-flex.align-items-center(style = 'background-color: inherit;')
                             .text-muted
                                 html.
                                   {% for i in data['User']['Presence']['gameDescription'].split('\n') %}
@@ -58,6 +65,14 @@ block content
                                   {% endfor %}
                         html {% endif %}
         .row
+            html {% if data['User']['message'] %}
+            .col-xl-2(style = 'padding-top: 25px')
+                .card
+                    .card-header(style = 'background-color: inherit;')
+                        b STATUS
+                    .card-body
+                        | {{ data['User']['message'] }}
+            html {% endif %}
             .col-xl-2(style = 'padding-top: 25px')
                 .card
                     .card-header(style = 'background-color: inherit;')

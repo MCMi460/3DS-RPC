@@ -35,11 +35,25 @@ block content
                             .card-footer.small.text-center.text-muted
                                 | Click here to view this user's profile!
                         html {% endfor %}
-                        
-
-            .col-xl-6
+            .col-xl-4
                 .card.mb-4
                     .card-header
                         i.fas.fa-chart-bar.me-1
-                        | Fun things!
+                        | Recently Joined Users...
                     .card-body
+                        html {% for i in data['new'] %}
+                        a(href = "/user/{{ i['friendCode'] }}", style = 'text-decoration: none; color: #000;').card.mb-4
+                            .card-body.d-flex.flex-row.flex-wrap.justify-content-center.align-items-begin
+                                div.d-flex.flex-column.align-items-center(style = 'padding-right: 10px; padding-bottom: 10px;')
+                                    | User:
+                                    img(src = "{{ i['mii']['face'] }}", height = '100vw', style = 'background: linear-gradient(0deg, rgb(255, 198, 147) 0%, rgb(254, 245, 239, 0.1) 100%);')
+                                    | {{ i['username'] }}
+                                html {% if i['game'] %}
+                                div.d-flex.flex-column.align-items-center.text-center.text-break(style = 'padding-left: 10px;')
+                                    | Currently playing game:
+                                    img(src = "{{ i['game']['banner_url'] }}", height = '100vw')
+                                    p(style = 'width: 200px;') {{ i['game']['name'] }}
+                                html {% endif %}
+                            .card-footer.small.text-center.text-muted
+                                | Click here to view this user's profile!
+                        html {% endfor %}

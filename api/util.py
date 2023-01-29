@@ -90,6 +90,8 @@ def getTitle(titleID, titlesToUID, titleDatabase):
             'score': '??',
         },
         'display_genre': '??',
+        'price_on_retail': '$??.??',
+        'release_date_on_eshop': '????-??-??',
         '@id': tid,
     }
     for game in titlesToUID:
@@ -115,6 +117,10 @@ def getTitle(titleID, titlesToUID, titleDatabase):
         # raise GameMatchError('unknown game: %s' % uid)
     if _pass:
         game = _pass
+
+    for key in _template.keys():
+        if not key in game.keys():
+            game[key] = _template[key]
 
     # Support browsers' security stuff
     game['icon_url'] = game['icon_url'].replace('https://kanzashi-ctr.cdn.nintendo.net/i/', '/cdn/i/')
