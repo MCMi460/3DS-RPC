@@ -57,6 +57,19 @@ block content
                                   <br>
                                   {% endfor %}
                         html {% endif %}
+        .row
+            .col-xl-2(style = 'padding-top: 25px')
+                .card
+                    .card-header(style = 'background-color: inherit;')
+                        b MEMBER SINCE
+                    .card-body
+                        | {{ data['User']['accountCreation'] }}
+            .col-xl-2(style = 'padding-top: 25px')
+                .card
+                    .card-header(style = 'background-color: inherit;')
+                        b LAST ONLINE
+                    .card-body
+                        | {{ data['User']['lastOnline'] }}
         .row.d-flex.justify-content-between(style = 'padding-top: 2rem;')
           .col-xl-7
               .card

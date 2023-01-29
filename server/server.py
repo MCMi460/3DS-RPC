@@ -88,7 +88,7 @@ def createUser(friendCode:int, addNewInstance:bool = False):
         convertFriendCodeToPrincipalId(friendCode)
         if not addNewInstance:
             raise Exception('UNIQUE constraint failed: friends.friendCode')
-        db.session.execute('INSERT INTO friends (friendCode, online, titleID, updID, lastAccessed, accountCreation) VALUES (\'%s\', %s, %s, %s, %s, %s)' % (str(friendCode).zfill(12), False, '0', '0', time.time() + 300, time.time()))
+        db.session.execute('INSERT INTO friends (friendCode, online, titleID, updID, lastAccessed, accountCreation, lastOnline) VALUES (\'%s\', %s, %s, %s, %s, %s, %s)' % (str(friendCode).zfill(12), False, '0', '0', time.time() + 300, time.time(), time.time()))
         db.session.commit()
     except Exception as e:
         if 'UNIQUE constraint failed: friends.friendCode' in str(e):
@@ -153,6 +153,9 @@ def getPresence(friendCode:int, *, créerCompte:bool = True, ignoreUserAgent = F
                 'username': result[6],
                 'message': result[7],
                 'mii': mii,
+                'accountCreation': result[5],
+                'lastAccessed': result[4],
+                'lastOnline': result[11],
             }
         }
     except Exception as e:
@@ -209,6 +212,16 @@ def userPage(friendCode:str):
         userData['User']['Presence']['game'] = getTitle(userData['User']['Presence']['titleID'], titlesToUID, titleDatabase)
     else:
         userData['User']['Presence']['game'] = None
+    for i in ('accountCreation','lastAccessed','lastOnline'):
+        if userData['User'][i] == 0:
+            userData['User'][i] = 'Never'
+        elif time.time() - userData['User'][i] > 86400:
+            userData['User'][i] = datetime.datetime.fromtimestamp(userData['User'][i]).strftime('%b %d, %Y')
+        elif time.time() - userData['User'][i] > 300:
+            s = str(datetime.timedelta(seconds = int(time.time() - userData['User'][i]))).split(':')
+            userData['User'][i] = s[0] + 'h, ' + s[1] + 'm, ' + s[2] + 's ago'
+        else:
+            userData['User'][i] = 'Just now'
     #print(userData) # COMMENT/DELETE THIS BEFORE COMMITTING
     userData.update(sidenav())
     response = make_response(render_template('dist/user.html', data = userData))

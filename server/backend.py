@@ -95,7 +95,7 @@ async def main():
 									gameDescription = game.presence.game_mode_description
 									joinable = bool(game.presence.join_availability_flag)
 
-									cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s, joinable = %s, gameDescription = \'%s\' WHERE friendCode = \'%s\'' % (True, game.presence.game_key.title_id, game.presence.game_key.title_version, joinable, gameDescription, str(convertPrincipalIdtoFriendCode(users[-1])).zfill(12)))
+									cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s, joinable = %s, gameDescription = \'%s\', lastOnline = %s WHERE friendCode = \'%s\'' % (True, game.presence.game_key.title_id, game.presence.game_key.title_version, joinable, gameDescription, time.time(), str(convertPrincipalIdtoFriendCode(users[-1])).zfill(12)))
 								for user in [ h for h in rotation if not h in users ]:
 									cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s WHERE friendCode = \'%s\'' % (False, 0, 0, str(convertPrincipalIdtoFriendCode(user)).zfill(12)))
 

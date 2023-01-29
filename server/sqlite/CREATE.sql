@@ -9,7 +9,8 @@ Create Table friends(
   message text,
   mii text,
   joinable boolean,
-  gameDescription text
+  gameDescription text,
+  lastOnline bigint NOT NULL
 );
 
 Create Table config(
