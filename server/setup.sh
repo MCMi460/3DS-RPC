@@ -13,10 +13,10 @@ then
 fi
 python3 -m venv venv
 source venv/bin/activate
-git clone https://github.com/MCMi460/anynet -b w/o-netifaces
+git clone https://github.com/MCMi460/anynet -b w/o-netifaces2
 cd anynet && python -m pip install . && cd ..
 rm -rf anynet
-git clone https://github.com/MCMi460/NintendoClients -b update-anynet
+git clone https://github.com/kinnay/NintendoClients
 cd NintendoClients && python -m pip install . && cd ..
 rm -rf NintendoClients
 python -m pip install -r requirements.txt

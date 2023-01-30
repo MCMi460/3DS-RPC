@@ -3,7 +3,6 @@
 
 from nintendo import nasc
 from nintendo.nex import backend, friends, settings, streams
-from nintendo.games import Friends3DS
 from nintendo.nex import common
 import anyio, time, sqlite3, sys
 sys.path.append('../')
@@ -43,15 +42,15 @@ async def main():
 
 				try:
 					client = nasc.NASCClient()
-					client.set_title(Friends3DS.TITLE_ID_USA, Friends3DS.LATEST_VERSION)
+					client.set_title(0x0004013000003202, 20)
 					client.set_device(SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME)
 					client.set_locale(REGION, LANGUAGE)
 					client.set_user(PID, PID_HMAC)
 
-					response = await client.login(Friends3DS.GAME_SERVER_ID)
+					response = await client.login(0x3200)
 
 					s = settings.load('friends')
-					s.configure(Friends3DS.ACCESS_KEY, Friends3DS.NEX_VERSION)
+					s.configure("ridfebb9", 20000)
 					async with backend.connect(s, response.host, response.port) as be:
 						async with be.login(str(PID), NEX_PASSWORD) as client:
 							friends_client = friends.FriendsClientV1(client)
@@ -107,19 +106,6 @@ async def main():
 								# And no matter how many trials I do with varying inputs, nothing works
 								# I do not give up, but until I figure it out, the slower method (get_friend_mii)
 								# will have to do.
-								# Here is where I left off:
-								#
-								#t2 = []
-								#for ti in t:
-								#	fff = FriendInfo()
-								#	fff.unk1 = ti.unk1
-								#	fff.unk2 = common.DateTime(int(time.time()))
-								#	t2.append(fff)
-								#try:
-								#	m = await friends_client.get_friend_mii_list(t2) # PythonCore::ConversionError
-								#except Exception as e:
-								#	print(logging.exception("message"))
-								#
 
 								for ti in t:
 									time.sleep(delay)
