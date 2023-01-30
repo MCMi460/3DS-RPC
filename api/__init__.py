@@ -2,7 +2,6 @@
 
 from .public import * # public
 from .love import * # fc2pi
-from .love2 import * # mii
 from .util import * # utility
 # --
 # Following is unnecessary for production

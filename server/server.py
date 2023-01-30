@@ -7,6 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 import sqlite3, requests, sys, os, time, json, multiprocessing, datetime, xmltodict, pickle
 sys.path.append('../')
 from api import *
+from api.love2 import *
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.abspath('sqlite/fcLibrary.db')

@@ -9,6 +9,7 @@ import anyio, time, sqlite3, sys
 sys.path.append('../')
 from api.private import SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME, REGION, LANGUAGE, PID, PID_HMAC, NEX_PASSWORD
 from api import *
+from api.love2 import *
 
 import logging
 logging.basicConfig(level=logging.INFO)
