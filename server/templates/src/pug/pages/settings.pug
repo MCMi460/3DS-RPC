@@ -1,17 +1,19 @@
-extends ../layouts/authentication.pug
+extends ../layouts/dashboard.pug
 
 block config
-    - var pageTitle = 'Settings'
-
-
+    - var bodyClass = 'sb-nav-fixed'
+    - var pageTitle = "Settings"
+    - var sidenavStyle = 'sb-sidenav-dark'
+    - var settings = true;
 
 block content
-    .container
-        .row.justify-content-center
+    .container-fluid.px-4
+        include includes/page-header.pug
+
+        .d-flex.justify-content-center
             .col-lg-10
-                .card.shadow-lg.border-0.rounded-lg.mt-5
+                .card.text-center
                     .card-header
-                        h3.text-center.font-weight-light.my-4 Settings
+                        b Settings
                     .card-body
-                        | These are some settings!
-                      
+                        | There's nothing here!

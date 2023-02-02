@@ -3,51 +3,67 @@ extends ../layouts/dashboard.pug
 block config
     - var bodyClass = 'sb-nav-fixed'
     - var pageTitle = "{{ data['User']['username'] }}"
+    - var fc = "{{ data['User']['friendCode'] }}"
     - var sidenavStyle = 'sb-sidenav-dark'
 
 block content
     .container-fluid.px-4
         include includes/page-header.pug
         
-        html {% if data['User']['Presence']['game'] %}
-        .modal.fade#gameInfo(tabindex = '-1', aria-labelledby = 'modelLabel', aria-hidden = 'true')
+        html {% for game in (data['User']['Presence']['game'], data['User']['favoriteGame']) %}
+        html {% if game %}
+        .modal.fade(tabindex = '-1', aria-labelledby = 'modelLabel', aria-hidden = 'true')
             .modal-dialog
                 .modal-content
                     .modal-header
                         h5.modal-title#modalLabel
-                            b {{ data['User']['Presence']['game']['name'] }}
-                            | by {{ data['User']['Presence']['game']['publisher']['name'] }}
+                            b {{ game['name'] }}
+                            | by {{ game['publisher']['name'] }}
                         button.btn-close(type = 'button' data-bs-dismiss = 'modal' aria-label = 'Close')
                     .modal-body
                         div
-                            img(src = "{{ data['User']['Presence']['game']['banner_url'] }}", style = "height: 100%; width: 100%;")
+                            img(src = "{{ game['banner_url'] }}", style = "height: 100%; width: 100%;")
                         div.d-flex.justify-content-between
-                            div Genre: {{ data['User']['Presence']['game']['display_genre'] }}
+                            div Genre: {{ game['display_genre'] }}
                             div Rating:
-                                b {{ data['User']['Presence']['game']['star_rating_info']['score'] }}/5
+                                b {{ game['star_rating_info']['score'] }}/5
                                 | Stars
                         div.d-flex.justify-content-between
-                            div Price: {{ data['User']['Presence']['game']['price_on_retail'] }}
+                            div Price: {{ game['price_on_retail'] }}
                             div Released:
-                                b {{ data['User']['Presence']['game']['release_date_on_eshop'] }}
+                                b {{ game['release_date_on_eshop'] }}
                     .modal-footer
-                        html {% if data['User']['Presence']['game']['name'] != 'Home Screen' %}
-                        button.btn.btn-secondary(type = 'button' onclick = "window.open(`https://www.google.com/search?q={{ '+'.join((data['User']['Presence']['game']['name'] + ' ' + data['User']['Presence']['game']['publisher']['name']).split(' ')) }}`, `_blank`);") Search Online
+                        html {% if game['name'] != 'Home Screen' %}
+                        button.btn.btn-secondary(type = 'button' onclick = "window.open(`https://www.google.com/search?q={{ '+'.join((game['name'] + ' ' + game['publisher']['name']).split(' ')) }}`, `_blank`);") Search Online
                         html {% endif %}
                         button.btn.btn-primary(type = 'button' data-bs-dismiss = 'modal') Close
+        html {% else %}
+        .modal.fade(tabindex = '-1', aria-labelledby = 'modelLabel', aria-hidden = 'true')
+            .modal-dialog
+                .modal-content
+                    .modal-footer
+                        button.btn.btn-primary(type = 'button' data-bs-dismiss = 'modal') Close
         html {% endif %}
+        html {% endfor %}
+
+        script.
+            let f = document.getElementsByClassName('modal');
+            for (let i = 0; i < f.length; i++)
+            {
+                f[i].id = 'ID' + i.toString();
+            }
 
         .row
             .col-sm-2.d-flex.align-items-end
                 img(src = "{{ data['User']['mii']['face'] }}", width = '100%', style = 'background: linear-gradient(0deg, rgb(255, 198, 147) 0%, rgb(254, 245, 239, 0.1) 100%);')
             .col-md-5
-                .row(style = 'padding-top: 25px')
+                .row(style = 'padding-top: 2rem;')
                     .card.text-center
                         html {% if data['User']['Presence']['game'] %}
                         .card-header(style = 'background-color: inherit;')
-                            | Currently playing...
+                            b CURRENTLY PLAYING
                         html {% endif %}
-                        a.card-body.d-flex.align-items-center.text-black(style = 'text-decoration: none;', data-bs-toggle="modal", href = '#gameInfo')
+                        a.card-body.d-flex.align-items-center.text-black(style = 'text-decoration: none;', data-bs-toggle="modal", href = '#ID0')
                             html {% if data['User']['Presence']['game'] %}
                             .col-md-2
                                 img(src = "{{ data['User']['Presence']['game']['icon_url'] }}", width = '100%')
@@ -66,30 +82,35 @@ block content
                         html {% endif %}
         .row
             html {% if data['User']['message'] %}
-            .col-xl-2(style = 'padding-top: 25px')
+            .col-xl-2(style = 'padding-top: 2rem')
                 .card
-                    .card-header(style = 'background-color: inherit;')
+                    .card-header
                         b STATUS
                     .card-body
                         | {{ data['User']['message'] }}
             html {% endif %}
-            .col-xl-2(style = 'padding-top: 25px')
+            .col-xl-2(style = 'padding-top: 2rem')
                 .card
-                    .card-header(style = 'background-color: inherit;')
+                    .card-header
                         b MEMBER SINCE
                     .card-body
                         | {{ data['User']['accountCreation'] }}
-            .col-xl-2(style = 'padding-top: 25px')
+            .col-xl-2(style = 'padding-top: 2rem')
                 .card
-                    .card-header(style = 'background-color: inherit;')
+                    .card-header
                         b LAST ONLINE
                     .card-body
                         | {{ data['User']['lastOnline'] }}
-        .row.d-flex.justify-content-between(style = 'padding-top: 2rem;')
-          .col-xl-7
-              .card
-                  .card-header(style = 'background-color: inherit;')
-                      i.fas.fa-chart-area.me-1
-                      | Activity Log
-                  .card-body
-                    
+        .row(style = 'padding-top: 2rem; padding-bottom: 2rem;')
+            .col-xl-6
+                .card
+                    .card-header
+                        b FAVORITE GAME
+                    a.card-body.d-flex.align-items-center.text-black(style = 'text-decoration: none;', data-bs-toggle="modal", href = '#ID1')
+                      html {% if data['User']['favoriteGame'] %}
+                      .col-md-2
+                          img(src = "{{ data['User']['favoriteGame']['icon_url'] }}", width = '100%')
+                      p(style = 'padding-left: 1rem;') {{ data['User']['favoriteGame']['name'] }}
+                      html {% else %}
+                      .text-muted.text-center None
+                      html {% endif %}

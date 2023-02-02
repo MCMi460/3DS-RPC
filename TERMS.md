@@ -22,8 +22,10 @@ Due to the nature of this app, it constantly scrapes the bot's friend list and s
 | `mii` | `text` |
 | `joinable` | `boolean` |
 | `gameDescription` | `text` |
+| `jeuFavori`\* | `bigint` |
 
-The above objects are scraped and stored by the friend bot.
+The above objects are scraped and stored by the friend bot.  
+\*`jeuFavori` is the user's favorite game
 
 <h3 id = 'article2'>How Do I Opt-Out?</h3>
 

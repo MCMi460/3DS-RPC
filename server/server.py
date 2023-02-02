@@ -35,7 +35,7 @@ def handler404(e):
 # Limiter limits
 userPresenceLimit = '3/minute'
 newUserLimit = '2/minute'
-cdnLimit = '20/minute'
+cdnLimit = '30/minute'
 
 # Database files
 titleDatabase = []
@@ -157,6 +157,7 @@ def getPresence(friendCode:int, *, créerCompte:bool = True, ignoreUserAgent = F
                 'accountCreation': result[5],
                 'lastAccessed': result[4],
                 'lastOnline': result[11],
+                'favoriteGame': result[12],
             }
         }
     except Exception as e:
@@ -212,18 +213,40 @@ def settings():
     response = make_response(render_template('dist/settings.html', data = sidenav()))
     return response
 
+# Register page
+@app.route('/register.html')
+def register():
+    response = make_response(render_template('dist/register.html'))
+    return response
+
+# Failure page
+@app.route('/failure.html')
+def failure():
+    return render_template('dist/failure.html')
+
+# Success page
+@app.route('/success.html')
+def success():
+    data = {
+        'url': 'user/' + request.args.get('fc'),
+    }
+    return render_template('dist/success.html', data = data)
+
 @app.route('/user/<string:friendCode>/')
 def userPage(friendCode:str):
     try:
-        userData = getPresence(int(friendCode), créerCompte = False, ignoreUserAgent = True, ignoreBackend = True)
+        userData = getPresence(int(friendCode.replace('-', '')), créerCompte = False, ignoreUserAgent = True, ignoreBackend = True)
         if userData['Exception'] or not userData['User']['username']:
             raise Exception(userData['Exception'])
     except:
-        return redirect('/404.html')
+        return render_template('dist/404.html')
     if userData['User']['online'] and userData['User']['Presence']:
         userData['User']['Presence']['game'] = getTitle(userData['User']['Presence']['titleID'], titlesToUID, titleDatabase)
     else:
         userData['User']['Presence']['game'] = None
+    userData['User']['favoriteGame'] = getTitle(userData['User']['favoriteGame'], titlesToUID, titleDatabase)
+    if userData['User']['favoriteGame']['name'] == 'Home Screen':
+        userData['User']['favoriteGame'] = None
     for i in ('accountCreation','lastAccessed','lastOnline'):
         if userData['User'][i] == 0:
             userData['User'][i] = 'Never'
@@ -250,9 +273,10 @@ def terms():
 # Create entry in database with friendCode
 @app.route('/api/user/create/<int:friendCode>/', methods=['POST'])
 @limiter.limit(newUserLimit)
-def newUser(friendCode:int):
+def newUser(friendCode:int, userCheck:bool = True):
     try:
-        userAgentCheck()
+        if userCheck:
+            userAgentCheck()
         createUser(friendCode, True)
         return {
             'Exception': False,
@@ -301,6 +325,16 @@ def cdnImage(file:str):
     response = make_response(requests.get('https://kanzashi-ctr.cdn.nintendo.net/i/%s' % file, verify = False).content)
     response.headers['Content-Type'] = 'image/jpeg'
     return response
+
+# Login route
+@app.route('/login', methods=['POST'])
+def login():
+    try:
+        fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(request.form['fc']))).zfill(12)
+        newUser(fc, False)
+    except:
+        return redirect('/failure.html')
+    return redirect(f'/success.html?fc={fc}')
 
 if __name__ == '__main__':
     cacheTitles()

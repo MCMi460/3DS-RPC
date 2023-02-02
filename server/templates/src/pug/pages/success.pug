@@ -1,0 +1,15 @@
+extends ../layouts/error.pug
+
+block content
+    .container
+        .row.justify-content-center
+            .col-lg-6
+                .text-center.mt-4
+                    h3 Your account has been created!
+                    p.lead But it'll take a minute or two for your profile to be loaded.
+                    a(href='/{{ data["url"] }}')
+                        | Try Profile
+                    br
+                    a(href='/')
+                        i.fas.fa-arrow-left.me-1
+                        | Return to Home

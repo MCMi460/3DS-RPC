@@ -1,5 +1,13 @@
 // Optionally, add white background to here as well. card.mb-X
-h1.mt-4 #{pageTitle}
+if index || settings
+    h1.mt-4 #{pageTitle}
+else
+    h1.mt-4
+        | #{pageTitle}
+        small(style = 'font-size: 0.7em;')#splitTHIS #{fc}
+script.
+    let x = document.getElementById('splitTHIS');
+    x.textContent = '(' + (x.textContent.match(/.{1,4}/g) ?? []).join('-') + ')';
 if index
     ol.breadcrumb.mb-4
         li.breadcrumb-item.active #{pageTitle}

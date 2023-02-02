@@ -12,16 +12,10 @@ nav.sb-topnav.navbar.navbar-expand.navbar-dark(id = 'topnav')
     form.d-none.d-md-inline-block.form-inline.ms-auto.me-0.me-md-3.my-2.my-md-0
 
     // What was once the account toolbar...
-    //-ul.navbar-nav.ms-auto.ms-md-0.me-3.me-lg-4
+    ul.navbar-nav.ms-auto.ms-md-0.me-3.me-lg-4
         li.nav-item.dropdown
             a#navbarDropdown.nav-link.dropdown-toggle(href='#' role='button' data-bs-toggle='dropdown' aria-expanded='false')
                 i.fas.fa-user.fa-fw
-            ul.dropdown-menu.dropdown-menu-end(aria-labelledby='navbarDropdown')#accountSymbol
+            ul.dropdown-menu.dropdown-menu-end(aria-labelledby='navbarDropdown')
                 li
-                    a.dropdown-item(href='settings.html') Settings
-                li
-                    a.dropdown-item(href='activity.html') Activity Log
-                li
-                    hr.dropdown-divider
-                li
-                    a.dropdown-item(href='logout') Logout
+                    a.dropdown-item(href='register.html') Register

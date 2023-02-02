@@ -112,21 +112,27 @@ async def main():
 
 									ti.unk2 = 0 # A cursed (but operable) 'hack'
 									try:
-										j1 = await friends_client.get_friend_comment([ti,])
+										j1 = await friends_client.get_friend_persistent_info([ti.unk1,])
 									except:
 										continue
+									comment = j1[0].message
+									jeuFavori = 0
 									username = ''
 									face = ''
-									if not j1[0].comment.endswith(' '):
+									if not comment.endswith(' '):
+										# Get user's mii + username from mii
 										m = await friends_client.get_friend_mii([ti,])
 										username = m[0].mii.unk1
 										mii_data = m[0].mii.mii_data
 										obj = MiiData()
 										obj.decode(obj.convert(io.BytesIO(mii_data)))
 										face = obj.mii_studio()['data']
+
+										# Get user's favorite game
+										jeuFavori = j1[0].game_key.title_id
 									else:
-										j1[0].comment = ''
-									cursor.execute('UPDATE friends SET username = \'%s\', message = \'%s\', mii = \'%s\' WHERE friendCode = \'%s\'' % (username, j1[0].comment, face, str(convertPrincipalIdtoFriendCode(ti.unk1)).zfill(12)))
+										comment = ''
+									cursor.execute('UPDATE friends SET username = \'%s\', message = \'%s\', mii = \'%s\', jeuFavori = \'%s\' WHERE friendCode = \'%s\'' % (username, comment, face, jeuFavori, str(convertPrincipalIdtoFriendCode(ti.unk1)).zfill(12)))
 									con.commit()
 
 							for friend in rotation + cleanUp:
