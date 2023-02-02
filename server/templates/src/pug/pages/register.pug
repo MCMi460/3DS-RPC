@@ -14,12 +14,16 @@ block content
                     .card-header
                         h3.text-center.font-weight-light.my-4 Register
                     .card-body
+                        h5.text-center Before registering, add the bot's friend code to your 3DS' friendlist:
+                        p.lead.text-center
+                            b {{ data['botFC'] }}
+                        
                         form(action = '/login', method = 'POST')
                             .form-floating.mb-3
                                 input#inputFC.form-control(type = 'text', placeholder = '1234-5678-9012', name = 'fc', value = '')
                                 label(for = 'inputFC') Friend Code
                             .d-flex.align-items-center.justify-content-end.mt-4.mb-0
-                                input.btn.btn-primary(type = 'submit', value = 'Login')
+                                input.btn.btn-primary(type = 'submit', value = 'Register')
                     .card-footer.text-center
                       .small
                         | By using this service, you agree to the

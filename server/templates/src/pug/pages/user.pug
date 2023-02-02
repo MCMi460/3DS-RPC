@@ -18,7 +18,8 @@ block content
                     .modal-header
                         h5.modal-title#modalLabel
                             b {{ game['name'] }}
-                            | by {{ game['publisher']['name'] }}
+                            | by
+                            b {{ game['publisher']['name'] }}
                         button.btn-close(type = 'button' data-bs-dismiss = 'modal' aria-label = 'Close')
                     .modal-body
                         div
@@ -41,6 +42,9 @@ block content
         .modal.fade(tabindex = '-1', aria-labelledby = 'modelLabel', aria-hidden = 'true')
             .modal-dialog
                 .modal-content
+                    .modal-header
+                        h5.modal-title#modalLabel
+                            b None
                     .modal-footer
                         button.btn.btn-primary(type = 'button' data-bs-dismiss = 'modal') Close
         html {% endif %}

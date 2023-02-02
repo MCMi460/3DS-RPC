@@ -216,7 +216,7 @@ def settings():
 # Register page
 @app.route('/register.html')
 def register():
-    response = make_response(render_template('dist/register.html'))
+    response = make_response(render_template('dist/register.html', data = {'botFC':'-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4))}))
     return response
 
 # Failure page
