@@ -43,7 +43,7 @@ QComboBox {
 }
 QPushButton {
   color: #ffffff;
-  background-color: #e60012;
+  background-color: #ff8000;
   border-radius: 10px;
   text-align: center;
 }
@@ -86,11 +86,6 @@ class GUI(Ui_MainWindow):
         threading.Thread(target = self.grabCode, daemon = True).start()
 
     def assignVariables(self):
-        self.comboBox = self.groupBox.findChild(QComboBox, 'comboBox')
-        self.comboBox.clear()
-
-        self.comboBox.addItems(get_args(_REGION))
-
         self.button2 = self.groupBox_2.findChild(QPushButton, 'pushButton_2')
         self.button2.clicked.connect(self.continueButton)
 
@@ -115,7 +110,7 @@ class GUI(Ui_MainWindow):
             friendCode = self.waitUntil()
         try:
             try:
-                client = Client(self.comboBox.currentText(), friendCode, GUI = True)
+                client = Client(friendCode, GUI = True)
             except (AssertionError, FriendCodeValidityError) as e:
                 if os.path.isfile(privateFile):
                     os.remove(privateFile)

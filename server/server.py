@@ -138,6 +138,8 @@ def getPresence(friendCode:int, *, créerCompte:bool = True, ignoreUserAgent = F
                 'updateID': result[3],
                 'joinable': bool(result[9]),
                 'gameDescription': result[10],
+                'game': getTitle(result[2], titlesToUID, titleDatabase),
+                'disclaimer': 'all information regarding the title (User/Presence/game) is downloaded from Nintendo APIs',
             }
         else:
             presence = {}

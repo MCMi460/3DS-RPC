@@ -28,18 +28,15 @@ path = getAppPath()
 privateFile = os.path.join(path, 'private.txt')
 
 class Client():
-    def __init__(self, region: _REGION, friendCode: str, *, GUI:bool = False, saveDatabases:bool = True):
+    def __init__(self, friendCode: str, *, GUI: bool = False):
         ### Maintain typing ###
-        assert region in get_args(_REGION), '\'%s\' does not match _REGION' % region # Region assertion
         friendCode = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12) # Friend Code check
         with open(privateFile, 'w') as file: # Save FC to file
             file.write(json.dumps({
                 'friendCode': friendCode,
-                'region': region,
             }))
 
-        # Region and FC variables
-        self.region = region
+        # FC variables
         self.friendCode = friendCode
 
         self.GUI = GUI
@@ -49,41 +46,8 @@ class Client():
         # Discord-related variables
         self.currentGame = {'@id': None}
 
-        # Pull databases
-        self.region = (self.region,)
-        if self.region[0] == 'ALL':
-            self.region = list(get_args(_REGION))
-            del self.region[0]
-        databasePath = os.path.join(path, 'databases.dat')
-        if os.path.isfile(databasePath):
-            with open(databasePath, 'rb') as file:
-                t = pickle.loads(file.read())
-                self.titleDatabase = t[0]
-                self.titlesToUID = t[1]
-        else:
-            self.titleDatabase = []
-            self.titlesToUID = []
-
-            if not self.GUI:bar = ProgressBar() # Create progress bar
-
-            for region in self.region:
-                self.titleDatabase.append(
-                    xmltodict.parse(requests.get('https://samurai.ctr.shop.nintendo.net/samurai/ws/%s/titles?shop_id=1&limit=5000&offset=0' % region, verify = False).text)
-                )
-                if not self.GUI:bar.update(.5 / len(self.region)) # Update progress bar
-                self.titlesToUID += requests.get('https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_%s.json' % region).json()
-                if not self.GUI:bar.update(.5 / len(self.region)) # Update progress bar
-
-            if not self.GUI:bar.end() # End the progress bar
-
-        # Save databases to file
-        if saveDatabases and not os.path.isfile(databasePath):
-            with open(databasePath, 'wb') as file:
-                file.write(pickle.dumps(
-                    (self.titleDatabase,
-                    self.titlesToUID)
-                ))
-            print('[Saved database to file]')
+        # Game logging
+        self.gameLog = []
 
     # Get from API
     def APIget(self, route:str, content:dict = {}):
@@ -122,26 +86,21 @@ class Client():
         return r
 
     def loop(self):
-        userData = self.fetch()
+        userData = self.fetch();self.userData = userData
         presence = userData['User']['Presence']
 
         _pass = None
         if userData['User']['online'] and presence:
 
-            game = getTitle(presence['titleID'], self.titlesToUID, self.titleDatabase)
-            if not game['icon_url']:
-                game['icon_url'] = ' '
+            game = presence['game']
 
-            print('Update', end = '')
+            log = 'Update'
             if self.currentGame != game:
-                print(' [%s -> %s]' % (self.currentGame['@id'], game['@id']), end = '')
+                log += ' [%s -> %s]' % (self.currentGame['@id'], game['@id'])
                 self.currentGame = game
                 self.start = int(time.time())
-            print()
             kwargs = {
                 'details': game['name'],
-                'large_image': game['icon_url'].replace('/cdn/i/', host + '/cdn/i/'),
-                'large_text': game['name'],
                 'start': self.start,
                 # buttons = [{'label': 'Label', 'url': 'http://DOMAIN.WHATEVER'},]
                 # eShop URL could be https://api.qrserver.com/v1/create-qr-code/?data=ESHOP://{uid}
@@ -149,33 +108,42 @@ class Client():
                 # Include View Profile setting?
                 # Certainly something when presence['joinable'] == True
             }
+            if game['icon_url']:
+                kwargs['large_image'] = game['icon_url'].replace('/cdn/i/', host + '/cdn/i/')
+                kwargs['large_text'] = game['name']
             if presence['gameDescription']:
                 kwargs['state'] = presence['gameDescription']
             if userData['User']['username']:
                 kwargs['buttons'] = [{'label': 'Profile', 'url': host + '/user/' + userData['User']['friendCode']},]
             self.rpc.update(**kwargs)
         else:
-            print('Clear [%s -> %s]' % (self.currentGame['@id'], None))
+            log = 'Clear [%s -> %s]' % (self.currentGame['@id'], None)
             self.currentGame = {'@id': None}
             self.rpc.clear()
+        self.gameLog.append(log)
 
     def background(self):
-        if self.GUI:
-            asyncio.set_event_loop(asyncio.new_event_loop())
+        try:
+            if self.GUI:
+                asyncio.set_event_loop(asyncio.new_event_loop())
 
-            import nest_asyncio
-            nest_asyncio.apply()
-            threading.Thread(target = __import__('IPython').embed, daemon = True).start()
-        self.connect()
+                import nest_asyncio
+                nest_asyncio.apply()
+                threading.Thread(target = __import__('IPython').embed, daemon = True).start()
 
-        self.login() # Create account if not yet existent
-        while True:
-            self.loop()
-            time.sleep(30) # Wait 30 seconds between calls
+                self.connect()
+
+            self.login() # Create account if not yet existent
+            while True:
+                self.loop()
+                time.sleep(30) # Wait 30 seconds between calls
+        except Exception as e:
+            print(Color.RED + 'Failed')
+            print(e)
+            os._exit(0)
 
 def main():
     friendCode = None
-    region = None
 
     # Create directory for logging and friend code saving
     if not os.path.isdir(path):
@@ -189,25 +157,19 @@ def main():
         with open(privateFile, 'r') as file:
             js = json.loads(file.read())
             friendCode = js['friendCode']
-            region = js.get('region')
-    if not region:
-        region = input('Please enter your 3DS\' region [%s]\n%s(You may enter \'ALL\' if you are planning to play with multiple regions\' games)%s\n> %s' % (', '.join(get_args(_REGION)), Color.YELLOW, Color.DEFAULT, Color.PURPLE))
-        print(Color.DEFAULT, end = '')
-        if region == 'ALL':
-            r = input('- %sEnabling ALL regions may take a few minutes to download. Is this agreeable?%s\n- > %s' % (Color.RED, Color.DEFAULT, Color.PURPLE))
-            r = r.strip().lower()
-            if not r.startswith('y') and not 'yes' in r:
-                return
-        print(Color.DEFAULT + 'Downloading files...')
 
     try:
-        client = Client(region, friendCode)
+        client = Client(friendCode)
     except (AssertionError, FriendCodeValidityError) as e:
         if os.path.isfile(privateFile):
             os.remove(privateFile)
         raise e
 
-    client.background() # Start client background, but leave on main thread
+    threading.Thread(target = client.background, daemon = True).start() # Start client background
+
+    # Begin main thread for user configuration
+    con = Console(client)
+    con._main()
 
 if __name__ == '__main__':
     main()

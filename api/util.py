@@ -4,6 +4,7 @@ import os, sys
 import sqlite3
 import time
 import threading
+import readline
 
 def getAppPath(): # Credit to @HotaruBlaze
     applicationPath = os.path.expanduser('~/Documents/3DS-RPC')
@@ -29,7 +30,7 @@ def startDBTime(time):
     	con.commit()
 
 try:
-    terminalSize = os.get_terminal_size().columns - 2
+    terminalSize = os.get_terminal_size(0).columns - 2
 except OSError:
     terminalSize = 40
 
@@ -129,6 +130,77 @@ def getTitle(titleID, titlesToUID, titleDatabase):
     game['banner_url'] = game['banner_url'].replace('https://kanzashi-ctr.cdn.nintendo.net/i/', '/cdn/i/')
 
     return game
+
+class Console():
+    def __init__(self, client: object, *, prefix:str = '/'):
+        self.prefix = prefix
+        self.client = client
+        self.commands = {}
+        for func in dir(self):
+            if callable(getattr(self, func)) and not func.startswith('_'):
+                function = getattr(self, func)
+                self.commands[func] = {
+                    'function': function,
+                    'docstring': str(function.__doc__).strip(),
+                }
+
+        self.tip = ('Type \'%shelp\' to view the configuration menu' % self.prefix, Color.YELLOW)
+
+    def _main(self):
+        self._log(*self.tip)
+        while True:
+            userInput = input(Color.DEFAULT + '> ' + Color.PURPLE).strip().lower()
+
+            if userInput[0] == self.prefix:
+                try:
+                    self.commands[userInput[1:]]['function']()
+                except KeyError:
+                    self._missingCommand(userInput[1:])
+            else:
+                self._log('\'%s\'' % userInput, Color.GREEN)
+
+    def _log(self, text:str, color:str = Color.DEFAULT):
+        text = color + str(text)
+        print(text)
+        return text
+
+    def _missingCommand(self, command:str):
+        return self._log('\'%s\' is not a real command!' % command, Color.RED), self._log(*self.tip)
+
+    def exit(self):
+        """
+        Quits application
+        """
+        sys.exit(Color.RED + 'Exiting...')
+
+    def help(self):
+        """
+        Shows a formatted list of all available commands
+        """
+        return self._log('\n'.join(( '/%s: %s' % (key, self.commands[key]['docstring']) for key in self.commands.keys())), Color.BLUE)
+
+    def status(self):
+        """
+        Shows your current status
+        """
+        text = [
+            '%s: %s' % ('Exception', self.client.userData['Exception']),
+            '%s: %s' % ('Friend Code', self.client.userData['User']['friendCode']),
+            '%s: %s' % ('Online', self.client.userData['User']['online']),
+            '%s: %s' % ('Message', self.client.userData['User']['message']),
+        ]
+        if self.client.userData['User']['username']:
+            text.append('%s: %s' % ('Username', self.client.userData['User']['username']))
+            text.append('%s: %s' % ('Mii', self.client.userData['User']['mii']['face']))
+        if self.client.userData['User']['online']:
+            text.append('%s: %s' % ('Game', self.client.userData['User']['Presence']['game']['name']))
+        return self._log('\n'.join(text), Color.BLUE)
+
+    def log(self):
+        """
+        Shows activity log
+        """
+        return self._log('\n'.join(self.client.gameLog), Color.BLUE)
 
 class APIException(Exception):
     pass
