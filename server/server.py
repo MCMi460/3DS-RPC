@@ -17,7 +17,7 @@ limiter = Limiter(app, key_func = get_remote_address)
 
 local = False
 port = 2277
-version = 0.3
+version = 0.31
 agent = '3DS-RPC/'
 
 startTime = time.time() # Frontend

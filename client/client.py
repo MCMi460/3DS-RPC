@@ -12,7 +12,7 @@ from typing import Literal, get_args
 requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
 local = False
-version = 0.3
+version = 0.31
 
 host = 'https://3ds.mi460.dev' # Change the host as you'd wish
 if local:
