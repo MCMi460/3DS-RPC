@@ -4,7 +4,10 @@ import os, sys
 import sqlite3
 import time
 import threading
-import readline
+if os.name == 'nt':
+    import pyreadline3
+else:
+    import readline
 import typing
 
 def getAppPath(): # Credit to @HotaruBlaze
