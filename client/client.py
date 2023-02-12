@@ -7,7 +7,6 @@ import asyncio, threading
 sys.path.append('../')
 from api import *
 import pypresence
-from typing import Literal, get_args
 
 requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
@@ -23,7 +22,7 @@ if local:
 ## on running your own front and backend.
 convertFriendCodeToPrincipalId(botFC) # A quick verification check
 
-_REGION = Literal['ALL', 'US', 'JP', 'GB', 'KR', 'TW']
+_REGION = typing.Literal['ALL', 'US', 'JP', 'GB', 'KR', 'TW']
 path = getAppPath()
 privateFile = os.path.join(path, 'private.txt')
 
@@ -39,10 +38,10 @@ class Client():
         # FC variables
         self.friendCode = friendCode
 
+        # Client-config
         self.GUI = GUI
-        if not self.GUI:
-            # Connect to Discord
-            self.connect()
+        self.connected = False
+
         # Discord-related variables
         self.currentGame = {'@id': None}
 
@@ -58,9 +57,19 @@ class Client():
         return requests.post(host + '/api/' + route, data = content, headers = {'User-Agent':'3DS-RPC/%s' % version,})
 
     # Connect to PyPresence
-    def connect(self):
-        self.rpc = pypresence.Presence('1023094010383970304')
+    def connect(self, pipe:int = 0):
+        self.rpc = pypresence.Presence('1023094010383970304', pipe = pipe)
         self.rpc.connect()
+        self.connected = True
+
+    # Disconnect
+    def disconnect(self):
+        try:self.rpc.clear()
+        except:pass
+        try:self.rpc.close()
+        except:pass
+        self.rpc = None
+        self.connected = False
 
     def login(self):
         r = self.APIpost('user/create/%s' % self.friendCode)
@@ -115,11 +124,11 @@ class Client():
                 kwargs['state'] = presence['gameDescription']
             if userData['User']['username']:
                 kwargs['buttons'] = [{'label': 'Profile', 'url': host + '/user/' + userData['User']['friendCode']},]
-            self.rpc.update(**kwargs)
+            if self.connected:self.rpc.update(**kwargs)
         else:
             log = 'Clear [%s -> %s]' % (self.currentGame['@id'], None)
             self.currentGame = {'@id': None}
-            self.rpc.clear()
+            if self.connected:self.rpc.clear()
         self.gameLog.append(log)
 
     def background(self):
@@ -131,7 +140,8 @@ class Client():
                 nest_asyncio.apply()
                 threading.Thread(target = __import__('IPython').embed, daemon = True).start()
 
-                self.connect()
+                self.connect() # Connect to Discord
+                # Consider removing this here ^^ @MCMi460
 
             self.login() # Create account if not yet existent
             while True:

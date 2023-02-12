@@ -5,6 +5,7 @@ import sqlite3
 import time
 import threading
 import readline
+import typing
 
 def getAppPath(): # Credit to @HotaruBlaze
     applicationPath = os.path.expanduser('~/Documents/3DS-RPC')
@@ -144,20 +145,18 @@ class Console():
                     'docstring': str(function.__doc__).strip(),
                 }
 
-        self.tip = ('Type \'%shelp\' to view the configuration menu' % self.prefix, Color.YELLOW)
+        self.tip = ('Type \'help\' to view the configuration menu', Color.YELLOW)
 
     def _main(self):
         self._log(*self.tip)
         while True:
             userInput = input(Color.DEFAULT + '> ' + Color.PURPLE).strip().lower()
+            args = userInput.split(' ')
 
-            if userInput[0] == self.prefix:
-                try:
-                    self.commands[userInput[1:]]['function']()
-                except KeyError:
-                    self._missingCommand(userInput[1:])
-            else:
-                self._log('\'%s\'' % userInput, Color.GREEN)
+            try:
+                self.commands[args[0]]['function'](*args[1:])
+            except KeyError:
+                self._missingCommand(userInput)
 
     def _log(self, text:str, color:str = Color.DEFAULT):
         text = color + str(text)
@@ -177,7 +176,13 @@ class Console():
         """
         Shows a formatted list of all available commands
         """
-        return self._log('\n'.join(( '/%s: %s' % (key, self.commands[key]['docstring']) for key in self.commands.keys())), Color.BLUE)
+        return self._log('\n'.join(( '%s: %s' % (key, self.commands[key]['docstring']) for key in self.commands.keys())), Color.BLUE)
+
+    def clear(self):
+        """
+        Clears the console
+        """
+        return print('\033[H\033[J', end = '')
 
     def status(self):
         """
@@ -195,6 +200,16 @@ class Console():
         if self.client.userData['User']['online']:
             text.append('%s: %s' % ('Game', self.client.userData['User']['Presence']['game']['name']))
         return self._log('\n'.join(text), Color.BLUE)
+
+    def discord(self, directive:typing.Literal['connect', 'disconnect'] = 'connect', pipe:int = 0):
+        """
+        Utility for connecting to Discord
+        """
+        if directive == 'connect':
+            self.client.connect(pipe)
+        else:
+            self.client.disconnect()
+        return self._log('Done', Color.BLUE)
 
     def log(self):
         """
