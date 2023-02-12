@@ -26,14 +26,25 @@ _REGION = typing.Literal['ALL', 'US', 'JP', 'GB', 'KR', 'TW']
 path = getAppPath()
 privateFile = os.path.join(path, 'private.txt')
 
+# Config template
+configTemplate = {
+    'friendCode': '',
+    'showElapsed': True,
+    'showProfileButton': True,
+    'fetchTime': 30,
+}
+
 class Client():
-    def __init__(self, friendCode: str, *, GUI: bool = False):
+    def __init__(self, friendCode: str, config:dict, *, GUI: bool = False):
         ### Maintain typing ###
         friendCode = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12) # Friend Code check
-        with open(privateFile, 'w') as file: # Save FC to file
-            file.write(json.dumps({
-                'friendCode': friendCode,
-            }))
+        with open(privateFile, 'w') as file: # Save FC and config to file
+            js = configTemplate
+            js['friendCode'] = friendCode
+            for key in config.keys():
+                if key in configTemplate.keys():
+                    js[key] = config[key]
+            file.write(json.dumps(js))
 
         # FC variables
         self.friendCode = friendCode
@@ -44,9 +55,20 @@ class Client():
 
         # Discord-related variables
         self.currentGame = {'@id': None}
+        self.showElapsed = js['showElapsed']
+        self.showProfileButton = js['showProfileButton']
+        self.fetchTime = js['fetchTime']
 
         # Game logging
         self.gameLog = []
+
+    # Reflect to config file
+    def reflectConfig(self):
+        with open(privateFile, 'w') as file:
+            js = configTemplate
+            for key in js.keys():
+                js[key] = self.__dict__[key]
+            file.write(json.dumps(js))
 
     # Get from API
     def APIget(self, route:str, content:dict = {}):
@@ -57,7 +79,7 @@ class Client():
         return requests.post(host + '/api/' + route, data = content, headers = {'User-Agent':'3DS-RPC/%s' % version,})
 
     # Connect to PyPresence
-    def connect(self, pipe:int = 0):
+    def connect(self, pipe:str = '0'):
         self.rpc = pypresence.Presence('1023094010383970304', pipe = pipe)
         self.rpc.connect()
         self.connected = True
@@ -110,7 +132,6 @@ class Client():
                 self.start = int(time.time())
             kwargs = {
                 'details': game['name'],
-                'start': self.start,
                 # buttons = [{'label': 'Label', 'url': 'http://DOMAIN.WHATEVER'},]
                 # eShop URL could be https://api.qrserver.com/v1/create-qr-code/?data=ESHOP://{uid}
                 # But... that wouldn't be very convenient. It's unfortunate how Nintendo does not have an eShop website for the 3DS
@@ -122,8 +143,10 @@ class Client():
                 kwargs['large_text'] = game['name']
             if presence['gameDescription']:
                 kwargs['state'] = presence['gameDescription']
-            if userData['User']['username']:
+            if userData['User']['username'] and self.showProfileButton:
                 kwargs['buttons'] = [{'label': 'Profile', 'url': host + '/user/' + userData['User']['friendCode']},]
+            if self.showElapsed:
+                kwargs['start'] = self.start
             if self.connected:self.rpc.update(**kwargs)
         else:
             log = 'Clear [%s -> %s]' % (self.currentGame['@id'], None)
@@ -146,7 +169,7 @@ class Client():
             self.login() # Create account if not yet existent
             while True:
                 self.loop()
-                time.sleep(30) # Wait 30 seconds between calls
+                time.sleep(self.fetchTime) # Wait 30 seconds between calls
         except Exception as e:
             print(Color.RED + 'Failed')
             print(e)
@@ -158,18 +181,24 @@ def main():
     # Create directory for logging and friend code saving
     if not os.path.isdir(path):
         os.mkdir(path)
-    if not os.path.isfile(privateFile):
+    try:
+        if os.path.isfile(privateFile):
+            with open(privateFile, 'r') as file:
+                js = json.loads(file.read())
+                friendCode = js['friendCode']
+                config = js
+                del config['friendCode']
+        else:
+            raise Exception()
+    except:
         print('%sPlease take this time to add the bot\'s FC to your target 3DS\' friends list.\n%sBot FC: %s%s' % (Color.YELLOW, Color.DEFAULT, Color.BLUE, '-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4))))
         input('%s[Press enter to continue]%s' % (Color.GREEN, Color.DEFAULT))
         friendCode = input('Please enter your 3DS\' friend code\n> %s' % Color.PURPLE)
+        config = {}
         print(Color.DEFAULT, end = '')
-    else:
-        with open(privateFile, 'r') as file:
-            js = json.loads(file.read())
-            friendCode = js['friendCode']
 
     try:
-        client = Client(friendCode)
+        client = Client(friendCode, config)
     except (AssertionError, FriendCodeValidityError) as e:
         if os.path.isfile(privateFile):
             os.remove(privateFile)

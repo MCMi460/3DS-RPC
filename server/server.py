@@ -27,6 +27,12 @@ startTime2 = 0 # Backend
 def handler404(e):
     return render_template('dist/404.html')
 
+disableBackendWarnings = False
+try:
+    if sys.argv[1] == 'ignoreBackend' and local:
+        disableBackendWarnings = True
+except:pass
+
 # Limiter limits
 userPresenceLimit = '3/minute'
 newUserLimit = '2/minute'
@@ -117,7 +123,7 @@ def getPresence(friendCode:int, *, créerCompte:bool = True, ignoreUserAgent = F
         result = db.session.execute('SELECT BACKEND_UPTIME FROM config')
         result = result.fetchone()
         startTime2 = result[0]
-        if startTime2 == 0 and not ignoreBackend:
+        if startTime2 == 0 and not ignoreBackend and not disableBackendWarnings:
             raise Exception('backend currently offline. please try again later')
         friendCode = str(friendCode).zfill(12)
         if créerCompte:

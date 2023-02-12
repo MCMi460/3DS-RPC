@@ -161,6 +161,10 @@ class Console():
                 self.commands[args[0]]['function'](*args[1:])
             except KeyError:
                 self._missingCommand(userInput)
+            except AssertionError:
+                self._missingSubcommand(args)
+            except:
+                self._log(traceback.format_exc().strip(), Color.RED)
 
     def _log(self, text:str, color:str = Color.DEFAULT):
         text = color + str(text)
@@ -170,17 +174,25 @@ class Console():
     def _missingCommand(self, command:str):
         return self._log('\'%s\' is not a real command!' % command, Color.RED), self._log(*self.tip)
 
+    def _missingSubcommand(self, args:list):
+        return self._log('\'%s\' is not a supported subcommand of \'%s\'!' % (args[1], args[0]), Color.RED)
+
     def exit(self):
         """
         Quits application
         """
-        sys.exit(Color.RED + 'Exiting...')
+        self._log('Exiting...', Color.RED)
+        return os._exit(0)
 
-    def help(self):
+    def help(self, command:str = None):
         """
         Shows a formatted list of all available commands
+        self, command:str
         """
-        return self._log('\n'.join(( '%s: %s' % (key, self.commands[key]['docstring']) for key in self.commands.keys())), Color.YELLOW)
+        if not command:
+            return self._log('\n'.join(( '%s: %s' % (key, self.commands[key]['docstring']) for key in self.commands.keys())), Color.YELLOW)
+        assert command in self.commands.keys()
+        return self._log(( '%s: %s' % (command, self.commands[command]['docstring'])), Color.YELLOW)
 
     def clear(self):
         """
@@ -205,20 +217,59 @@ class Console():
             text.append('%s: %s' % ('Game', self.client.userData['User']['Presence']['game']['name']))
         return self._log('\n'.join(text), Color.BLUE)
 
-    def discord(self, directive:typing.Literal['connect', 'disconnect'] = 'connect', pipe:int = 0):
+    def discord(self, command:typing.Literal['connect', 'disconnect'] = 'connect', pipe:int = '0'):
         """
         Utility for connecting to Discord
-        self, directive:['connect', 'disconnect'] = 'connect', pipe:int = 0
-        Pipe refers to which Discord client to connect to. May be rather fickle.
+        self, command:['connect', 'disconnect'] = 'connect', pipe:int = 0
+        Pipe (0 - 9) refers to which Discord client to connect to. May be rather fickle.
         """
-        try:
-            if directive == 'connect':
-                self._log('Attempting to connect to Discord...', Color.YELLOW)
-                self.client.connect(pipe)
+        assert command in typing.get_args(self.discord.__annotations__['command'])
+        if command == 'connect':
+            self._log('Attempting to connect to Discord...', Color.YELLOW)
+            self.client.connect(pipe)
+        else:
+            self._log('Attempting to disconnect from Discord...', Color.YELLOW)
+            self.client.disconnect()
+        return self._log('Done', Color.BLUE)
+
+    def config(self, command:typing.Literal['help', 'profilebutton', 'elapsedtime', 'fetchtime'] = None, setVar = None):
+        """
+        Allows configuration of various things (use 'config help' to see more)
+        self, command:['help', 'profilebutton', 'elapsedtime', 'fetchtime'] = None, setVar = None
+        """
+        if not command:
+            command = 'help'
+        assert command in typing.get_args(self.config.__annotations__['command'])
+        self.dict = {
+            'help': 'Shows configuration help',
+            'profilebutton': '(on/off) Toggle the profile button on Discord',
+            'elapsedtime': '(on/off) Toggle whether elapsed time is shown on Discord',
+            'fetchtime': '(any number) Set time between user-fetches. Minimum is 20 seconds to prevent rate-limimting',
+        }
+        if self.dict[command].startswith('(on/off)') and setVar:
+            if setVar in ('yes', 'on', 'true', 'enable'):
+                setVar = True
             else:
-                self.client.disconnect()
-        except:
-            self._log(traceback.format_exc(), Color.RED)
+                setVar = False
+        if setVar == None:
+            setVar = ''
+        if command == 'help':
+            return self._log('\n'.join(( '%s%s:%s %s' % (Color.RED, key, Color.YELLOW, self.dict[key]) for key in self.dict.keys())), Color.YELLOW)
+        elif command == 'profilebutton':
+            if setVar == '':
+                return self._log('Currently: ' + str(self.client.showProfileButton), Color.BLUE)
+            self.client.showProfileButton = setVar
+        elif command == 'elapsedtime':
+            if setVar == '':
+                return self._log('Currently: ' + str(self.client.showElapsed), Color.BLUE)
+            self.client.showElapsed = setVar
+        elif command == 'fetchtime':
+            if setVar == '':
+                return self._log('Currently: ' + str(self.client.fetchTime), Color.BLUE)
+            if int(setVar) < 20:
+                setVar = 20
+            self.client.fetchTime = int(setVar)
+        self.client.reflectConfig()
         return self._log('Done', Color.BLUE)
 
     def log(self):
