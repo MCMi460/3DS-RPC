@@ -23,10 +23,6 @@ startTime = time.time() # Frontend
 startDBTime(0)
 startTime2 = 0 # Backend
 
-@app.errorhandler(429)
-def ratelimit_handler(e):
-    return 'You have exceeded your rate-limit. Please wait a bit before trying that again.'
-
 @app.errorhandler(404)
 def handler404(e):
     return render_template('dist/404.html')

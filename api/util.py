@@ -223,6 +223,15 @@ class Console():
         """
         return self._log('\n'.join(self.client.gameLog), Color.BLUE)
 
+# Exception handling
+def APIExcept(r):
+    text = r.text
+    if '429' in r.text:
+        text = 'You have reached your rate-limit for this resource.'
+    elif '500' in r.text:
+        text = 'The frontend is offline.'
+    raise APIException(text)
+
 class APIException(Exception):
     pass
 

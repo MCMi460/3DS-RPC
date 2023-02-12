@@ -76,7 +76,7 @@ class Client():
         try:
             r = r.json()
         except:
-            raise APIException(r.content)
+            APIExcept(r)
         if r['Exception']:
             if not 'UNIQUE constraint failed: friends.friendCode' in r['Exception']['Error']:
                 raise APIException(r['Exception'])
@@ -87,7 +87,7 @@ class Client():
         try:
             r = r.json()
         except:
-            raise APIException(r.content)
+            APIExcept(r)
         if r['Exception']:
             if 'not recognized' in r['Exception']['Error']:
                 print('%sRemember, the bot\'s friend code is as follows:\n%s%s' % (Color.YELLOW, '-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4)), Color.DEFAULT))
