@@ -73,10 +73,13 @@ async def main():
 								for ID in rotation:
 									if ID not in [ f.unk1 for f in t ]:
 										removeList.append(ID)
-							for t1 in t:
-								if not t1.unk1 in rotation:
+							x = t
+							t = []
+							for t1 in x:
+								if t1.unk1 in rotation:
+									t.append(t1)
+								else:
 									cleanUp.append(t1.unk1)
-									t.remove(t1)
 
 							for remover in removeList:
 								cursor.execute('DELETE FROM friends WHERE friendCode = \'%s\'' % str(convertPrincipalIdtoFriendCode(remover)).zfill(12))
