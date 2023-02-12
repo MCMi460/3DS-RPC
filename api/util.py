@@ -176,7 +176,7 @@ class Console():
         """
         Shows a formatted list of all available commands
         """
-        return self._log('\n'.join(( '%s: %s' % (key, self.commands[key]['docstring']) for key in self.commands.keys())), Color.BLUE)
+        return self._log('\n'.join(( '%s: %s' % (key, self.commands[key]['docstring']) for key in self.commands.keys())), Color.YELLOW)
 
     def clear(self):
         """
@@ -204,8 +204,11 @@ class Console():
     def discord(self, directive:typing.Literal['connect', 'disconnect'] = 'connect', pipe:int = 0):
         """
         Utility for connecting to Discord
+        self, directive:['connect', 'disconnect'] = 'connect', pipe:int = 0
+        Pipe refers to which Discord client to connect to. May be rather fickle.
         """
         if directive == 'connect':
+            self._log('Attempting to connect to Discord...', Color.YELLOW)
             self.client.connect(pipe)
         else:
             self.client.disconnect()

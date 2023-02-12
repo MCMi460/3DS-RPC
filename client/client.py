@@ -179,6 +179,10 @@ def main():
 
     # Begin main thread for user configuration
     con = Console(client)
+    try:
+        con.discord('connect')
+    except Exception as e:
+        con._log('\'%s\'\nFailed to connect to Discord! Try again with the \'discord\' command' % e, Color.RED)
     con._main()
 
 if __name__ == '__main__':
