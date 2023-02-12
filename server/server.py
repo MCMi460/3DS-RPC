@@ -2,7 +2,6 @@
 
 from flask import Flask, make_response, request, redirect, render_template
 from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
 import sqlite3, requests, sys, os, time, json, multiprocessing, datetime, xmltodict, pickle
 sys.path.append('../')
@@ -13,7 +12,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.abspath('sqlite/fcLibrary.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
-limiter = Limiter(app, key_func = get_remote_address)
+limiter = Limiter(app, key_func = lambda : request.access_route[-1])
 
 local = False
 port = 2277
