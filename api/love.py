@@ -18,9 +18,9 @@ class PrincipalIDValidityError(Exception):
 def convertFriendCodeToPrincipalId(friendCode:str) -> int:
     friendCode = ''.join(filter(str.isdigit, str(friendCode)))
     if len(friendCode) != 12: raise FriendCodeValidityError('an invalid friend code was passed') # Remove chances of friendCode being invalid
-    checksumPrincipal = str(hex(int(friendCode))) # Convert friendCode into hexadecimal
-    principalId = int(checksumPrincipal[4:], 16) # Remove most significant byte and convert to integer
-    checksumByte = hex(int(checksumPrincipal[2:][:2], 16)) # Separate checksum from checksumPrincipal
+    checksumPrincipal = ('%08X' % int(friendCode)).zfill(10) # Convert friendCode into hexadecimal
+    principalId = int(checksumPrincipal[2:], 16) # Remove most significant byte and convert to integer
+    checksumByte = hex(int(checksumPrincipal[:2], 16)) # Separate checksum from checksumPrincipal
     if not checkPrincipalIdValidity(checksumByte, principalId): raise FriendCodeValidityError('an invalid friend code was passed')
     return principalId
 
