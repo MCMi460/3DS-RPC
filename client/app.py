@@ -4,7 +4,6 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from layout import Ui_MainWindow
-import traceback
 from client import *
 from client import _REGION
 

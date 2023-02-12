@@ -4,6 +4,7 @@ import os, sys
 import sqlite3
 import time
 import threading
+import traceback
 if os.name == 'nt':
     import pyreadline3
 else:
@@ -210,11 +211,14 @@ class Console():
         self, directive:['connect', 'disconnect'] = 'connect', pipe:int = 0
         Pipe refers to which Discord client to connect to. May be rather fickle.
         """
-        if directive == 'connect':
-            self._log('Attempting to connect to Discord...', Color.YELLOW)
-            self.client.connect(pipe)
-        else:
-            self.client.disconnect()
+        try:
+            if directive == 'connect':
+                self._log('Attempting to connect to Discord...', Color.YELLOW)
+                self.client.connect(pipe)
+            else:
+                self.client.disconnect()
+        except:
+            self._log(traceback.format_exc(), Color.RED)
         return self._log('Done', Color.BLUE)
 
     def log(self):
