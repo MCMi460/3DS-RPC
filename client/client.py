@@ -13,11 +13,11 @@ requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.
 local = False
 version = 0.31
 
-host = 'https://3ds.mi460.dev' # Change the host as you'd wish
+host = 'https://3dsrpc.com' # Change the host as you'd wish
 if local:
     host = 'http://127.0.0.1:2277'
 
-## The below contains 3ds.mi460.dev-specific information
+## The below contains 3dsrpc.com-specific information
 ## You will have to provide your own 'bot' FC if you are planning
 ## on running your own front and backend.
 convertFriendCodeToPrincipalId(botFC) # A quick verification check
