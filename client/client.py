@@ -148,7 +148,7 @@ class Client():
                 kwargs['buttons'] = [{'label': 'Profile', 'url': host + '/user/' + userData['User']['friendCode']},]
             if self.showElapsed:
                 kwargs['start'] = self.start
-            if self.showSmallImage and userData['User']['username']:
+            if self.showSmallImage and userData['User']['username'] and game['icon_url']:
                 kwargs['small_image'] = userData['User']['mii']['face']
                 kwargs['small_text'] = '-'.join(userData['User']['friendCode'][i:i+4] for i in range(0, 12, 4))
             if self.connected:self.rpc.update(**kwargs)
