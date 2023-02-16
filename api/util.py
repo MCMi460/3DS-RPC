@@ -232,10 +232,10 @@ class Console():
             self.client.disconnect()
         return self._log('Done', Color.BLUE)
 
-    def config(self, command:typing.Literal['help', 'profilebutton', 'elapsedtime', 'fetchtime'] = None, setVar = None):
+    def config(self, command:typing.Literal['help', 'profilebutton', 'elapsedtime', 'smallimage', 'fetchtime'] = None, setVar = None):
         """
         Allows configuration of various things (use 'config help' to see more)
-        self, command:['help', 'profilebutton', 'elapsedtime', 'fetchtime'] = None, setVar = None
+        self, command:['help', 'profilebutton', 'elapsedtime', 'smallimage', 'fetchtime'] = None, setVar = None
         """
         if not command:
             command = 'help'
@@ -244,6 +244,7 @@ class Console():
             'help': 'Shows configuration help',
             'profilebutton': '(on/off) Toggle the profile button on Discord',
             'elapsedtime': '(on/off) Toggle whether elapsed time is shown on Discord',
+            'smallimage': '(on/off) Toggle whether a small image with the user\'s mii is shown on Discord',
             'fetchtime': '(any number) Set time between user-fetches. Minimum is 20 seconds to prevent rate-limimting',
         }
         if self.dict[command].startswith('(on/off)') and setVar:
@@ -263,6 +264,10 @@ class Console():
             if setVar == '':
                 return self._log('Currently: ' + str(self.client.showElapsed), Color.BLUE)
             self.client.showElapsed = setVar
+        elif command == 'smallimage':
+            if setVar == '':
+                return self._log('Currently: ' + str(self.client.showSmallImage), Color.BLUE)
+            self.client.showSmallImage = setVar
         elif command == 'fetchtime':
             if setVar == '':
                 return self._log('Currently: ' + str(self.client.fetchTime), Color.BLUE)

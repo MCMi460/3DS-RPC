@@ -30,7 +30,8 @@ privateFile = os.path.join(path, 'private.txt')
 configTemplate = {
     'friendCode': '',
     'showElapsed': True,
-    'showProfileButton': True,
+    'showProfileButton': False,
+    'showSmallImage': False,
     'fetchTime': 30,
 }
 
@@ -56,6 +57,7 @@ class Client():
         self.currentGame = {'@id': None}
         self.showElapsed = js['showElapsed']
         self.showProfileButton = js['showProfileButton']
+        self.showSmallImage = js['showSmallImage']
         self.fetchTime = js['fetchTime']
 
         # Game logging
@@ -142,10 +144,13 @@ class Client():
                 kwargs['large_text'] = game['name']
             if presence['gameDescription']:
                 kwargs['state'] = presence['gameDescription']
-            if userData['User']['username'] and self.showProfileButton:
+            if self.showProfileButton and userData['User']['username']:
                 kwargs['buttons'] = [{'label': 'Profile', 'url': host + '/user/' + userData['User']['friendCode']},]
             if self.showElapsed:
                 kwargs['start'] = self.start
+            if self.showSmallImage and userData['User']['username']:
+                kwargs['small_image'] = userData['User']['mii']['face']
+                kwargs['small_text'] = '-'.join(userData['User']['friendCode'][i:i+4] for i in range(0, 12, 4))
             if self.connected:self.rpc.update(**kwargs)
         else:
             log = 'Clear [%s -> %s]' % (self.currentGame['@id'], None)
@@ -180,7 +185,7 @@ def main():
         else:
             raise Exception()
     except:
-        print('%sPlease take this time to add the bot\'s FC to your target 3DS\' friends list.\n%sBot FC: %s%s' % (Color.YELLOW, Color.DEFAULT, Color.BLUE, '-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4))))
+        print('%sPlease take this time to add the bot\'s FC to your target 3DS\' friends list.\n%sBot FC: %s%s' % (Color.YELLOW, Color.DEFAULT, Color.BLUE, '-'.join(botFC[i:i+4] for i in range(0, 12, 4))))
         input('%s[Press enter to continue]%s' % (Color.GREEN, Color.DEFAULT))
         friendCode = input('Please enter your 3DS\' friend code\n> %s' % Color.PURPLE)
         config = {}
