@@ -39,6 +39,7 @@ try:
 except OSError:
     terminalSize = 40
 
+os.system('')
 class Color:
     DEFAULT = '\033[0m'
     RED = '\033[91m'
