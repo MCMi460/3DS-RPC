@@ -1,8 +1,5 @@
 requests
 xmltodict
 pypresence
-nest-asyncio
 pyqt5
-IPython
-pygments
 pyreadline3

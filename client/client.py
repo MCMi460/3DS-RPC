@@ -35,7 +35,7 @@ configTemplate = {
 }
 
 class Client():
-    def __init__(self, friendCode: str, config:dict, *, GUI: bool = False):
+    def __init__(self, friendCode: str, config:dict):
         ### Maintain typing ###
         friendCode = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12) # Friend Code check
         with open(privateFile, 'w') as file: # Save FC and config to file
@@ -50,7 +50,6 @@ class Client():
         self.friendCode = friendCode
 
         # Client-config
-        self.GUI = GUI
         self.connected = False
 
         # Discord-related variables
@@ -156,16 +155,6 @@ class Client():
 
     def background(self):
         try:
-            if self.GUI:
-                asyncio.set_event_loop(asyncio.new_event_loop())
-
-                import nest_asyncio
-                nest_asyncio.apply()
-                threading.Thread(target = __import__('IPython').embed, daemon = True).start()
-
-                self.connect() # Connect to Discord
-                # Consider removing this here ^^ @MCMi460
-
             self.login() # Create account if not yet existent
             while True:
                 self.loop()
@@ -204,15 +193,16 @@ def main():
             os.remove(privateFile)
         raise e
 
-    threading.Thread(target = client.background, daemon = True).start() # Start client background
-
     # Begin main thread for user configuration
     con = Console(client)
     try:
         client.connect()
     except Exception as e:
         con._log('\'%s\'\nFailed to connect to Discord! Try again with the \'discord\' command' % e, Color.RED)
-    con._main()
+
+    threading.Thread(target = client.background, daemon = True).start() # Start client background
+
+    con._main() # Begin main loop for console program
 
 if __name__ == '__main__':
     main()

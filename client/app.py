@@ -9,11 +9,15 @@ from client import _REGION
 
 # 3DS Variables
 friendCode = None
+config = {}
 if not os.path.isdir(path):
     os.mkdir(path)
 if os.path.isfile(privateFile):
     with open(privateFile, 'r') as file:
-        friendCode = json.loads(file.read())['friendCode']
+        js = json.loads(file.read())
+        friendCode = js['friendCode']
+        config = js
+        del config['friendCode']
 client = None
 # PyQt5 Variables
 style = """
@@ -74,7 +78,8 @@ class GUI(Ui_MainWindow):
     def __init__(self, MainWindow):
         self.MainWindow = MainWindow
 
-    def selfService(self):
+    def selfService(self, app):
+        self.app = app
         self.MainWindow.setStyleSheet(style)
         self.assignVariables()
         self.page = 0
@@ -97,19 +102,22 @@ class GUI(Ui_MainWindow):
         self.label5.setText('-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4)))
 
     def closeEvent(self, event):
-        if not self.state:
-            sys.exit()
-        event.ignore()
-        self.MainWindow.hide()
-        tray.show()
+        if client.connected:
+            event.ignore()
+            self.MainWindow.hide()
+            tray.show()
+        else:
+            event.accept()
+            self.app.quit()
 
     def grabCode(self):
-        global friendCode, client
-        if not friendCode:
-            friendCode = self.waitUntil()
+        global friendCode, client, config
+        if friendCode:
+            return
+        friendCode = self.waitUntil()
         try:
             try:
-                client = Client(friendCode, GUI = True)
+                client = Client(friendCode, config)
             except (AssertionError, FriendCodeValidityError) as e:
                 if os.path.isfile(privateFile):
                     os.remove(privateFile)
@@ -118,7 +126,6 @@ class GUI(Ui_MainWindow):
             print(traceback.format_exc())
             os._exit(1)
         friendCode = client.friendCode
-        threading.Thread(target = client.background, daemon = True).start()
 
     def waitUntil(self):
         while not self.state:
@@ -135,8 +142,9 @@ class GUI(Ui_MainWindow):
         self.page = 1
         self.updatePage()
 
-    def updatePage(self):
-        self.stackedWidget.setCurrentIndex(self.page)
+    def updatePage(self, page = None):
+        self.page = page if page != None else self.page
+        self.stackedWidget.setCurrentIndex(page if page != None else self.page)
 
 class SystemTrayApp(QSystemTrayIcon):
     def __init__(self, icon, parent):
@@ -157,14 +165,19 @@ if __name__ == '__main__':
 
     tray = SystemTrayApp(QIcon('icon.png'), MainWindow)
     window.setupUi(MainWindow)
-    window.selfService()
+    window.selfService(app)
 
-    if friendCode:
-        window.state = True
-        while not client:
-            pass
-        tray.show()
-    else:
+    if not friendCode:
+        window.state = False
         MainWindow.show()
+        app.exec_()
+
+    client = Client(friendCode, config)
+    client.connect()
+    threading.Thread(target = client.background, daemon = True).start()
+    while not client:
+        pass
+    window.state = True
+    tray.show()
 
     sys.exit(app.exec_())
