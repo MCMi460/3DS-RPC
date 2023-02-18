@@ -25,6 +25,7 @@ convertFriendCodeToPrincipalId(botFC) # A quick verification check
 _REGION = typing.Literal['ALL', 'US', 'JP', 'GB', 'KR', 'TW']
 path = getAppPath()
 privateFile = os.path.join(path, 'private.txt')
+logFile = os.path.join(path, 'logs.txt')
 
 # Config template
 configTemplate = {
@@ -34,6 +35,11 @@ configTemplate = {
     'showSmallImage': False,
     'fetchTime': 30,
 }
+
+def log(text:str):
+    with open(logFile, 'a') as file:
+        file.write('%s: %s\n' % (time.time(), text.replace('\n',' ')))
+    print(Color.RED + text)
 
 class Client():
     def __init__(self, friendCode: str, config:dict):
@@ -166,8 +172,7 @@ class Client():
                 self.loop()
                 time.sleep(self.fetchTime) # Wait 30 seconds between calls
         except Exception as e:
-            print(Color.RED + 'Failed')
-            print(e)
+            log('Failed\n' + str(e))
             os._exit(0)
 
 def main():
