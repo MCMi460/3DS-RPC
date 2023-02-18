@@ -52,6 +52,7 @@ class Client():
 
         # Client-config
         self.connected = False
+        self.userData = {}
 
         # Discord-related variables
         self.currentGame = {'@id': None}
