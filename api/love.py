@@ -34,7 +34,7 @@ def generateChecksumByte(principalId:int) -> str: # https://www.3dbrew.org/wiki/
 def convertPrincipalIdtoFriendCode(principalId:int) -> int:
     if not isinstance(principalId, int): raise PrincipalIDValidityError('an invalid principal id was passed')
     checksumByte = generateChecksumByte(principalId)
-    friendCode = checksumByte + hex(principalId)
+    friendCode = checksumByte + hex(principalId)[2:].zfill(8)
     return int(friendCode.replace('0x',''), 16)
 
 # Structure of a friendCode:
