@@ -177,7 +177,7 @@ def getPresence(friendCode:int, *, créerCompte:bool = True, ignoreUserAgent = F
 # Index page
 @app.route('/')
 def index():
-    results = db.session.execute('SELECT * FROM friends WHERE online = ? ORDER BY lastAccessed DESC LIMIT 2', (True,))
+    results = db.session.execute('SELECT * FROM friends WHERE online = True ORDER BY lastAccessed DESC LIMIT 2')
     results = results.fetchall()
     data = sidenav()
 
