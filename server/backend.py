@@ -4,7 +4,7 @@
 from nintendo import nasc
 from nintendo.nex import backend, friends, settings, streams
 from nintendo.nex import common
-import anyio, time, sqlite3, sys
+import anyio, time, sqlite3, sys, traceback
 sys.path.append('../')
 from api.private import SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME, REGION, LANGUAGE, PID, PID_HMAC, NEX_PASSWORD
 from api import *
@@ -82,7 +82,7 @@ async def main():
 									cleanUp.append(t1.unk1)
 
 							for remover in removeList:
-								cursor.execute('DELETE FROM friends WHERE friendCode = \'%s\'' % str(convertPrincipalIdtoFriendCode(remover)).zfill(12))
+								cursor.execute('DELETE FROM friends WHERE friendCode = ?', (str(convertPrincipalIdtoFriendCode(remover)).zfill(12),))
 							con.commit()
 
 							if len(t) > 0:
@@ -98,9 +98,9 @@ async def main():
 									gameDescription = game.presence.game_mode_description
 									joinable = bool(game.presence.join_availability_flag)
 
-									cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s, joinable = %s, gameDescription = \'%s\', lastOnline = %s WHERE friendCode = \'%s\'' % (True, game.presence.game_key.title_id, game.presence.game_key.title_version, joinable, gameDescription, time.time(), str(convertPrincipalIdtoFriendCode(users[-1])).zfill(12)))
+									cursor.execute('UPDATE friends SET online = ?, titleID = ?, updID = ?, joinable = ?, gameDescription = ?, lastOnline = ? WHERE friendCode = ?', (True, game.presence.game_key.title_id, game.presence.game_key.title_version, joinable, gameDescription, time.time(), str(convertPrincipalIdtoFriendCode(users[-1])).zfill(12)))
 								for user in [ h for h in rotation if not h in users ]:
-									cursor.execute('UPDATE friends SET online = %s, titleID = %s, updID = %s WHERE friendCode = \'%s\'' % (False, 0, 0, str(convertPrincipalIdtoFriendCode(user)).zfill(12)))
+									cursor.execute('UPDATE friends SET online = ?, titleID = ?, updID = ? WHERE friendCode = ?', (False, 0, 0, str(convertPrincipalIdtoFriendCode(user)).zfill(12)))
 
 								con.commit()
 
@@ -135,7 +135,7 @@ async def main():
 										jeuFavori = j1[0].game_key.title_id
 									else:
 										comment = ''
-									cursor.execute('UPDATE friends SET username = \'%s\', message = \'%s\', mii = \'%s\', jeuFavori = \'%s\' WHERE friendCode = \'%s\'' % (username, comment, face, jeuFavori, str(convertPrincipalIdtoFriendCode(ti.unk1)).zfill(12)))
+									cursor.execute('UPDATE friends SET username = ?, message = ?, mii = ?, jeuFavori = ? WHERE friendCode = ?', (username, comment, face, jeuFavori, str(convertPrincipalIdtoFriendCode(ti.unk1)).zfill(12)))
 									con.commit()
 
 							for friend in rotation + cleanUp:
@@ -143,6 +143,7 @@ async def main():
 								await friends_client.remove_friend_by_principal_id(friend)
 				except Exception as e:
 					print('An error occurred!\n%s' % e)
+					print(traceback.format_exc())
 					time.sleep(2)
 
 if __name__ == '__main__':
