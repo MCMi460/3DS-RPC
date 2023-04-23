@@ -76,6 +76,10 @@ QPushButton[objectName*="okButton"] {
 QPushButton[objectName*="okButton"]:hover {
     background: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0, stop:0 #9093a1, stop:1 #717274);
 }
+QPushButton[objectName*="Logout"] {
+    border: 2px solid #C7C7C7;
+    border-radius: 15px;
+}
 QGroupBox[objectName*="friendCard"] {
     background: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0, stop:0 #FFC693, stop:1 #FEF5EF);
     border: 2px solid #fff;

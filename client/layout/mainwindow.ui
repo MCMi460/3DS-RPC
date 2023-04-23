@@ -528,6 +528,50 @@
       <string/>
      </property>
     </widget>
+    <widget class="QPushButton" name="okButtonLogout">
+     <property name="geometry">
+      <rect>
+       <x>165</x>
+       <y>470</y>
+       <width>270</width>
+       <height>61</height>
+      </rect>
+     </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
+     </property>
+     <property name="text">
+      <string>Logout</string>
+     </property>
+    </widget>
+    <widget class="QGroupBox" name="showProfileButton">
+     <property name="geometry">
+      <rect>
+       <x>25</x>
+       <y>215</y>
+       <width>550</width>
+       <height>71</height>
+      </rect>
+     </property>
+     <property name="title">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QGroupBox" name="showSmallImage">
+     <property name="geometry">
+      <rect>
+       <x>25</x>
+       <y>365</y>
+       <width>550</width>
+       <height>71</height>
+      </rect>
+     </property>
+     <property name="title">
+      <string/>
+     </property>
+    </widget>
+    <zorder>showSmallImage</zorder>
+    <zorder>showProfileButton</zorder>
     <zorder>showElapsed</zorder>
     <zorder>okButton</zorder>
     <zorder>showElapsedOff</zorder>
@@ -539,6 +583,7 @@
     <zorder>showElapsedText</zorder>
     <zorder>showProfileButtonText</zorder>
     <zorder>showSmallImageText</zorder>
+    <zorder>okButtonLogout</zorder>
    </widget>
   </widget>
  </widget>

@@ -170,6 +170,20 @@ class Ui_MainWindow(object):
         self.showElapsed.setGeometry(QtCore.QRect(25, 65, 550, 71))
         self.showElapsed.setTitle("")
         self.showElapsed.setObjectName("showElapsed")
+        self.okButtonLogout = QtWidgets.QPushButton(self.settings)
+        self.okButtonLogout.setGeometry(QtCore.QRect(165, 470, 270, 61))
+        self.okButtonLogout.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self.okButtonLogout.setObjectName("okButtonLogout")
+        self.showProfileButton = QtWidgets.QGroupBox(self.settings)
+        self.showProfileButton.setGeometry(QtCore.QRect(25, 215, 550, 71))
+        self.showProfileButton.setTitle("")
+        self.showProfileButton.setObjectName("showProfileButton")
+        self.showSmallImage = QtWidgets.QGroupBox(self.settings)
+        self.showSmallImage.setGeometry(QtCore.QRect(25, 365, 550, 71))
+        self.showSmallImage.setTitle("")
+        self.showSmallImage.setObjectName("showSmallImage")
+        self.showSmallImage.raise_()
+        self.showProfileButton.raise_()
         self.showElapsed.raise_()
         self.okButton.raise_()
         self.showElapsedOff.raise_()
@@ -181,6 +195,7 @@ class Ui_MainWindow(object):
         self.showElapsedText.raise_()
         self.showProfileButtonText.raise_()
         self.showSmallImageText.raise_()
+        self.okButtonLogout.raise_()
         self.stackedWidget.addWidget(self.settings)
 
         self.retranslateUi(MainWindow)
@@ -210,6 +225,7 @@ class Ui_MainWindow(object):
         self.showElapsedText.setText(_translate("MainWindow", "Allow others to see your current time in-game?"))
         self.showProfileButtonText.setText(_translate("MainWindow", "Allow others to click your status to view your profile?"))
         self.showSmallImageText.setText(_translate("MainWindow", "Show a small image of your Mii to Discord?"))
+        self.okButtonLogout.setText(_translate("MainWindow", "Logout"))
 
 
 if __name__ == "__main__":

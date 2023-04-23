@@ -82,6 +82,7 @@ class GUI(Ui_MainWindow):
 
         # Update others
         self.friendCard.mouseReleaseEvent = lambda event : self.openLink(host + '/user/%s' % client.userData['User']['friendCode'])
+        self.okButtonLogout.clicked.connect(self.logout)
         for button in ((self.showElapsedOff, self.showElapsedOn, 'showElapsed'), (self.showProfileButtonOff, self.showProfileButtonOn, 'showProfileButton'), (self.showSmallImageOff, self.showSmallImageOn, 'showSmallImage')):
             self.setFontText(button[0], 'No')
             self.setFontText(button[1], 'Yes')
@@ -132,7 +133,7 @@ class GUI(Ui_MainWindow):
             sys.exit()
 
     def grabCode(self):
-        global friendCode, client, config
+        global friendCode
         if friendCode:
             return
         friendCode = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(self.waitUntil()))).zfill(12)
@@ -163,6 +164,10 @@ class GUI(Ui_MainWindow):
         else:
             self.gamePlate.hide()
         self.underLyingButton.click()
+
+    def logout(self):
+        os.remove(privateFile)
+        sys.exit()
 
 class SystemTrayApp(QSystemTrayIcon):
     def __init__(self, icon, parent):
