@@ -142,7 +142,7 @@ async def main():
 									con.commit()
 
 							for friend in rotation + cleanUp:
-								time.sleep(delay / 2)
+								time.sleep(delay / 4)
 								await friends_client.remove_friend_by_principal_id(friend)
 				except Exception as e:
 					print('An error occurred!\n%s' % e)

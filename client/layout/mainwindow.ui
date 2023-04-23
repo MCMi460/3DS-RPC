@@ -23,7 +23,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>2</number>
+    <number>3</number>
    </property>
    <widget class="QWidget" name="bot">
     <widget class="QLabel" name="description">
@@ -371,6 +371,174 @@
       <string>OK</string>
      </property>
     </widget>
+    <widget class="QPushButton" name="showElapsedOff">
+     <property name="geometry">
+      <rect>
+       <x>30</x>
+       <y>70</y>
+       <width>270</width>
+       <height>61</height>
+      </rect>
+     </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
+     </property>
+     <property name="text">
+      <string>No</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="showElapsedOn">
+     <property name="geometry">
+      <rect>
+       <x>300</x>
+       <y>70</y>
+       <width>270</width>
+       <height>61</height>
+      </rect>
+     </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
+     </property>
+     <property name="text">
+      <string>Yes</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="showProfileButtonOff">
+     <property name="geometry">
+      <rect>
+       <x>30</x>
+       <y>220</y>
+       <width>270</width>
+       <height>61</height>
+      </rect>
+     </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
+     </property>
+     <property name="text">
+      <string>No</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="showProfileButtonOn">
+     <property name="geometry">
+      <rect>
+       <x>300</x>
+       <y>220</y>
+       <width>270</width>
+       <height>61</height>
+      </rect>
+     </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
+     </property>
+     <property name="text">
+      <string>Yes</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="showSmallImageOff">
+     <property name="geometry">
+      <rect>
+       <x>30</x>
+       <y>370</y>
+       <width>270</width>
+       <height>61</height>
+      </rect>
+     </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
+     </property>
+     <property name="text">
+      <string>No</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="showSmallImageOn">
+     <property name="geometry">
+      <rect>
+       <x>300</x>
+       <y>370</y>
+       <width>270</width>
+       <height>61</height>
+      </rect>
+     </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
+     </property>
+     <property name="text">
+      <string>Yes</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="showElapsedText">
+     <property name="geometry">
+      <rect>
+       <x>15</x>
+       <y>20</y>
+       <width>571</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Allow others to see your current time in-game?</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="showProfileButtonText">
+     <property name="geometry">
+      <rect>
+       <x>15</x>
+       <y>170</y>
+       <width>571</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Allow others to click your status to view your profile?</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="showSmallImageText">
+     <property name="geometry">
+      <rect>
+       <x>15</x>
+       <y>320</y>
+       <width>571</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Show a small image of your Mii to Discord?</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QGroupBox" name="showElapsed">
+     <property name="geometry">
+      <rect>
+       <x>25</x>
+       <y>65</y>
+       <width>550</width>
+       <height>71</height>
+      </rect>
+     </property>
+     <property name="title">
+      <string/>
+     </property>
+    </widget>
+    <zorder>showElapsed</zorder>
+    <zorder>okButton</zorder>
+    <zorder>showElapsedOff</zorder>
+    <zorder>showElapsedOn</zorder>
+    <zorder>showProfileButtonOff</zorder>
+    <zorder>showProfileButtonOn</zorder>
+    <zorder>showSmallImageOff</zorder>
+    <zorder>showSmallImageOn</zorder>
+    <zorder>showElapsedText</zorder>
+    <zorder>showProfileButtonText</zorder>
+    <zorder>showSmallImageText</zorder>
    </widget>
   </widget>
  </widget>

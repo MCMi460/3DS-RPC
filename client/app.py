@@ -51,8 +51,10 @@ class GUI(Ui_MainWindow):
         self.updatePage()
 
         self.MainWindow.closeEvent = self.closeEvent
+        self.underLyingButton = QPushButton()
+        self.underLyingButton.clicked.connect(lambda a : self.updateColor())
 
-        if self.state and client.userData['User']['username']:
+        if self.state and client.userData['User']:
             self.stylize()
         self.closeButton.clicked.connect(sys.exit)
         self.settingsButton.clicked.connect(lambda a : self.updatePage(3))
@@ -69,16 +71,31 @@ class GUI(Ui_MainWindow):
         self.botFCLabel.setText('-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4)))
 
     def stylize(self):
-        self.updateColor()
+        self.underLyingButton.click()
 
         # Update dynamic elements
         self.setFontText(self.username, client.userData['User']['username'])
         self.miiLabel.setScaledContents(True)
         self.gameIcon.setScaledContents(True)
-        up(self.miiLabel, client.userData['User']['mii']['face'])
+        if client.userData['User']['mii']:
+            up(self.miiLabel, client.userData['User']['mii']['face'])
 
         # Update others
         self.friendCard.mouseReleaseEvent = lambda event : self.openLink(host + '/user/%s' % client.userData['User']['friendCode'])
+        for button in ((self.showElapsedOff, self.showElapsedOn, 'showElapsed'), (self.showProfileButtonOff, self.showProfileButtonOn, 'showProfileButton'), (self.showSmallImageOff, self.showSmallImageOn, 'showSmallImage')):
+            self.setFontText(button[0], 'No')
+            self.setFontText(button[1], 'Yes')
+            button[0].clicked.connect(lambda e, button = button : self.updateSettings(button, False))
+            button[1].clicked.connect(lambda e, button = button : self.updateSettings(button, True))
+            self.updateSettings(button, client.__dict__[button[2]])
+        for label in (self.showElapsedText, self.showProfileButtonText, self.showSmallImageText):
+            self.setFontText(label, label.text())
+
+    def updateSettings(self, button, activate):
+        client.__dict__[button[2]] = activate
+        client.reflectConfig()
+        button[0].setStyleSheet('background-color: #%s' % ('E1E1E1' if activate else '8BFDB3'))
+        button[1].setStyleSheet('background-color: #%s' % ('E1E1E1' if not activate else '8BFDB3'))
 
     def updateColor(self):
         self.MainWindow.setStyleSheet('')
@@ -86,7 +103,6 @@ class GUI(Ui_MainWindow):
             self.MainWindow.setStyleSheet(offlineStyle)
         else:
             self.MainWindow.setStyleSheet(style)
-        self.MainWindow.update()
 
         self.status.setText('Online' if client.userData['User']['online'] else 'Offline')
 
@@ -141,12 +157,12 @@ class GUI(Ui_MainWindow):
             self.gamePlate.show()
             game = client.userData['User']['Presence']['game']
             self.gamePlate.mouseReleaseEvent = lambda a : self.openLink('https://www.google.com/search?q=%s' % '+'.join((game['name'] + ' ' + game['publisher']['name']).split(' ')))
-            if data['large_image'] and not local:
+            if data.get('large_image') and not local:
                 up(self.gameIcon, data['large_image'])
             self.setFontText(self.gameName, data['details'])
         else:
             self.gamePlate.hide()
-        self.updateColor()
+        self.underLyingButton.click()
 
 class SystemTrayApp(QSystemTrayIcon):
     def __init__(self, icon, parent):

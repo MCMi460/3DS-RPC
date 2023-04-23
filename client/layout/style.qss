@@ -96,3 +96,21 @@ QLabel[objectName*="namePlate"] {
     color: #882D12;
     font-weight: normal;
 }
+QPushButton[objectName*="show"] {
+    background-color: #E1E1E1;
+    border: 2px solid #828182;
+    color: #000;
+    border-radius: 0px;
+}
+QPushButton[objectName*="Off"] {
+    border-top-left-radius: 15px;
+    border-bottom-left-radius: 15px;
+}
+QPushButton[objectName*="On"] {
+    border-top-right-radius: 15px;
+    border-bottom-right-radius: 15px;
+}
+QGroupBox[objectName*="show"] {
+    background-color: #C7C7C7;
+    border-radius: 15px;
+}

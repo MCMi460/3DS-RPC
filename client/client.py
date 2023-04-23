@@ -162,7 +162,7 @@ class Client():
                 kwargs['small_image'] = userData['User']['mii']['face']
                 kwargs['small_text'] = '-'.join(userData['User']['friendCode'][i:i+4] for i in range(0, 12, 4))
             for key in list(kwargs): # Blatant rip from OpenEmuRPC (also made by me. Check it out if you want)
-                if isinstance(kwargs[key], str):
+                if isinstance(kwargs[key], str) and not 'image' in key:
                     if len(kwargs[key]) < 2:
                         del kwargs[key]
                     elif len(kwargs[key]) > 128:
