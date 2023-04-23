@@ -139,14 +139,25 @@ class GUI(Ui_MainWindow):
         friendCode = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(self.waitUntil()))).zfill(12)
 
     def waitUntil(self):
-        while not self.state:
-            pass
+        while True:
+            while not self.state:
+                pass
+            try:
+                convertFriendCodeToPrincipalId(self.fcInput.text().strip())
+                break
+            except:
+                self.state = False
         return self.fcInput.text().strip()
 
     def changeState(self):
         self.state = True
         while not friendCode:
-            pass
+            if not self.state:
+                dlg = QMessageBox()
+                dlg.setWindowTitle('3DS-RPC')
+                dlg.setText('An invalid friendcode has been passed')
+                dlg.exec_()
+                return
         self.MainWindow.close()
 
     def updatePage(self, page = None):
