@@ -29,13 +29,9 @@ async def main():
 			result = cursor.fetchall()
 			if not result:
 				continue
-			list = []
-			for row in result:
-				# Below is commented out for a constant and continuous loop
-				#if time.time() - row[1] <= 30:
-				list.append(row[0])
 
-			lst = [ convertFriendCodeToPrincipalId(f) for f in list ]
+			list = [ (convertFriendCodeToPrincipalId(f[0]), f[1]) for f in result ]
+			lst = [ f[0] for f in list ]
 
 			for i in range(0, len(lst), 100):
 				rotation = lst[i:i+100]
@@ -111,6 +107,13 @@ async def main():
 								# will have to do.
 
 								for ti in t:
+									work = True
+									for l in list:
+										if l[0] == ti.unk1 and time.time() - l[1] <= 300:
+											work = False
+									if not work:
+										continue
+
 									time.sleep(delay)
 
 									ti.unk2 = 0 # A cursed (but operable) 'hack'
@@ -135,7 +138,7 @@ async def main():
 										jeuFavori = j1[0].game_key.title_id
 									else:
 										comment = ''
-									cursor.execute('UPDATE friends SET username = ?, message = ?, mii = ?, jeuFavori = ? WHERE friendCode = ?', (username, comment, face, jeuFavori, str(convertPrincipalIdtoFriendCode(ti.unk1)).zfill(12)))
+									cursor.execute('UPDATE friends SET username = ?, message = ?, mii = ?, jeuFavori = ?, lastAccessed = ? WHERE friendCode = ?', (username, comment, face, jeuFavori, time.time(), str(convertPrincipalIdtoFriendCode(ti.unk1)).zfill(12)))
 									con.commit()
 
 							for friend in rotation + cleanUp:
