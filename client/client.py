@@ -4,8 +4,11 @@ import requests, os, sys, time
 import xmltodict, json
 import pickle
 import asyncio, threading
-sys.path.append('../')
-from api import *
+try:
+    from api import *
+except:
+    sys.path.append('../')
+    from api import *
 import pypresence
 
 requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
@@ -91,8 +94,8 @@ class Client():
 
     # Connect to PyPresence
     def connect(self, pipe:str = '0'):
-        self.rpc = pypresence.Presence('1023094010383970304', pipe = pipe)
         try:
+            self.rpc = pypresence.Presence('1023094010383970304', pipe = pipe)
             self.rpc.connect()
         except Exception as e:
             if self.GUI:

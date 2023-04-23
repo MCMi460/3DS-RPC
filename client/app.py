@@ -42,6 +42,8 @@ class GUI(Ui_MainWindow):
     def __init__(self, MainWindow):
         self.MainWindow = MainWindow
         self.MainWindow.setFixedSize(600,600)
+        if os.name == 'nt':
+            self.MainWindow.setWindowIcon(QIcon(getPath('layout/resources/logo.ico')))
 
         self.underLyingButton2 = QPushButton()
         self.underLyingButton2.clicked.connect(lambda a : self.errorMes())
@@ -188,7 +190,6 @@ class GUI(Ui_MainWindow):
         self.underLyingButton2.click()
 
     def errorMes(self):
-        print('test')
         dlg = QMessageBox()
         dlg.setWindowTitle('3DS-RPC')
         dlg.setText('An error has occurred:\n%s' % str(self.err))
