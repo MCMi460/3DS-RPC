@@ -95,8 +95,8 @@ class GUI(Ui_MainWindow):
     def updateSettings(self, button, activate):
         client.__dict__[button[2]] = activate
         client.reflectConfig()
-        button[0].setStyleSheet('background-color: #%s' % ('E1E1E1' if activate else '8BFDB3'))
-        button[1].setStyleSheet('background-color: #%s' % ('E1E1E1' if not activate else '8BFDB3'))
+        button[0].setStyleSheet('QPushButton{background-color: #%s;} %s' % (('E1E1E1' if activate else '8BFDB3'), ('QPushButton:hover {background-color: #818181;color: #FFF;}' if activate else '')))
+        button[1].setStyleSheet('QPushButton{background-color: #%s;} %s' % (('E1E1E1' if not activate else '8BFDB3'), ('QPushButton:hover {background-color: #818181;color: #FFF;}' if not activate else '')))
 
     def updateColor(self):
         self.MainWindow.setStyleSheet('')
