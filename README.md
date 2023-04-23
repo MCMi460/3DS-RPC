@@ -34,18 +34,16 @@ I'd like to thank:
 Download the app from the [latest release](https://github.com/MCMi460/3DS-RPC/releases) and run!  
 Once ran, the app will ask for you to add a friend on your Nintendo 3DS. This is for the express purpose of pulling your currently playing Nintendo game.
 
-1. Open Discord and 3DS-RPC
+1. Open Discord first, and then open 3DS-RPC
 
 2. Add the bot's friend code provided
 
-3. Enter your own friend code
-
-<!--![link](/resources/link.png)-->
+3. Enter your own friend code when prompted
 
 4. Profit!
   - Each update is around every ~30 seconds (keep in mind, the backend is updating at a different rate than the client, so this may vary). They are automatic, but it may take upwards of one minute after the program begins. To make certain that everything is in order, check your 3DS' friends list to verify the bot account has added you back.
 
-<!--![display](/resources/display.png)-->
+![Tutorial GIF (which is pronounced 'gif', not 'jif')](/resources/tutorial.gif)
 
 ## FAQ
 

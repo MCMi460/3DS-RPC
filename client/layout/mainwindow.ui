@@ -23,7 +23,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>3</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="bot">
     <widget class="QLabel" name="description">
@@ -122,6 +122,28 @@
       <set>Qt::AlignCenter</set>
      </property>
     </widget>
+    <widget class="QLabel" name="description_2">
+     <property name="geometry">
+      <rect>
+       <x>130</x>
+       <y>420</y>
+       <width>331</width>
+       <height>81</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Please be aware that by using this product you are agreeing to the &lt;a href=&quot;https://github.com/MCMi460/3DS-RPC/blob/main/TERMS.md&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#007af4;&quot;&gt;Terms and Services&lt;/span&gt;&lt;/a&gt; listed on the MCMi460/3DS-RPC Github page.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+     <property name="openExternalLinks">
+      <bool>true</bool>
+     </property>
+    </widget>
    </widget>
    <widget class="QWidget" name="link">
     <widget class="QLabel" name="description2">
@@ -204,6 +226,28 @@
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="description_3">
+     <property name="geometry">
+      <rect>
+       <x>130</x>
+       <y>420</y>
+       <width>331</width>
+       <height>81</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Please be aware that by using this product you are agreeing to the &lt;a href=&quot;https://github.com/MCMi460/3DS-RPC/blob/main/TERMS.md&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#007af4;&quot;&gt;Terms and Services&lt;/span&gt;&lt;/a&gt; listed on the MCMi460/3DS-RPC Github page.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+     <property name="openExternalLinks">
+      <bool>true</bool>
      </property>
     </widget>
    </widget>
