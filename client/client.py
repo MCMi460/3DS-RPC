@@ -92,7 +92,13 @@ class Client():
     # Connect to PyPresence
     def connect(self, pipe:str = '0'):
         self.rpc = pypresence.Presence('1023094010383970304', pipe = pipe)
-        self.rpc.connect()
+        try:
+            self.rpc.connect()
+        except Exception as e:
+            if self.GUI:
+                self.GUI.error(str(e), traceback.format_exc())
+            else:
+                raise e
         self.connected = True
 
     # Disconnect
