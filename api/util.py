@@ -8,7 +8,10 @@ import traceback
 if os.name == 'nt':
     import pyreadline3
 else:
-    import readline
+    try:
+        import readline
+    except:
+        pass
 import typing
 
 def getAppPath(): # Credit to @HotaruBlaze
@@ -23,9 +26,17 @@ def getAppPath(): # Credit to @HotaruBlaze
             SHGFP_TYPE_CURRENT = 0 # Get current, not default value
             buf=ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
             ctypes.windll.shell32.SHGetFolderPathW(None, CSIDL_PERSONAL, None, SHGFP_TYPE_CURRENT, buf)
-            applicationPath = os.path.join(buf.value,'3DS-RPC')
+            applicationPath = os.path.join(buf.value, '3DS-RPC')
         except:pass
     return applicationPath
+
+def getPath(path):
+    try:
+        root = sys._MEIPASS
+    except Exception:
+        root = os.path.abspath('.')
+
+    return os.path.join(root, path)
 
 def startDBTime(time):
     with sqlite3.connect('sqlite/fcLibrary.db') as con:

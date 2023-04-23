@@ -23,7 +23,7 @@ if os.path.isfile(privateFile):
 client = None
 
 # PyQt5 Variables
-with open('./layout/style.qss', 'r') as file:
+with open(getPath('./layout/style.qss'), 'r') as file:
     style = file.read()
 offlineStyle = style.replace('#FFC693', '#B7B7B7').replace('#E39240', '#AAA6A3')
 
@@ -43,6 +43,11 @@ class GUI(Ui_MainWindow):
         self.MainWindow = MainWindow
         self.MainWindow.setFixedSize(600,600)
 
+        self.underLyingButton2 = QPushButton()
+        self.underLyingButton2.clicked.connect(lambda a : self.errorMes())
+        self.err = None
+        self.traceback = None
+
     def selfService(self, app):
         self.app = app
         self.MainWindow.setStyleSheet(style)
@@ -54,7 +59,7 @@ class GUI(Ui_MainWindow):
         self.underLyingButton = QPushButton()
         self.underLyingButton.clicked.connect(lambda a : self.updateColor())
 
-        if self.state and client.userData['User']:
+        if self.state and client.userData.get('User'):
             self.stylize()
         self.closeButton.clicked.connect(sys.exit)
         self.settingsButton.clicked.connect(lambda a : self.updatePage(3))
@@ -176,6 +181,22 @@ class GUI(Ui_MainWindow):
             self.gamePlate.hide()
         self.underLyingButton.click()
 
+    def error(self, error, traceback):
+        self.err = error
+        self.traceback = traceback
+        print(self.error)
+        self.underLyingButton2.click()
+
+    def errorMes(self):
+        print('test')
+        dlg = QMessageBox()
+        dlg.setWindowTitle('3DS-RPC')
+        dlg.setText('An error has occurred:\n%s' % str(self.err))
+        dlg.exec_()
+        print(self.traceback)
+        self.app.quit()
+        os._exit(0)
+
     def logout(self):
         os.remove(privateFile)
         sys.exit()
@@ -205,7 +226,7 @@ if __name__ == '__main__':
     MainWindow = QMainWindow()
     window = GUI(MainWindow)
 
-    tray = SystemTrayApp(QIcon('icon.png'), MainWindow)
+    tray = SystemTrayApp(QIcon(getPath('layout/resources/tray.png')), MainWindow)
     window.state = False
     window.setupUi(MainWindow)
     window.selfService(app)
@@ -214,10 +235,10 @@ if __name__ == '__main__':
         MainWindow.show()
         app.exec_()
 
-    client = Client(friendCode, config, GUI = window.update)
+    client = Client(friendCode, config, GUI = window)
     client.connect()
     threading.Thread(target = client.background, daemon = True).start()
-    while not client.userData:
+    while not client.userData and not window.err:
         pass
     window.state = True
     window.setupUi(MainWindow)

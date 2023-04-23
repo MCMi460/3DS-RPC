@@ -168,12 +168,12 @@ class Client():
                     elif len(kwargs[key]) > 128:
                         kwargs[key] = kwargs[key][:128]
             if self.connected:self.rpc.update(**kwargs)
-            if self.GUI:self.GUI(kwargs)
+            if self.GUI:self.GUI.update(kwargs)
         else:
             log = 'Clear [%s -> %s]' % (self.currentGame['@id'], None)
             self.currentGame = {'@id': None}
             if self.connected:self.rpc.clear()
-            if self.GUI:self.GUI(None)
+            if self.GUI:self.GUI.update(None)
         self.gameLog.append(log)
 
     def background(self):
@@ -183,9 +183,12 @@ class Client():
                 self.loop()
                 time.sleep(self.fetchTime) # Wait 30 seconds between calls
         except Exception as e:
-            log('Failed\n' + str(e))
-            print(traceback.format_exc())
-            os._exit(0)
+            if self.GUI:
+                self.GUI.error(str(e), traceback.format_exc())
+            else:
+                log('Failed\n' + str(e))
+                print(traceback.format_exc())
+                os._exit(0)
 
 def main():
     friendCode = None
