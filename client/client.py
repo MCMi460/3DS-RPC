@@ -42,7 +42,7 @@ def log(text:str):
     print(Color.RED + text)
 
 class Client():
-    def __init__(self, friendCode: str, config:dict):
+    def __init__(self, friendCode: str, config:dict, *, GUI = None):
         ### Maintain typing ###
         friendCode = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12) # Friend Code check
         with open(privateFile, 'w') as file: # Save FC and config to file
@@ -69,6 +69,9 @@ class Client():
 
         # Game logging
         self.gameLog = []
+
+        # GUI-related
+        self.GUI = GUI
 
     # Reflect to config file
     def reflectConfig(self):
@@ -158,11 +161,19 @@ class Client():
             if self.showSmallImage and userData['User']['username'] and game['icon_url']:
                 kwargs['small_image'] = userData['User']['mii']['face']
                 kwargs['small_text'] = '-'.join(userData['User']['friendCode'][i:i+4] for i in range(0, 12, 4))
+            for key in list(kwargs): # Blatant rip from OpenEmuRPC (also made by me. Check it out if you want)
+                if isinstance(kwargs[key], str):
+                    if len(kwargs[key]) < 2:
+                        del kwargs[key]
+                    elif len(kwargs[key]) > 128:
+                        kwargs[key] = kwargs[key][:128]
             if self.connected:self.rpc.update(**kwargs)
+            if self.GUI:self.GUI(kwargs)
         else:
             log = 'Clear [%s -> %s]' % (self.currentGame['@id'], None)
             self.currentGame = {'@id': None}
             if self.connected:self.rpc.clear()
+            if self.GUI:self.GUI(None)
         self.gameLog.append(log)
 
     def background(self):
@@ -173,6 +184,7 @@ class Client():
                 time.sleep(self.fetchTime) # Wait 30 seconds between calls
         except Exception as e:
             log('Failed\n' + str(e))
+            print(traceback.format_exc())
             os._exit(0)
 
 def main():
