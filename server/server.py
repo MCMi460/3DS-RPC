@@ -90,11 +90,11 @@ def createUser(friendCode:int, addNewInstance:bool = False):
         convertFriendCodeToPrincipalId(friendCode)
         if not addNewInstance:
             raise Exception('UNIQUE constraint failed: friends.friendCode')
-        db.session.execute('INSERT INTO friends (friendCode, online, titleID, updID, lastAccessed, accountCreation, lastOnline, jeuFavori) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (str(friendCode).zfill(12), False, '0', '0', time.time() + 300, time.time(), time.time(), 0))
+        db.session.execute('INSERT INTO friends (friendCode, online, titleID, updID, lastAccessed, accountCreation, lastOnline, jeuFavori) VALUES (\'%s\', %s, %s, %s, %s, %s, %s, %s)' % (str(friendCode).zfill(12), False, '0', '0', time.time() + 300, time.time(), time.time(), 0))
         db.session.commit()
     except Exception as e:
         if 'UNIQUE constraint failed: friends.friendCode' in str(e):
-            db.session.execute('UPDATE friends SET lastAccessed = ? WHERE friendCode = ?', (time.time(), str(friendCode).zfill(12)))
+            db.session.execute('UPDATE friends SET lastAccessed = %s WHERE friendCode = \'%s\'' % (time.time(), str(friendCode).zfill(12)))
             db.session.commit()
 
 def sidenav():
@@ -129,7 +129,7 @@ def getPresence(friendCode:int, *, créerCompte:bool = True, ignoreUserAgent = F
         if créerCompte:
             createUser(friendCode, False)
         principalId = convertFriendCodeToPrincipalId(friendCode)
-        result = db.session.execute('SELECT * FROM friends WHERE friendCode = ?', (friendCode,))
+        result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % friendCode)
         result = result.fetchone()
         if not result:
             raise Exception('friendCode not recognized\nHint: You may not have added the bot as a friend')
