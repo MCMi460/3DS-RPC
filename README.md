@@ -31,8 +31,6 @@ I'd like to thank:
 
 <h1 id = 'quick'>Quickstart Guide</h1>
 
-*\*Until this project has an official release, it is recommended to follow the directions written [here](https://github.com/MCMi460/3DS-RPC/issues/2#issuecomment-1345621523).*
-
 Download the app from the [latest release](https://github.com/MCMi460/3DS-RPC/releases) and run!  
 Once ran, the app will ask for you to add a friend on your Nintendo 3DS. This is for the express purpose of pulling your currently playing Nintendo game.
 
