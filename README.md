@@ -26,6 +26,8 @@ I'd like to thank:
   - pypresence is a useful Python module that allows developers to connect their games to Discord via Python. It is how 3DS-RPC sends Rich Presence data to Discord.
 - [StartBootstrap](https://github.com/StartBootstrap) for their [startbootstrap-sb-admin](https://github.com/StartBootstrap/startbootstrap-sb-admin)
   - startbootstrap-sb-admin is a template using [bootstrap](https://github.com/twbs/bootstrap) which is how I created the friends network website!
+- [MrGameCub3](https://github.com/mrgamecub3) for resource design!
+  - He made all of the pretty things :) -- except for the app's GUI. I did that. But the pretty logos were his!
 
 <h1 id = 'quick'>Quickstart Guide</h1>
 
@@ -43,9 +45,11 @@ Once ran, the app will ask for you to add a friend on your Nintendo 3DS. This is
 4. Profit!
   - Each update is around every ~30 seconds (keep in mind, the backend is updating at a different rate than the client, so this may vary). They are automatic, but it may take upwards of one minute after the program begins. To make certain that everything is in order, check your 3DS' friends list to verify the bot account has added you back.
 
-![Tutorial GIF (which is pronounced 'gif', not 'jif')](/resources/tutorial.gif)
+<p align = 'center'>
+  <img src = '/resources/tutorial.gif' alt = "Tutorial GIF (which is pronounced 'gif', not 'jif')" />
+</p>
 
-## FAQ
+<h2 id = 'faq'>FAQ</h2>
 
 > If none of the below Qs and As help with your problem, feel free to [file an issue](https://github.com/MCMi460/3DS-RPC/issues/new). Alternatively, you can join the [3DS-RPC Discord server](https://discord.gg/pwFASr2NKx) for a better back-and-forth method of communication with me!
 
@@ -65,29 +69,38 @@ Once ran, the app will ask for you to add a friend on your Nintendo 3DS. This is
 
 <h2 id = 'building'>Building</h2>
 
-<!--
 For Windows, run
 ```bat
-cd .\3DS-RPC\scripts
+cd .\3DS-RPC\client\scripts
 .\build.bat
 ```
 For MacOS, run
 ```sh
-cd ./3DS-RPC/scripts
+cd ./3DS-RPC/client/scripts
 chmod +x build.sh
 ./build.sh
 ```
-For Linux (Ubuntu), run
-```sh
-cd ./3DS-RPC/scripts
-chmod +x install.sh
-./install.sh
-```
 
-*(Make sure you have `python3` and `pip` installed)
--->
+\*(Make sure you have `python3` and `pip` installed)
 
 <h2 id = 'understanding'>Understanding</h2>
+
+The intricacies of this project are deep and innumerable. I started this project some weeks before October 16th (at least since [kinnay/NintendoClients#88](https://github.com/kinnay/NintendoClients/pull/88)), when I published the first commit on this repository. I have records of the sheer amount of pain I have undergone to create this (see [2d1ad37](https://github.com/MCMi460/3DS-RPC/commit/2d1ad3737869dfbe5dc020b496a97cf745c5f6d9), [everything on Feb 11th](https://github.com/MCMi460/3DS-RPC/commits?author=MCMi460&since=2023-02-11&until=2023-02-11), [this *thing*](https://github.com/MCMi460/3DS-RPC/commit/e6ae017e69aa82bfed2e5a02f17635de492e0d65), and [oh so much more](https://github.com/MCMi460/3DS-RPC/commits/main)), but somehow, I prevailed.
+
+Anywho, none of this matters for the in-depth 'guide'. **If you are looking at this guide because you can't figure something out or are having an error**, *please check the [FAQ](#faq), [join my Discord server](https://discord.gg/pwFASr2NKx), or [file an issue](https://github.com/MCMi460/3DS-RPC/issues/new).* Instead, we're going to be looking at the inner-workings of the project.
+
+So sit back, relax, and wait because, chances are, this guide is either unfinished or out-of-date.
+
+<details>
+  <summary><h3>The Beast</h3></summary>
+
+  Let's get to the good part, shall we?
+
+  Basic control structure:
+
+  ![just a diagram](/resources/diagram.png)
+
+</details>
 
 [cli]: /client/client.py
 [api]: /api/love.py
