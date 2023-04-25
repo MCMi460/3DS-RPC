@@ -7,7 +7,7 @@ else
         small(style = 'font-size: 0.7em;')#splitTHIS #{fc}
 script.
     let x = document.getElementById('splitTHIS');
-    x.textContent = '(' + (x.textContent.match(/.{1,4}/g) ?? []).join('-') + ')';
+    if (x){x.textContent = '(' + (x.textContent.match(/.{1,4}/g) ?? []).join('-') + ')';}
 if index
     ol.breadcrumb.mb-4
         li.breadcrumb-item.active #{pageTitle}

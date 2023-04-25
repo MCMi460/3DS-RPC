@@ -222,6 +222,11 @@ def register():
     response = make_response(render_template('dist/register.html', data = {'botFC':'-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4))}))
     return response
 
+# Register page redirect
+@app.route('/register')
+def registerPage():
+    return register()
+
 # Failure page
 @app.route('/failure.html')
 def failure():
@@ -232,6 +237,7 @@ def failure():
 def success():
     data = {
         'url': 'user/' + request.args.get('fc'),
+        'fc': request.args.get('fc'),
     }
     return render_template('dist/success.html', data = data)
 

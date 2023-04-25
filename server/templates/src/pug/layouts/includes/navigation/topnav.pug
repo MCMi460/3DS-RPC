@@ -16,6 +16,10 @@ nav.sb-topnav.navbar.navbar-expand.navbar-dark(id = 'topnav')
         li.nav-item.dropdown
             a#navbarDropdown.nav-link.dropdown-toggle(href='#' role='button' data-bs-toggle='dropdown' aria-expanded='false')
                 i.fas.fa-user.fa-fw
-            ul.dropdown-menu.dropdown-menu-end(aria-labelledby='navbarDropdown')
+            ul.dropdown-menu.dropdown-menu-end(aria-labelledby='navbarDropdown')#accountDropdown
                 li
-                    a.dropdown-item(href='/register.html') Register
+                    a.dropdown-item(href='') Profile
+                li
+                    a.dropdown-item(href='javascript:deleteFriendcode()') Logout
+                li
+                    a.dropdown-item(href='/register') Register / Login

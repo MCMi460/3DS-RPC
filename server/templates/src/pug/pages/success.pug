@@ -1,6 +1,16 @@
 extends ../layouts/error.pug
 
+block config
+    - var pageTitle = "Success!";
+
 block content
+    script.
+        // Thanks https://www.quirksmode.org/js/cookies.html
+        var date = new Date();
+        date.setTime(date.getTime() + (1000 * 24 * 60 * 60 * 1000)); // Days, hours, minutes, seconds, milliseconds
+        expires = '; expires=' + date.toUTCString();
+        document.cookie = 'FC' + '=' + ('{{ data['fc'] }}' || '')  + expires + '; path=/';
+  
     .container
         .row.justify-content-center
             .col-lg-6

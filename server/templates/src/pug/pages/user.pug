@@ -7,6 +7,34 @@ block config
     - var sidenavStyle = 'sb-sidenav-dark'
 
 block content
+    html.
+        <script>
+        function getCookie(cname) {
+          let name = cname + '=';
+          let ca = document.cookie.split(';');
+          for(let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) == ' ') {
+              c = c.substring(1);
+            }
+            if (c.indexOf(name) == 0) {
+              return c.substring(name.length, c.length);
+            }
+          }
+          return '';
+        }
+        
+        let c = getCookie('FC');
+        if (c == '{{ data['User']['friendCode'] }}') {
+          console.log('Updated Mii!');
+          // Thanks https://www.quirksmode.org/js/cookies.html
+          var date = new Date();
+          date.setTime(date.getTime() + (1000 * 24 * 60 * 60 * 1000)); // Days, hours, minutes, seconds, milliseconds
+          expires = '; expires=' + date.toUTCString();
+          document.cookie = 'MII' + '=' + ('{{ data['User']['mii']['face'] }}' || '')  + expires + '; path=/';
+        }
+        </script>
+    
     .container-fluid.px-4
         include includes/page-header.pug
         
