@@ -58,6 +58,14 @@ async def main():
 							if time.time() - since > 3600:
 								break
 
+							time.sleep(delay)
+							print('Cleaning out to zero')
+							removables = await friends_client.get_all_friends()
+							for friend in removables:
+								time.sleep(delay / 4)
+								await friends_client.remove_friend_by_principal_id(friend.unk1)
+							print('Removed %s friends' % str(len(removables)))
+
 							removeList = []
 							cleanUp = []
 							time.sleep(delay)
@@ -107,10 +115,10 @@ async def main():
 								# will have to do.
 
 								for ti in t:
-									work = True
+									work = False
 									for l in list:
 										if l[0] == ti.unk1 and time.time() - l[1] <= 300:
-											work = False
+											work = True
 									if not work:
 										continue
 
@@ -138,7 +146,7 @@ async def main():
 										jeuFavori = j1[0].game_key.title_id
 									else:
 										comment = ''
-									cursor.execute('UPDATE friends SET username = ?, message = ?, mii = ?, jeuFavori = ?, lastAccessed = ? WHERE friendCode = ?', (username, comment, face, jeuFavori, time.time(), str(convertPrincipalIdtoFriendCode(ti.unk1)).zfill(12)))
+									cursor.execute('UPDATE friends SET username = ?, message = ?, mii = ?, jeuFavori = ? WHERE friendCode = ?', (username, comment, face, jeuFavori, str(convertPrincipalIdtoFriendCode(ti.unk1)).zfill(12)))
 									con.commit()
 
 							for friend in rotation + cleanUp:
