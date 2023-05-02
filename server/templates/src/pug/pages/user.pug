@@ -5,6 +5,7 @@ block config
     - var pageTitle = "{{ data['User']['username'] }}"
     - var fc = "{{ data['User']['friendCode'] }}"
     - var sidenavStyle = 'sb-sidenav-dark'
+    - var description = "{{ data['User']['username'] }} ({{ data['User']['friendCode'] }}){{ ': ' + data['User']['message'] if data['User']['message'] }}{{ '\nFavorite game: ' + data['User']['favoriteGame']['name'] if data['User']['favoriteGame'] }}"
 
 block content
     html.

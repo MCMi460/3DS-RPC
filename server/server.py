@@ -1,6 +1,6 @@
 # Created by Deltaion Lee (MCMi460) on Github
 
-from flask import Flask, make_response, request, redirect, render_template
+from flask import Flask, make_response, request, redirect, render_template, send_file
 from flask_limiter import Limiter
 from flask_sqlalchemy import SQLAlchemy
 import sqlite3, requests, sys, os, time, json, multiprocessing, datetime, xmltodict, pickle
@@ -209,6 +209,11 @@ def index():
 @app.route('/index.html')
 def indexHTML():
     return index()
+
+# Favicon
+@app.route('/favicon.ico')
+def favicon():
+    return send_file('static/assets/img/favicon.ico')
 
 # Settings page
 @app.route('/settings.html')
