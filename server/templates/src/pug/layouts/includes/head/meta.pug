@@ -5,11 +5,13 @@ block meta
     meta(http-equiv='X-UA-Compatible', content='IE=edge')
     meta(name='viewport', content='width=device-width, initial-scale=1, shrink-to-fit=no')
     meta(name='description', content=description)
+    meta(property='og:title', content=pageTitle)
     meta(property='og:site_name', content='3DS-RPC')
+    meta(name='author', content='3DS-RPC')
+    meta(property='og:type', content='website')
     html {% if data is defined and data.get('User') %}
     meta(property='og:image', content="{{ data['User']['mii']['face'] }}")
     html {% else %}
     meta(property='og:image', content="{{ url_for('static',filename='assets/img/logo.png') }}")
     html {% endif %}
     meta(property='og:image:type', content='image/png')
-    meta(name='author', content='3DS-RPC')
