@@ -17,7 +17,7 @@ limiter = Limiter(app, key_func = lambda : request.access_route[-1])
 
 API_ENDPOINT:str = 'https://discord.com/api/v10'
 
-local = True
+local = False
 port = 2277
 version = 0.31
 agent = '3DS-RPC/'
