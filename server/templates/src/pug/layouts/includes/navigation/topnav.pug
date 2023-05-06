@@ -11,15 +11,15 @@ nav.sb-topnav.navbar.navbar-expand.navbar-dark(id = 'topnav')
     // Navbar Search
     form.d-none.d-md-inline-block.form-inline.ms-auto.me-0.me-md-3.my-2.my-md-0
 
-    // What was once the account toolbar...
+    // Welcome back, account toolbar!
     ul.navbar-nav.ms-auto.ms-md-0.me-3.me-lg-4
         li.nav-item.dropdown
             a#navbarDropdown.nav-link.dropdown-toggle(href='#' role='button' data-bs-toggle='dropdown' aria-expanded='false')
                 i.fas.fa-user.fa-fw
             ul.dropdown-menu.dropdown-menu-end(aria-labelledby='navbarDropdown')#accountDropdown
                 li
-                    a.dropdown-item(href='') Profile
+                    a.dropdown-item(href='/consoles')
                 li
-                    a.dropdown-item(href='javascript:deleteFriendcode()') Logout
+                    a.dropdown-item(href='javascript:deleteLogin()') Logout
                 li
-                    a.dropdown-item(href='/register') Register / Login
+                    a.dropdown-item(href='/discord') Register

@@ -21,50 +21,31 @@ function getCookie(cname) {
 function eraseCookie(name) {
     document.cookie = name +'=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 }
-function deleteFriendcode() {
-    eraseCookie('FC');
-    eraseCookie('MII');
+function deleteLogin() {
+    eraseCookie('token');
+    eraseCookie('user');
+    eraseCookie('pfp');
     location.reload();
 }
 
 var account = document.getElementById('accountDropdown')
 var nav = document.getElementById('navbarDropdown')
-const FC = getCookie('FC');
-const MII = getCookie('MII');
-console.log(`User's FC: ${FC}`);
-console.log(`User's Mii: ${MII}`);
+const token = getCookie('token');
+const user = getCookie('user');
+const pfp = getCookie('pfp');
+console.log(`User's name: ${user}`);
+console.log(`User's pfp: ${pfp}`);
 if (account) {
   var accountList = account.getElementsByTagName('li');
-  if (FC == '')
+  if (token == '')
   {
     account.removeChild(accountList[0]);
     account.removeChild(accountList[0]);
   } else {
     account.removeChild(accountList[2]);
-    accountList[0].firstChild.href = '/user/' + FC;
+    accountList[0].firstChild.text = `${user}'s consoles`;
   }
 }
-if (MII != '' && nav) {
-  nav.innerHTML = `<img height = '50px' src = '${MII}' />`;
+if (pfp != '' && nav) {
+  nav.innerHTML = `<img height = '50px' src = '${pfp}' style = 'border-radius: 50%;' />`;
 }
-
-window.addEventListener('DOMContentLoaded', event => {
-
-    // Toggle the side navigation
-    const sidebarToggle = document.body.querySelector('#sidebarToggle');
-    if (sidebarToggle) {
-        // Uncomment Below to persist sidebar toggle between refreshes
-        // if (localStorage.getItem('sb|sidebar-toggle') === 'true') {
-        //     document.body.classList.toggle('sb-sidenav-toggled');
-        // }
-        sidebarToggle.addEventListener('click', event => {
-            event.preventDefault();
-            document.body.classList.toggle('sb-sidenav-toggled');
-            localStorage.setItem('sb|sidebar-toggle', document.body.classList.contains('sb-sidenav-toggled'));
-            if (settings) {
-                window.location.href = '/';
-            }
-        });
-    }
-
-});

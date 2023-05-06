@@ -17,3 +17,19 @@ Create Table friends(
 Create Table config(
   BACKEND_UPTIME bigint NOT NULL
 );
+
+Create Table discord(
+  ID bigint NOT NULL UNIQUE,
+  refresh text NOT NULL,
+  bearer text NOT NULL,
+  session text,
+  token text UNIQUE,
+  lastAccessed bigint NOT NULL,
+  generationDate bigint NOT NULL
+);
+
+Create Table discordFriends(
+  ID bigint NOT NULL,
+  friendCode text NOT NULL,
+  active boolean NOT NULL
+);

@@ -4,12 +4,6 @@ block config
     - var pageTitle = "Success!";
 
 block content
-    script.
-        // Thanks https://www.quirksmode.org/js/cookies.html
-        var date = new Date();
-        date.setTime(date.getTime() + (1000 * 24 * 60 * 60 * 1000)); // Days, hours, minutes, seconds, milliseconds
-        expires = '; expires=' + date.toUTCString();
-        document.cookie = 'FC' + '=' + ('{{ data['fc'] }}' || '')  + expires + '; path=/';
   
     .container
         .row.justify-content-center
@@ -20,6 +14,20 @@ block content
                     a(href='/{{ data["url"] }}')
                         | Try Profile
                     br
+                    a(href='javascript:addConsole();')#addToConsoles
+                        | Add to Consoles
+                        br
                     a(href='/')
                         i.fas.fa-arrow-left.me-1
                         | Return to Home
+
+    script.
+        var fc = '{{ data["url"].replace("user/", "") }}';
+        if (!document.cookie.includes('token')) {
+            document.getElementById('addToConsoles').remove();
+        }
+        function addConsole() {
+            var xmlHttp = new XMLHttpRequest();
+            xmlHttp.open( "POST", "/api/toggle/" + fc, false );
+            xmlHttp.send( [token, 0] );
+        }

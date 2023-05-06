@@ -3,10 +3,11 @@
 from flask import Flask, make_response, request, redirect, render_template, send_file
 from flask_limiter import Limiter
 from flask_sqlalchemy import SQLAlchemy
-import sqlite3, requests, sys, os, time, json, multiprocessing, datetime, xmltodict, pickle
+import sqlite3, requests, sys, os, time, json, multiprocessing, datetime, xmltodict, pickle, secrets
 sys.path.append('../')
 from api import *
 from api.love2 import *
+from api.private import CLIENT_ID, CLIENT_SECRET, HOST
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.abspath('sqlite/fcLibrary.db')
@@ -14,7 +15,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 limiter = Limiter(app, key_func = lambda : request.access_route[-1])
 
-local = False
+API_ENDPOINT:str = 'https://discord.com/api/v10'
+
+local = True
 port = 2277
 version = 0.31
 agent = '3DS-RPC/'
@@ -32,6 +35,8 @@ try:
     if sys.argv[1] == 'ignoreBackend' and local:
         disableBackendWarnings = True
 except:pass
+if local:
+    HOST = 'http://localhost:2277'
 
 # Limiter limits
 userPresenceLimit = '3/minute'
@@ -96,6 +101,78 @@ def createUser(friendCode:int, addNewInstance:bool = False):
         if 'UNIQUE constraint failed: friends.friendCode' in str(e):
             db.session.execute('UPDATE friends SET lastAccessed = %s WHERE friendCode = \'%s\'' % (time.time(), str(friendCode).zfill(12)))
             db.session.commit()
+
+def fetchBearerToken(code:str):
+    data = {
+        'client_id': '%s' % CLIENT_ID,
+        'client_secret': '%s' % CLIENT_SECRET,
+        'grant_type': 'authorization_code',
+        'code': code,
+        'redirect_uri': '%s/authorize' % HOST,
+    }
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+    }
+    r = requests.post('%s/oauth2/token' % API_ENDPOINT, data = data, headers = headers)
+    r.raise_for_status()
+    return r.json()
+
+def refreshBearer(token:str):
+    user = userFromToken(token)
+    data = {
+        'client_id': '%s' % CLIENT_ID,
+        'client_secret': '%s' % CLIENT_SECRET,
+        'grant_type': 'refresh_token',
+        'refresh_token': user[1],
+    }
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+    }
+    r = requests.post('%s/oauth2/token' % API_ENDPOINT, data = data, headers = headers)
+    r.raise_for_status()
+    token, user, pfp = createDiscordUser('', r.json())
+    return token, user, pfp
+
+def tokenFromID(ID:int):
+    result = db.session.execute('SELECT * FROM discord WHERE ID = %s' % ID)
+    result = result.fetchone()
+    return result[4]
+
+def userFromToken(token:str):
+    result = db.session.execute('SELECT * FROM discord WHERE token = \'%s\'' % token)
+    result = result.fetchone()
+    if not result:
+        raise Exception('invalid token!')
+    return result[0:4]
+
+def createDiscordUser(code:str, response:dict = None):
+    if not response:
+        response = fetchBearerToken(code)
+    headers = {
+        'Authorization': 'Bearer %s' % response['access_token'],
+    }
+    new = requests.get('https://discord.com/api/users/@me', headers = headers)
+    user = new.json()
+    token = secrets.token_hex(20)
+    try:
+        db.session.execute('INSERT INTO discord (ID, refresh, bearer, session, token, lastAccessed, generationDate) VALUES (%s, \'%s\', \'%s\', \'%s\', \'%s\', %s, %s)' % (user['id'], response['refresh_token'], response['access_token'], '', token, 0, time.time()))
+        db.session.commit()
+    except Exception as e:
+        if 'UNIQUE constraint failed' in str(e):
+            token = tokenFromID(user['id'])
+            db.session.execute('UPDATE discord SET refresh = \'%s\', bearer = \'%s\', generationDate = %s WHERE token = \'%s\'' % (response['refresh_token'], response['access_token'], time.time(), token))
+            db.session.commit()
+    return token, user['username'], ('https://cdn.discordapp.com/avatars/%s/%s.%s' % (user['id'], user['avatar'], 'gif' if user['avatar'].startswith('a_') else 'png') if user['avatar'] else '')
+
+def deleteDiscordUser(ID:int):
+    db.session.execute('DELETE FROM discord WHERE ID = %s' % ID)
+    db.session.execute('DELETE FROM discordFriends WHERE ID = %s' % ID)
+    db.session.commit()
+
+def getConnectedConsoles(ID:int):
+    result = db.session.execute('SELECT * FROM discordFriends WHERE ID = %s' % ID)
+    result = result.fetchall()
+    return [ (result[1], bool(result[2])) for result in result ]
 
 def sidenav():
     result = db.session.execute('SELECT BACKEND_UPTIME FROM config')
@@ -232,6 +309,15 @@ def register():
 def registerPage():
     return register()
 
+# Connection page
+@app.route('/connect')
+def connect():
+    return render_template('dist/connect.html', data = {'local':local})
+
+@app.route('/discord')
+def discordConnect():
+    return redirect('/connect')
+
 # Failure page
 @app.route('/failure.html')
 def failure():
@@ -245,6 +331,35 @@ def success():
         'fc': request.args.get('fc'),
     }
     return render_template('dist/success.html', data = data)
+
+# Consoles page
+@app.route('/consoles')
+def consoles():
+    if not request.cookies.get('token'):
+        return redirect('/')
+    data = {
+        'consoles': [],
+    }
+    try:
+        id = userFromToken(request.cookies['token'])[0]
+    except Exception as e:
+        if 'invalid token' in str(e):
+            response = make_response(redirect('/'))
+            response.set_cookie('token', '', expires = 0)
+            response.set_cookie('user', '', expires = 0)
+            response.set_cookie('pfp', '', expires = 0)
+            return response
+    for console, active in getConnectedConsoles(id):
+        result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % console)
+        result = result.fetchone()
+        data['consoles'].append({
+            'fc': '-'.join(console[i:i+4] for i in range(0, 12, 4)),
+            'username': result[6],
+            'active': active,
+        })
+    data.update(sidenav())
+    response = render_template('dist/consoles.html', data = data)
+    return response
 
 @app.route('/user/<string:friendCode>/')
 def userPage(friendCode:str):
@@ -332,6 +447,39 @@ def newAlias2(friendCode:int):
 def newAlias3(friendCode:int):
     return newUser(friendCode)
 
+# Toggle
+@app.route('/api/toggle/<int:friendCode>/', methods=['POST'])
+@limiter.limit(userPresenceLimit)
+def toggler(friendCode:int):
+    fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
+    f = request.data.decode('utf-8').split(',')
+    token = f[0]
+    active = bool(int(f[1]))
+    id = userFromToken(token)[0]
+    if active:
+        db.session.execute('UPDATE discordFriends SET active = %s WHERE active = %s AND ID = %s' % (False, True, id))
+        db.session.commit()
+    result = db.session.execute('SELECT * FROM discordFriends WHERE ID = %s AND friendCode = \'%s\'' % (id, fc))
+    result = result.fetchone()
+    if result:
+        db.session.execute('UPDATE discordFriends SET active = %s WHERE friendCode = \'%s\' AND ID = %s' % (active, fc, id))
+        db.session.commit()
+    else:
+        db.session.execute('INSERT INTO discordFriends (ID, friendCode, active) VALUES (%s, \'%s\', %s)' % (id, fc, active))
+        db.session.commit()
+    return 'success!'
+
+# Delete
+@app.route('/api/delete/<int:friendCode>/', methods=['POST'])
+@limiter.limit(userPresenceLimit)
+def deleter(friendCode:int):
+    fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
+    token = request.data.decode('utf-8')
+    id = userFromToken(token)[0]
+    db.session.execute('DELETE FROM discordFriends WHERE friendCode = \'%s\' AND ID = %s' % (fc, id))
+    db.session.commit()
+    return 'success!'
+
 # Make Nintendo's cert a 'secure' cert
 @app.route('/cdn/i/<string:file>/', methods=['GET'])
 @limiter.limit(cdnLimit)
@@ -349,6 +497,32 @@ def login():
     except:
         return redirect('/failure.html')
     return redirect(f'/success.html?fc={fc}')
+
+# Discord route
+@app.route('/authorize')
+def authorize():
+    if not request.args.get('code'):
+        return render_template('dist/404.html')
+    token, user, pfp = createDiscordUser(request.args['code'])
+    response = make_response(redirect('/consoles'))
+    response.set_cookie('token', token, expires = datetime.datetime.now() + datetime.timedelta(days = 30))
+    response.set_cookie('user', user, expires = datetime.datetime.now() + datetime.timedelta(days = 30))
+    response.set_cookie('pfp', pfp, expires = datetime.datetime.now() + datetime.timedelta(days = 30))
+    return response
+
+@app.route('/refresh')
+def refresh():
+    if local:
+        try:
+            token, user, pfp = refreshBearer(request.cookies['token'])
+            response = make_response(redirect('/consoles'))
+            response.set_cookie('token', token, expires = datetime.datetime.now() + datetime.timedelta(days = 30))
+            response.set_cookie('user', user, expires = datetime.datetime.now() + datetime.timedelta(days = 30))
+            response.set_cookie('pfp', pfp, expires = datetime.datetime.now() + datetime.timedelta(days = 30))
+            return response
+        except:
+            deleteDiscordUser(userFromToken(request.cookies['token'])[0])
+    return redirect('/404.html')
 
 if __name__ == '__main__':
     cacheTitles()

@@ -1,0 +1,82 @@
+extends ../layouts/dashboard.pug
+
+block config
+    - var bodyClass = 'sb-nav-fixed'
+    - var pageTitle = "Consoles"
+    - var sidenavStyle = 'sb-sidenav-dark'
+
+block content
+    .container-fluid.px-4
+        include includes/page-header.pug
+
+        style.
+            .card.subsequentCard {
+                background-color: #ffb759;
+            }
+            .card.mainCard {
+                background-color: #FC8C2C;
+            }
+            .btn.toggle {
+                margin: 25px;
+                height: 50px;
+                width: 50px;
+                border-radius: 50px;
+            }
+            .btn.toggle.active {
+                background-color: #03fc62;
+                border-color: transparent;
+            }
+            
+        script.
+            function clicked(element, fc) {
+                let active = element.attributes[5].nodeValue == 'true';
+                var xmlHttp = new XMLHttpRequest();
+                xmlHttp.open( "POST", "/api/toggle/" + fc, false );
+                xmlHttp.send( [token, +active] );
+                if (xmlHttp.responseText != 'success!') {
+                    if (active) {
+                      element.classList.remove('active');
+                    } else {
+                      element.classList.add('active');
+                    }
+                    element.attributes[5].nodeValue = !active;
+                } else {
+                  location.reload();
+                }
+            }
+            function deleteCode(fc) {
+                var xmlHttp = new XMLHttpRequest();
+                xmlHttp.open( "POST", "/api/delete/" + fc, false );
+                xmlHttp.send( token );
+                if (xmlHttp.responseText == 'success!') {
+                    location.reload();
+                }
+            }
+
+        .card.text-center.shadow-lg.border-0.rounded-lg.mainCard(style = 'margin-bottom: 25px;')
+            .card-header
+                b Consoles
+            .card-body
+                html {% for console in data['consoles'] %}
+                .card.text-center.g-0.shadow-lg.border-0.rounded-lg.subsequentCard(style = 'margin-bottom: 25px;')
+                    .card-header
+                        b Console {{ loop.index0 + 1 }} ({{ console['fc'] }})
+                    .card-body.m-0.p-0
+                        .row.g-0.m-0.p-0
+                            .col-2.my-auto
+                                button.btn.btn-primary.toggle(class = "{{ 'active' if console['active'] }} {{ console['fc'].replace('-', '') }}" onclick = "clicked(this, {{ console['fc'].replace('-', '') }})" type = 'button' data-bs-toggle = 'button' data-toggle = 'button' aria-pressed = "{{ 'true' if console['active'] else 'false' }}" autocomplete = 'off')
+                                    |
+                            .col-8.my-auto
+                                a(href = "/user/{{ console['fc'].replace('-', '') }}" style = 'text-decoration: none;')
+                                    b {{ console['username'] }}
+                            .col-2.my-auto
+                                a(href = "javascript:deleteCode({{ console['fc'].replace('-', '') }});" style = 'text-decoration: none;')
+                                    b Delete
+                html {% endfor %}
+        .card.text-center.shadow-lg.border-0.rounded-lg
+            .card-header
+                b Add a new console?
+            .card-body.d-flex.align-items-center.justify-content-center
+                .col-lg-10
+                    a.btn.btn-primary.btn-block.input-block-level.form-control(href = '/register')
+                      | Register Friend Code

@@ -1,0 +1,37 @@
+extends ../layouts/authentication.pug
+
+block config
+    - var pageTitle = 'Login'
+
+block content
+    .container
+
+        .row.justify-content-center
+            .col-lg-6
+                .card.shadow-lg.border-0.rounded-lg.mt-5
+                    .card-header
+                        h3.text-center.font-weight-light.my-4 Login
+                    .card-body
+                        h5.text-center Connect to Discord
+                        p.text-center
+                            i
+                              | By connecting your Discord account, you permit 3DS-RPC to 
+                              a(href = '/terms') update your presence data
+                              | and set your Discord status to your currently playing 3DS game.
+
+                        .d-flex.align-items-center.justify-content-center.mt-4.mb-0
+                            .col-lg-10
+                                a.btn.btn-primary.btn-block.input-block-level.form-control(style = 'background-color:#7289da;border-width:0px;' href = 'https://discord.com/api/oauth2/authorize?client_id=1023094010383970304&redirect_uri=https%3A%2F%2F3dsrpc.com%2Fauthorize&response_type=code&scope=identify%20activities.write')
+                                  img(src = '{{ url_for("static",filename="assets/img/discord.svg") }}', height = '20px')
+                                  | Discord
+                        html {% if data['local'] %}
+                        .d-flex.align-items-center.justify-content-center.mt-4.mb-0
+                            .col-lg-10
+                                a.btn.btn-primary.btn-block.input-block-level.form-control(style = 'background-color:#7289da;border-width:0px;', href = 'https://discord.com/api/oauth2/authorize?client_id=1023094010383970304&redirect_uri=http%3A%2F%2Flocalhost%3A2277%2Fauthorize&response_type=code&scope=identify%20activities.write')
+                                  img(src = '{{ url_for("static",filename="assets/img/discord.svg") }}', height = '20px')
+                                  | Local
+                        html {% endif %}
+                    .card-footer.text-center
+                        .small
+                          | By using this service, you agree to the
+                          a(href='/terms') Terms and Services
