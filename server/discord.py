@@ -179,6 +179,7 @@ while True:
 					discord.resetPresence(r[2], r[1], r[3], r[5], r[6])
 				except:
 					discord.deleteDiscordUser(r[0])
+				time.sleep(delay)
 
 			print('[BATCH OF %s USERS]' % len(v))
 			if len(v) < 1:
