@@ -34,7 +34,7 @@ I'd like to thank:
 ### 3DS-RPC has been updated to support Mobile users and to work without a Desktop client open!
 
 <p align = 'center'>
-  <img src = '/resources/example.png' />
+  <img src = '/resources/example.png' width = '50%' />
 </p>
 
 1. Open the website [3dsrpc.com](https://3dsrpc.com/) and click on the icon in the top right-hand corner, then choose [Register](https://3dsrpc.com/connect). By following the steps on the website, you will be able to connect your target Discord account to 3DS-RPC.
