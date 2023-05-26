@@ -490,6 +490,7 @@ def cdnImage(file:str):
 
 # Login route
 @app.route('/login', methods=['POST'])
+@limiter.limit(newUserLimit)
 def login():
     try:
         fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(request.form['fc']))).zfill(12)
@@ -500,6 +501,7 @@ def login():
 
 # Discord route
 @app.route('/authorize')
+@limiter.limit(newUserLimit)
 def authorize():
     if not request.args.get('code'):
         return render_template('dist/404.html')

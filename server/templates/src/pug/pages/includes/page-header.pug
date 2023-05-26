@@ -22,12 +22,13 @@ script.
     if (x){
       var fc = x.textContent;
       if (document.cookie.includes('token')) {
-          document.getElementById('addToConsoles').text = ' (Add to consoles)';
+          document.getElementById('addToConsoles').innerHTML = '&nbsp;(Add to consoles)';
       }
       function addConsole() {
           var xmlHttp = new XMLHttpRequest();
           xmlHttp.open( "POST", "/api/toggle/" + fc, false );
           xmlHttp.send( [token, 0] );
+          window.location.href = "/consoles";
       }
       x.textContent = '(' + (x.textContent.match(/.{1,4}/g) ?? []).join('-') + ')';
     }

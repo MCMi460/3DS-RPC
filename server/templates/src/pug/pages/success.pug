@@ -30,4 +30,5 @@ block content
             var xmlHttp = new XMLHttpRequest();
             xmlHttp.open( "POST", "/api/toggle/" + fc, false );
             xmlHttp.send( [token, 0] );
+            window.location.href = "/consoles";
         }
