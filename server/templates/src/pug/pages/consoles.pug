@@ -16,30 +16,20 @@ block content
             .card.mainCard {
                 background-color: #FC8C2C;
             }
-            .btn.toggle {
-                margin: 25px;
-                height: 50px;
-                width: 50px;
-                border-radius: 50px;
+            .icon img {
+                filter: invert(51%) sepia(12%) saturate(0%) hue-rotate(181deg) brightness(89%) contrast(87%);
             }
-            .btn.toggle.active {
-                background-color: #03fc62;
-                border-color: transparent;
+            .icon.active img {
+                filter: invert(49%) sepia(44%) saturate(749%) hue-rotate(84deg) brightness(101%) contrast(79%);
             }
             
         script.
-            function clicked(element, fc) {
-                let active = element.attributes[5].nodeValue == 'true';
+            function clicked(active, fc) {
+                active = active == 'False';
                 var xmlHttp = new XMLHttpRequest();
                 xmlHttp.open( "POST", "/api/toggle/" + fc, false );
                 xmlHttp.send( [token, +active] );
                 if (xmlHttp.responseText != 'success!') {
-                    if (active) {
-                      element.classList.remove('active');
-                    } else {
-                      element.classList.add('active');
-                    }
-                    element.attributes[5].nodeValue = !active;
                 } else {
                   location.reload();
                 }
@@ -54,18 +44,24 @@ block content
             }
 
         .card.text-center.shadow-lg.border-0.rounded-lg.mainCard(style = 'margin-bottom: 25px;')
-            .card-header
+            .card-header.d-flex.justify-content-around
+                b Enable
                 b Consoles
+                b Delete
             .card-body
                 html {% for console in data['consoles'] %}
                 .card.text-center.g-0.shadow-lg.border-0.rounded-lg.subsequentCard(style = 'margin-bottom: 25px;')
                     .card-header
                         b Console {{ loop.index0 + 1 }} ({{ console['fc'] }})
                     .card-body.m-0.p-0
-                        .row.g-0.m-0.p-0
+                        .row.g-0.m-0.p-3
                             .col-2.my-auto
-                                button.btn.btn-primary.toggle(class = "{{ 'active' if console['active'] }} {{ console['fc'].replace('-', '') }}" onclick = "clicked(this, {{ console['fc'].replace('-', '') }})" type = 'button' data-bs-toggle = 'button' data-toggle = 'button' aria-pressed = "{{ 'true' if console['active'] else 'false' }}" autocomplete = 'off')
-                                    |
+                                a(class = "icon {{ 'active' if console['active'] }}" href = "javascript:clicked('{{ console['active'] }}', {{ console['fc'].replace('-', '') }})")
+                                    html {% if not console['active'] %}
+                                    img(src = '{{ url_for("static",filename="assets/img/star.svg") }}' width = '50vmax')
+                                    html {% else %}
+                                    img(src = '{{ url_for("static",filename="assets/img/star-fill.svg") }}' width = '50vmax')
+                                    html {% endif %}
                             .col-8.my-auto
                                 a(href = "/user/{{ console['fc'].replace('-', '') }}" style = 'text-decoration: none;')
                                     b {{ console['username'] }}
