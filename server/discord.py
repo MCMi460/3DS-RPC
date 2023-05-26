@@ -174,7 +174,6 @@ while True:
 			print('[CLEARING INACTIVES; BATCH OF %s]' % len(b1))
 
 			for r in b1:
-				print(r)
 				try:
 					print('[RESETTING %s]' % r[0])
 					discord.resetPresence(r[2], r[1], r[3], r[5], r[6])
@@ -192,7 +191,6 @@ while True:
 				cursor.execute('SELECT * FROM discord WHERE ID = ?', (r[0],))
 				v3 = cursor.fetchone()
 				if time.time() - v3[5] >= 60:
-					print(v2[0])
 					principalId = convertFriendCodeToPrincipalId(v2[0])
 					if not v2[1]:
 						try:
