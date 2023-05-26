@@ -37,7 +37,7 @@ class Discord():
 	def updatePresence(self, bearer, refresh, session, lastAccessed, generationDate, userData):
 		if time.time() - lastAccessed >= 1000:
 			session = Session(self.con, self.cursor).retire(refresh)
-		elif time.time() - lastAccessed <= 15:
+		elif time.time() - lastAccessed <= 30:
 			print('[MANUAL RATE LIMITED]')
 			return
 		data = {
@@ -158,6 +158,29 @@ while True:
 
 			cursor.execute('SELECT * FROM discordFriends WHERE active = ?', (True,))
 			v = cursor.fetchall()
+
+			cursor.execute('SELECT * FROM discord')
+			b = cursor.fetchall()
+			b1 = []
+			for e in b:
+				if any(e[0] == i[0] for i in b1):
+					continue
+				fail = False
+				for oe in v:
+					if e[0] == oe[0]:
+						fail = True
+				if not fail:
+					b1.append(e)
+			print('[CLEARING INACTIVES; BATCH OF %s]' % len(b1))
+
+			for r in b1:
+				print(r)
+				try:
+					print('[RESETTING %s]' % r[0])
+					discord.resetPresence(r[2], r[1], r[3], r[5], r[6])
+				except:
+					discord.deleteDiscordUser(r[0])
+
 			print('[BATCH OF %s USERS]' % len(v))
 			if len(v) < 1:
 				time.sleep(delay)
