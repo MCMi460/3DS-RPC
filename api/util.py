@@ -13,6 +13,7 @@ else:
     except:
         pass
 import typing
+from .love3 import *
 
 def getAppPath(): # Credit to @HotaruBlaze
     applicationPath = os.path.expanduser('~/Documents/3DS-RPC')
@@ -141,6 +142,14 @@ def getTitle(titleID, titlesToUID, titleDatabase):
     for key in _template.keys():
         if not key in game.keys():
             game[key] = _template[key]
+
+    if game == _template:
+        response = getTitleInfo(titleID)
+        if response:
+            game['name'] = response['short']
+            game['publisher']['name'] = response['publisher']
+            game['icon_url'] = '/cdn/l/' + response['imageID']
+            game['banner_url'] = '/cdn/l/' + response['imageID']
 
     # Support browsers' security stuff
     game['icon_url'] = game['icon_url'].replace('https://kanzashi-ctr.cdn.nintendo.net/i/', '/cdn/i/')

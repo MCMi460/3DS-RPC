@@ -369,9 +369,7 @@ def userPage(friendCode:str):
             raise Exception(userData['Exception'])
     except:
         return render_template('dist/404.html')
-    if userData['User']['online'] and userData['User']['Presence']:
-        userData['User']['Presence']['game'] = getTitle(userData['User']['Presence']['titleID'], titlesToUID, titleDatabase)
-    else:
+    if not userData['User']['online'] or not userData['User']['Presence']:
         userData['User']['Presence']['game'] = None
     userData['User']['favoriteGame'] = getTitle(userData['User']['favoriteGame'], titlesToUID, titleDatabase)
     if userData['User']['favoriteGame']['name'] == 'Home Screen':
@@ -452,6 +450,10 @@ def newAlias3(friendCode:int):
 @limiter.limit(userPresenceLimit)
 def toggler(friendCode:int):
     fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
+    result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % fc)
+    result = result.fetchone()
+    if not result:
+        return 'failure!'
     f = request.data.decode('utf-8').split(',')
     token = f[0]
     active = bool(int(f[1]))
@@ -487,6 +489,13 @@ def cdnImage(file:str):
     response = make_response(requests.get('https://kanzashi-ctr.cdn.nintendo.net/i/%s' % file, verify = False).content)
     response.headers['Content-Type'] = 'image/jpeg'
     return response
+
+# Local image cache
+@app.route('/cdn/l/<string:file>/', methods=['GET'])
+@limiter.limit(cdnLimit)
+def localImageCdn(file:str):
+    file = hex(int(file, 16)).replace('0x', '').zfill(16)
+    return send_file('cache/' + file + '.png')
 
 # Login route
 @app.route('/login', methods=['POST'])

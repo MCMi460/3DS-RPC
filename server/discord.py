@@ -191,7 +191,7 @@ while True:
 				v2 = cursor.fetchone()
 				cursor.execute('SELECT * FROM discord WHERE ID = ?', (r[0],))
 				v3 = cursor.fetchone()
-				if time.time() - v3[5] >= 60:
+				if time.time() - v3[5] >= 60 and v2:
 					principalId = convertFriendCodeToPrincipalId(v2[0])
 					if not v2[1]:
 						try:

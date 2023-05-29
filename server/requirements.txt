@@ -6,3 +6,5 @@ gevent
 SQLAlchemy<1.4.46
 Flask-SQLAlchemy # Using deprecated features, apparently
 xmltodict
+Pillow
+pycryptodomex
