@@ -145,9 +145,10 @@ class Client():
 
             game = presence['game']
 
-            log = 'Update'
+            log(str(presence))
+            logger = 'Update'
             if self.currentGame != game:
-                log += ' [%s -> %s]' % (self.currentGame['@id'], game['@id'])
+                logger += ' [%s -> %s]' % (self.currentGame['@id'], game['@id'])
                 self.currentGame = game
                 self.start = int(time.time())
             kwargs = {
@@ -179,11 +180,11 @@ class Client():
             if self.connected:self.rpc.update(**kwargs)
             if self.GUI:self.GUI.update(kwargs)
         else:
-            log = 'Clear [%s -> %s]' % (self.currentGame['@id'], None)
+            logger = 'Clear [%s -> %s]' % (self.currentGame['@id'], None)
             self.currentGame = {'@id': None}
             if self.connected:self.rpc.clear()
             if self.GUI:self.GUI.update(None)
-        self.gameLog.append(log)
+        self.gameLog.append(logger)
 
     def background(self):
         try:
