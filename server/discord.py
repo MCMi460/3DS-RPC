@@ -56,7 +56,7 @@ class Discord():
 			game = presence['game']
 			data['activities'][0]['name'] = game['name'] + ' (3DS)'
 			if game['icon_url']:
-				data['activities'][0]['assets']['large_image'] = game['icon_url'].replace('/cdn/i/', HOST + '/cdn/i/')
+				data['activities'][0]['assets']['large_image'] = game['icon_url'].replace('/cdn/', HOST + '/cdn/')
 				data['activities'][0]['assets']['large_text'] = game['name']
 			if presence['gameDescription']:
 				data['activities'][0]['details'] = presence['gameDescription']

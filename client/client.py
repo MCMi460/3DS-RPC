@@ -159,7 +159,7 @@ class Client():
                 # Certainly something when presence['joinable'] == True
             }
             if game['icon_url']:
-                kwargs['large_image'] = game['icon_url'].replace('/cdn/i/', host + '/cdn/i/')
+                kwargs['large_image'] = game['icon_url'].replace('/cdn/', host + '/cdn/')
                 kwargs['large_text'] = game['name']
             if presence['gameDescription']:
                 kwargs['state'] = presence['gameDescription']
