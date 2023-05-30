@@ -31,7 +31,11 @@ def getTitleData(titleID:hex):
 	return decipher.decrypt(data[2:])
 
 def getTitleInfo(titleID:hex):
-	int(titleID, 16) # Errors if not HEX
+	titleID = str(titleID)
+	try:
+		int(titleID, 16) # Errors if not HEX
+	except:
+		return None
 	if isinstance(titleID, str):
 		titleID = hex(int(titleID)).replace('0x', '')
 
