@@ -3,3 +3,9 @@ xmltodict
 pypresence
 pyqt5
 pyreadline3
+Pillow
+pycryptodomex
+
+pyinstaller==5.10.1
+charset_normalizer<3.0
+pyinstaller-hooks-contrib==2023.2
