@@ -337,7 +337,7 @@ def active():
         'joinable': bool(user[9]),
     }) for user in results if user[6] ]
 
-    response = make_response(render_template('dist/active.html', data = data))
+    response = make_response(render_template('dist/users.html', data = data))
     return response
 
 # Register page
