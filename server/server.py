@@ -254,7 +254,7 @@ def getPresence(friendCode:int, *, créerCompte:bool = True, ignoreUserAgent = F
 # Index page
 @app.route('/')
 def index():
-    results = db.session.execute('SELECT * FROM friends WHERE online = True ORDER BY lastAccessed DESC')
+    results = db.session.execute('SELECT * FROM friends WHERE online = True ORDER BY lastAccessed DESC LIMIT 6')
     results = results.fetchall()
     num = len(results)
     data = sidenav()
@@ -271,7 +271,7 @@ def index():
             data['active'].remove(e)
     data['active'] = data['active'][:2]
 
-    results = db.session.execute('SELECT * FROM friends ORDER BY accountCreation DESC LIMIT 2')
+    results = db.session.execute('SELECT * FROM friends ORDER BY accountCreation DESC LIMIT 6')
     results = results.fetchall()
     data['new'] = [ ({
         'mii':MiiData().mii_studio_url(user[8]),
@@ -280,6 +280,7 @@ def index():
         'friendCode': str(user[0]).zfill(12),
         'joinable': bool(user[9]),
     }) for user in results if user[6] ]
+    data['new'] = data['new'][:2]
 
     data['num'] = num
 
