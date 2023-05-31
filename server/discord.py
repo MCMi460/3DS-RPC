@@ -83,10 +83,10 @@ class Discord():
 	def resetPresence(self, bearer, refresh, session, lastAccessed, generationDate):
 		if not session:
 			print('[NO SESSION TO RESET]')
-			return
+			return False
 		elif time.time() - lastAccessed <= 30:
 			print('[MANUAL RATE LIMITED]')
-			return
+			return False
 		Session(self.con, self.cursor).update(session)
 		headers = {
 		    'Authorization': 'Bearer %s' % bearer,
@@ -98,6 +98,7 @@ class Discord():
 		r = requests.post('%s/users/@me/headless-sessions/delete' % API_ENDPOINT, data = json.dumps(data), headers = headers)
 		r.raise_for_status()
 		Session(self.con, self.cursor).create(refresh, '') # Reset session
+		return True
 
 	def refreshBearer(self, refresh:str, access:str, generationDate:int, ID:int):
 		if time.time() - generationDate < 604800 - 1800: # 30 minutes before the token expires
@@ -176,10 +177,10 @@ while True:
 			for r in b1:
 				try:
 					print('[RESETTING %s]' % r[0])
-					discord.resetPresence(r[2], r[1], r[3], r[5], r[6])
+					if discord.resetPresence(r[2], r[1], r[3], r[5], r[6]):
+						time.sleep(delay)
 				except:
 					discord.deleteDiscordUser(r[0])
-				time.sleep(delay)
 
 			print('[BATCH OF %s USERS]' % len(v))
 			if len(v) < 1:
