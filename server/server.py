@@ -536,7 +536,7 @@ def cdnImage(file:str):
 @app.route('/cdn/l/<string:file>/', methods=['GET'])
 @limiter.limit(cdnLimit)
 def localImageCdn(file:str):
-    file = hex(int(file, 16)).replace('0x', '').zfill(16)
+    file = hex(int(file, 16)).replace('0x', '').zfill(16).upper()
     return send_file('cache/' + file + '.png')
 
 # Login route
