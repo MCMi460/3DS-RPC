@@ -39,7 +39,7 @@ class Discord():
 			session = Session(self.con, self.cursor).retire(refresh)
 		elif time.time() - lastAccessed <= 30:
 			print('[MANUAL RATE LIMITED]')
-			return
+			return False
 		data = {
 			'activities': [
 				{
@@ -79,6 +79,7 @@ class Discord():
 			r.raise_for_status()
 			Session(self.con, self.cursor).create(refresh, r.json()['token'])
 			Session(self.con, self.cursor).update(r.json()['token'])
+			return True
 
 	def resetPresence(self, bearer, refresh, session, lastAccessed, generationDate):
 		if not session:
@@ -182,6 +183,8 @@ while True:
 				except:
 					discord.deleteDiscordUser(r[0])
 
+			time.sleep(delay)
+
 			print('[BATCH OF %s USERS]' % len(v))
 			if len(v) < 1:
 				time.sleep(delay)
@@ -197,7 +200,8 @@ while True:
 					if not v2[1]:
 						try:
 							print('[RESETTING %s]' % v2[0])
-							discord.resetPresence(v3[2], v3[1], v3[3], v3[5], v3[6])
+							if discord.resetPresence(v3[2], v3[1], v3[3], v3[5], v3[6]):
+								time.sleep(delay)
 						except:
 							discord.deleteDiscordUser(v3[0])
 					else:
@@ -210,18 +214,19 @@ while True:
 							mii = MiiData().mii_studio_url(mii)
 						print('[UPDATING %s]' % v2[0])
 						try:
-							discord.updatePresence(v3[2], v3[1], v3[3], v3[5], v3[6], {
-								'User': {
-									'friendCode': str(convertPrincipalIdtoFriendCode(principalId)).zfill(12),
-									'online': bool(v2[1]),
-									'Presence': presence,
-									'username': v2[6],
-									'mii': mii,
-									'lastAccessed': v2[4],
-								}
-							})
+							if discord.updatePresence(v3[2], v3[1], v3[3], v3[5], v3[6], {
+									'User': {
+										'friendCode': str(convertPrincipalIdtoFriendCode(principalId)).zfill(12),
+										'online': bool(v2[1]),
+										'Presence': presence,
+										'username': v2[6],
+										'mii': mii,
+										'lastAccessed': v2[4],
+									}
+								}):
+								time.sleep(delay)
 						except:
 							discord.deleteDiscordUser(v3[0])
 				else:
 					print('[WAIT]')
-				time.sleep(delay)
+			time.sleep(delay)
