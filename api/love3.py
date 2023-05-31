@@ -9,7 +9,7 @@
 from Cryptodome.Cipher import AES
 import Cryptodome.Cipher.AES
 from binascii import hexlify, unhexlify
-import requests, io, math
+import requests, io, math, json, os
 from PIL import Image
 
 def getTitleData(titleID:hex):
@@ -40,9 +40,19 @@ def getTitleInfo(titleID:hex):
 		titleID = hex(int(titleID)).replace('0x', '')
 
 	titleID = titleID.zfill(16).upper()
+
+	if os.path.isfile('cache/homebrew' + titleID + '.txt'):
+		return None
+
+	if os.path.isfile('cache/' + titleID + '.txt') and os.path.isfile('cache/' + titleID + '.png'):
+		with open('cache/' + titleID + '.txt', 'r') as file:
+			return json.loads(file.read())
+
 	try:
 		data = getTitleData(titleID)
 	except:
+		with open('cache/homebrew' + titleID + '.txt', 'w') as file:
+			file.write('')
 		return None
 
 	for i in range(3):
@@ -54,6 +64,16 @@ def getTitleInfo(titleID:hex):
 		publisher = n[0x180:0x180+0x80].decode('utf-16').replace('\x00', '')
 		if short:
 			break
+
+	ret = {
+		'short': short,
+		'long': long,
+		'publisher': publisher,
+		'imageID': titleID,
+	}
+
+	with open('cache/' + titleID + '.txt', 'w') as file:
+		file.write(json.dumps(ret))
 
 	icon_data = data[0x24D0:0x24D0+0x1200] # 48x48 icon data
 
@@ -79,9 +99,4 @@ def getTitleInfo(titleID:hex):
 
 	icon.save('cache/' + titleID + '.png', 'PNG')
 
-	return {
-		'short': short,
-		'long': long,
-		'publisher': publisher,
-		'imageID': titleID,
-	}
+	return ret

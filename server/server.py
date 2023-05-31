@@ -254,8 +254,9 @@ def getPresence(friendCode:int, *, créerCompte:bool = True, ignoreUserAgent = F
 # Index page
 @app.route('/')
 def index():
-    results = db.session.execute('SELECT * FROM friends WHERE online = True ORDER BY lastAccessed DESC LIMIT 2')
+    results = db.session.execute('SELECT * FROM friends WHERE online = True ORDER BY lastAccessed DESC')
     results = results.fetchall()
+    num = len(results)
     data = sidenav()
 
     data['active'] = [ ({
@@ -268,6 +269,7 @@ def index():
     for e in data['active']:
         if not e['game']['icon_url']:
             data['active'].remove(e)
+    data['active'] = data['active'][:2]
 
     results = db.session.execute('SELECT * FROM friends ORDER BY accountCreation DESC LIMIT 2')
     results = results.fetchall()
@@ -278,6 +280,8 @@ def index():
         'friendCode': str(user[0]).zfill(12),
         'joinable': bool(user[9]),
     }) for user in results if user[6] ]
+
+    data['num'] = num
 
     response = make_response(render_template('dist/index.html', data = data))
     return response
@@ -296,6 +300,44 @@ def favicon():
 @app.route('/settings.html')
 def settings():
     response = make_response(render_template('dist/settings.html', data = sidenav()))
+    return response
+
+# Roster page
+@app.route('/roster')
+def roster():
+    results = db.session.execute('SELECT * FROM friends ORDER BY accountCreation DESC LIMIT 8')
+    results = results.fetchall()
+    data = sidenav()
+    data['title'] = 'New Users'
+
+    data['users'] = [ ({
+        'mii':MiiData().mii_studio_url(user[8]),
+        'username':user[6],
+        'game': getTitle(user[2], titlesToUID, titleDatabase),
+        'friendCode': str(user[0]).zfill(12),
+        'joinable': bool(user[9]),
+    }) for user in results if user[6] ]
+
+    response = make_response(render_template('dist/users.html', data = data))
+    return response
+
+# Active page
+@app.route('/active')
+def active():
+    results = db.session.execute('SELECT * FROM friends WHERE online = True ORDER BY lastAccessed DESC')
+    results = results.fetchall()
+    data = sidenav()
+    data['title'] = 'Active Users'
+
+    data['users'] = [ ({
+        'mii':MiiData().mii_studio_url(user[8]),
+        'username':user[6],
+        'game': getTitle(user[2], titlesToUID, titleDatabase),
+        'friendCode': str(user[0]).zfill(12),
+        'joinable': bool(user[9]),
+    }) for user in results if user[6] ]
+
+    response = make_response(render_template('dist/active.html', data = data))
     return response
 
 # Register page

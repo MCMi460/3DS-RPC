@@ -19,7 +19,9 @@ block content
                 .card.mb-4
                     .card-header
                         i.fas.fa-chart-area.me-1
-                        | Actively Playing Users...
+                        a(href = '/active' style = 'text-decoration: none;')
+                            b {{ data['num'] }}
+                            | Actively Playing Users...
                     .card-body
                         html {% for i in data['active'] %}
                         a(href = "/user/{{ i['friendCode'] }}", style = 'text-decoration: none; color: #000;').card.mb-4
@@ -39,7 +41,8 @@ block content
                 .card.mb-4
                     .card-header
                         i.fas.fa-chart-bar.me-1
-                        | Recently Joined Users...
+                        a(href = '/roster' style = 'text-decoration: none;')
+                            | Recently Joined Users...
                     .card-body
                         html {% for i in data['new'] %}
                         a(href = "/user/{{ i['friendCode'] }}", style = 'text-decoration: none; color: #000;').card.mb-4
