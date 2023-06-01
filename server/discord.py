@@ -34,7 +34,7 @@ class Discord():
 		self.con = con
 		self.cursor = cursor
 
-	def updatePresence(self, bearer, refresh, session, lastAccessed, generationDate, userData):
+	def updatePresence(self, bearer, refresh, session, lastAccessed, generationDate, userData, config):
 		if time.time() - lastAccessed >= 1000:
 			session = Session(self.con, self.cursor).retire(refresh)
 		elif time.time() - lastAccessed <= 30:
@@ -60,9 +60,9 @@ class Discord():
 				data['activities'][0]['assets']['large_text'] = game['name']
 			if presence['gameDescription']:
 				data['activities'][0]['details'] = presence['gameDescription']
-			if userData['User']['username']:
+			if userData['User']['username'] and bool(config[0]):
 				data['activities'][0]['buttons'] = [{'label': 'Profile', 'url': HOST + '/user/' + userData['User']['friendCode']},]
-			if userData['User']['username'] and game['icon_url']:
+			if userData['User']['username'] and game['icon_url'] and bool(config[1]):
 				data['activities'][0]['assets']['small_image'] = userData['User']['mii']['face']
 				data['activities'][0]['assets']['small_text'] = '-'.join(userData['User']['friendCode'][i:i+4] for i in range(0, 12, 4))
 			if session:
@@ -223,7 +223,7 @@ while True:
 										'mii': mii,
 										'lastAccessed': v2[4],
 									}
-								}):
+								}, (v3[7], v3[8])):
 								time.sleep(delay)
 						except:
 							discord.deleteDiscordUser(v3[0])

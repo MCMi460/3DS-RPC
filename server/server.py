@@ -302,7 +302,28 @@ def favicon():
 # Settings page
 @app.route('/settings.html')
 def settings():
-    response = make_response(render_template('dist/settings.html', data = sidenav()))
+    if not request.cookies.get('token'):
+        return redirect('/connect')
+    data = {
+        'consoles': [],
+    }
+    data = sidenav()
+    try:
+        result = db.session.execute('SELECT * FROM discord WHERE token = \'%s\'' % request.cookies['token'])
+        result = result.fetchone()
+    except Exception as e:
+        if 'invalid token' in str(e):
+            response = make_response(redirect('/'))
+            response.set_cookie('token', '', expires = 0)
+            response.set_cookie('user', '', expires = 0)
+            response.set_cookie('pfp', '', expires = 0)
+            return response
+        return redirect('/')
+
+    data['profileButton'] = bool(result[7])
+    data['smallImage'] = bool(result[8])
+
+    response = make_response(render_template('dist/settings.html', data = data))
     return response
 
 # Roster page
@@ -381,7 +402,7 @@ def success():
 @app.route('/consoles')
 def consoles():
     if not request.cookies.get('token'):
-        return redirect('/')
+        return redirect('/connect')
     data = {
         'consoles': [],
     }
@@ -394,6 +415,7 @@ def consoles():
             response.set_cookie('user', '', expires = 0)
             response.set_cookie('pfp', '', expires = 0)
             return response
+        return redirect('/')
     for console, active in getConnectedConsoles(id):
         result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % console)
         result = result.fetchone()
@@ -525,6 +547,24 @@ def deleter(friendCode:int):
     id = userFromToken(token)[0]
     db.session.execute('DELETE FROM discordFriends WHERE friendCode = \'%s\' AND ID = %s' % (fc, id))
     db.session.commit()
+    return 'success!'
+
+# Toggle one
+@app.route('/api/settings/<string:which>/', methods=['POST'])
+@limiter.limit(userPresenceLimit)
+def settingsToggler(which:str):
+    toggle = bool(int(request.data.decode('utf-8')))
+    if not which in ('smallImage', 'profileButton'):
+        return 'failure!'
+    if which == 'smallImage':
+        which = 'showSmallImage'
+    else:
+        which = 'showProfileButton'
+    try:
+        db.session.execute('UPDATE discord SET \'%s\' = %s WHERE token = \'%s\'' % (which, toggle, request.cookies['token']))
+        db.session.commit()
+    except:
+        return 'failure!'
     return 'success!'
 
 # Make Nintendo's cert a 'secure' cert

@@ -2,18 +2,41 @@ extends ../layouts/dashboard.pug
 
 block config
     - var bodyClass = 'sb-nav-fixed'
-    - var pageTitle = "Settings"
+    - var pageTitle = 'Settings'
     - var sidenavStyle = 'sb-sidenav-dark'
-    - var settings = true;
 
 block content
     .container-fluid.px-4
         include includes/page-header.pug
 
+        script.
+            function update(element) {
+                var xmlHttp = new XMLHttpRequest();
+                xmlHttp.open( "POST", "/api/settings/" + element.id, false );
+                xmlHttp.send( [+element.checked] );
+                if (xmlHttp.responseText != 'success!') {
+                  alert('This request failed. Perhaps you\'ve hit a ratelimit?');
+                  location.reload();
+                }
+            }
+
         .d-flex.justify-content-center
-            .col-lg-10
-                .card.text-center
-                    .card-header
-                        b Settings
-                    .card-body
-                        | There's nothing here!
+            .col-12
+                .card
+                    .card-body.d-flex.justify-content-center
+                        div
+                            .form-check.form-switch
+                                html {% if data['profileButton'] %}
+                                input.form-check-input#profileButton(type = 'checkbox' role = 'switch' onchange = 'update(this)' checked autocomplete = 'off')
+                                html {% else %}
+                                input.form-check-input#profileButton(type = 'checkbox' role = 'switch' onchange = 'update(this)' autocomplete = 'off')
+                                html {% endif %}
+                                label.form-check-label(for = 'profileButton') Allow others to click your status to view your profile?
+                            br
+                            .form-check.form-switch
+                                html {% if data['smallImage'] %}
+                                input.form-check-input#smallImage(type = 'checkbox' role = 'switch' onchange = 'update(this)' checked autocomplete = 'off')
+                                html {% else %}
+                                input.form-check-input#smallImage(type = 'checkbox' role = 'switch' onchange = 'update(this)' autocomplete = 'off')
+                                html {% endif %}
+                                label.form-check-label(for = 'smallImage') Show a small image of your Mii to Discord?
