@@ -3,8 +3,7 @@
 
 # A solid afternoon was spent. :D
 
-# Thank you to 3DBrew's IDBE page (https://www.3dbrew.org/wiki/IDBE) which was written by Cruel (https://www.3dbrew.org/w/index.php?title=User:Cruel).
-# And thank you to Cruel again (https://github.com/Cruel) for helping with understanding the RGB565 data type and Nintendo's anger issues
+# Thank you to 3DBrew's IDBE page (https://www.3dbrew.org/wiki/IDBE)
 
 from Cryptodome.Cipher import AES
 import Cryptodome.Cipher.AES
@@ -77,7 +76,7 @@ def getTitleInfo(titleID:hex):
 
 	icon_data = data[0x24D0:0x24D0+0x1200] # 48x48 icon data
 
-	# Taken from Repo3DS (https://github.com/Repo3DS/shop-cache/blob/master/TitleInfo.py) -- Thank you so much, Cruel!
+	# Taken from Repo3DS (https://github.com/Repo3DS/shop-cache/blob/master/TitleInfo.py)
 	(w, h) = (48, 48)
 	tiled_icon = Image.frombuffer('RGB', (w, h), icon_data, 'raw', 'BGR;16')
 	# Untile the image
