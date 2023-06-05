@@ -300,7 +300,7 @@ def favicon():
     return send_file('static/assets/img/favicon.ico')
 
 # Settings page
-@app.route('/settings.html')
+@app.route('/settings')
 def settings():
     if not request.cookies.get('token'):
         return redirect('/connect')
@@ -325,6 +325,10 @@ def settings():
 
     response = make_response(render_template('dist/settings.html', data = data))
     return response
+
+@app.route('/settings.html')
+def settingsRedirect():
+    return redirect('/settings')
 
 # Roster page
 @app.route('/roster')
