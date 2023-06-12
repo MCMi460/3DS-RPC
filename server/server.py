@@ -254,7 +254,7 @@ def getPresence(friendCode:int, *, créerCompte:bool = True, ignoreUserAgent = F
 # Index page
 @app.route('/')
 def index():
-    results = db.session.execute('SELECT * FROM friends WHERE online = True ORDER BY lastAccessed DESC')
+    results = db.session.execute('SELECT * FROM friends WHERE online = True AND username != "" ORDER BY lastAccessed DESC')
     results = results.fetchall()
     num = len(results)
     data = sidenav()
@@ -267,13 +267,10 @@ def index():
         'game': getTitle(user[2], titlesToUID, titleDatabase),
         'friendCode': str(user[0]).zfill(12),
         'joinable': bool(user[9]),
-    }) for user in results if user[6] and int(user[2]) != 0 ]
-    for e in data['active']:
-        if not e['game']['icon_url']:
-            data['active'].remove(e)
+    }) for user in results if user[6] ]
     data['active'] = data['active'][:2]
 
-    results = db.session.execute('SELECT * FROM friends ORDER BY accountCreation DESC LIMIT 6')
+    results = db.session.execute('SELECT * FROM friends WHERE username != "" ORDER BY accountCreation DESC LIMIT 6')
     results = results.fetchall()
     data['new'] = [ ({
         'mii':MiiData().mii_studio_url(user[8]),
@@ -333,7 +330,7 @@ def settingsRedirect():
 # Roster page
 @app.route('/roster')
 def roster():
-    results = db.session.execute('SELECT * FROM friends ORDER BY accountCreation DESC LIMIT 8')
+    results = db.session.execute('SELECT * FROM friends WHERE username != "" ORDER BY accountCreation DESC LIMIT 8')
     results = results.fetchall()
     data = sidenav()
     data['title'] = 'New Users'
@@ -352,7 +349,7 @@ def roster():
 # Active page
 @app.route('/active')
 def active():
-    results = db.session.execute('SELECT * FROM friends WHERE online = True ORDER BY lastAccessed DESC')
+    results = db.session.execute('SELECT * FROM friends WHERE online = True AND username != "" ORDER BY lastAccessed DESC')
     results = results.fetchall()
     data = sidenav()
     data['title'] = 'Active Users'

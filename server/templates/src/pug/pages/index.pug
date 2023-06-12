@@ -30,10 +30,12 @@ block content
                                     | User:
                                     img(src = "{{ i['mii']['face'] }}", height = '100vw', style = 'background: linear-gradient(0deg, rgb(255, 198, 147) 0%, rgb(254, 245, 239, 0.1) 100%);')
                                     | {{ i['username'] }}
+                                html {% if not i['game']['name'] in ('Home Screen', 'Unknown 3DS App') %}
                                 div.d-flex.flex-column.align-items-center.text-center.text-break(style = 'padding-left: 10px;')
                                     | Currently playing game:
                                     img(src = "{{ i['game']['banner_url'] }}", height = '100vw')
                                     p(style = 'width: 200px;') {{ i['game']['name'] }}
+                                html {% endif %}
                             .card-footer.small.text-center.text-muted
                                 | Click here to view this user's profile!
                         html {% endfor %}

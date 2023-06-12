@@ -27,7 +27,7 @@ script.
       function addConsole() {
           var xmlHttp = new XMLHttpRequest();
           xmlHttp.open( "POST", "/api/toggle/" + fc, false );
-          xmlHttp.send( [token, 0] );
+          xmlHttp.send( [token, 1] );
           window.location.href = "/consoles";
       }
       x.textContent = '(' + (x.textContent.match(/.{1,4}/g) ?? []).join('-') + ')';

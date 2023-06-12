@@ -15,6 +15,7 @@ logging.basicConfig(level=logging.INFO)
 
 delay = 2
 since = 0
+quicker = 6
 begun = time.time()
 startDBTime(begun)
 
@@ -62,7 +63,7 @@ async def main():
 							print('Cleaning out to zero')
 							removables = await friends_client.get_all_friends()
 							for friend in removables:
-								time.sleep(delay / 4)
+								time.sleep(delay / quicker)
 								await friends_client.remove_friend_by_principal_id(friend.unk1)
 							print('Removed %s friends' % str(len(removables)))
 
@@ -119,7 +120,7 @@ async def main():
 								for ti in t:
 									work = False
 									for l in list_:
-										if l[0] == ti.unk1 and time.time() - l[1] <= 300:
+										if l[0] == ti.unk1 and time.time() - l[1] <= 600:
 											work = True
 									if not work:
 										continue
@@ -152,7 +153,7 @@ async def main():
 									con.commit()
 
 							for friend in rotation + cleanUp:
-								time.sleep(delay / 4)
+								time.sleep(delay / quicker)
 								await friends_client.remove_friend_by_principal_id(friend)
 				except Exception as e:
 					print('An error occurred!\n%s' % e)
