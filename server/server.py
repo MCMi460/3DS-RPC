@@ -41,7 +41,8 @@ if local:
 # Limiter limits
 userPresenceLimit = '3/minute'
 newUserLimit = '2/minute'
-cdnLimit = '30/minute'
+cdnLimit = '60/minute'
+togglerLimit = '5/minute'
 
 # Database files
 titleDatabase = []
@@ -159,8 +160,8 @@ def createDiscordUser(code:str, response:dict = None):
         db.session.commit()
     except Exception as e:
         if 'UNIQUE constraint failed' in str(e):
-            token = tokenFromID(user['id'])
-            db.session.execute('UPDATE discord SET refresh = \'%s\', bearer = \'%s\', generationDate = %s WHERE token = \'%s\'' % (response['refresh_token'], response['access_token'], time.time(), token))
+            old_token = tokenFromID(user['id'])
+            db.session.execute('UPDATE discord SET refresh = \'%s\', bearer = \'%s\', generationDate = %s, token = \'%s\' WHERE token = \'%s\'' % (response['refresh_token'], response['access_token'], time.time(), token, old_token))
             db.session.commit()
     return token, user['username'], ('https://cdn.discordapp.com/avatars/%s/%s.%s' % (user['id'], user['avatar'], 'gif' if user['avatar'].startswith('a_') else 'png') if user['avatar'] else '')
 
@@ -515,22 +516,30 @@ def newAlias3(friendCode:int):
 
 # Toggle
 @app.route('/api/toggle/<int:friendCode>/', methods=['POST'])
-@limiter.limit(userPresenceLimit)
+@limiter.limit(togglerLimit)
 def toggler(friendCode:int):
-    fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
+    try:
+        fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
+    except:
+        return 'failure!\nthat is not a real friendCode!'
     result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % fc)
     result = result.fetchone()
     if not result:
-        return 'failure!'
+        return 'failure!\nthat is not an existing friendCode!'
     f = request.data.decode('utf-8').split(',')
     token = f[0]
     active = bool(int(f[1]))
     id = userFromToken(token)[0]
+    result = db.session.execute('SELECT * FROM discordFriends WHERE ID = %s AND friendCode = \'%s\'' % (id, fc))
+    result = result.fetchone()
+    if not result:
+        thing = db.session.execute('SELECT * FROM discordFriends WHERE ID = %s' % id)
+        thing = thing.fetchall()
+        if len(thing) >= 5:
+            return 'failure!\nyou can\'t have more than five consoles added at one time!'
     if active:
         db.session.execute('UPDATE discordFriends SET active = %s WHERE active = %s AND ID = %s' % (False, True, id))
         db.session.commit()
-    result = db.session.execute('SELECT * FROM discordFriends WHERE ID = %s AND friendCode = \'%s\'' % (id, fc))
-    result = result.fetchone()
     if result:
         db.session.execute('UPDATE discordFriends SET active = %s WHERE friendCode = \'%s\' AND ID = %s' % (active, fc, id))
         db.session.commit()
@@ -541,7 +550,7 @@ def toggler(friendCode:int):
 
 # Delete
 @app.route('/api/delete/<int:friendCode>/', methods=['POST'])
-@limiter.limit(userPresenceLimit)
+@limiter.limit(togglerLimit)
 def deleter(friendCode:int):
     fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
     token = request.data.decode('utf-8')
@@ -552,7 +561,7 @@ def deleter(friendCode:int):
 
 # Toggle one
 @app.route('/api/settings/<string:which>/', methods=['POST'])
-@limiter.limit(userPresenceLimit)
+@limiter.limit(togglerLimit)
 def settingsToggler(which:str):
     toggle = bool(int(request.data.decode('utf-8')))
     if not which in ('smallImage', 'profileButton'):
