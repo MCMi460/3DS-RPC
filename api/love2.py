@@ -55,7 +55,7 @@ class MiiData(miis.MiiData):
             self.eyebrow_distance,
             self.eyebrow_height,
             self.face_color,
-            self.face_style,
+            self.blush_type,
             self.face_type,
             self.face_style,
             self.color,
