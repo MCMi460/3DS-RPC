@@ -120,7 +120,7 @@ async def main():
 								for ti in t:
 									work = False
 									for l in list_:
-										if l[0] == ti.unk1 and time.time() - l[1] <= 600:
+										if l[0] == ti.unk1 and time.time() - l[1] <= 1200:
 											work = True
 									if not work:
 										continue
