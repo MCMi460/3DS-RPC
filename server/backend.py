@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 
 delay = 2
 since = 0
-quicker = 6
+quicker = 10
 begun = time.time()
 startDBTime(begun)
 
