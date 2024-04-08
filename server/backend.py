@@ -18,6 +18,7 @@ since = 0
 quicker = 15
 begun = time.time()
 startDBTime(begun)
+scrape_only = False
 
 async def main():
 	while True:
@@ -96,6 +97,8 @@ async def main():
 								f = await friends_client.get_friend_presence([ e.unk1 for e in t ])
 								users = []
 								for game in f:
+									if scrape_only: # Set all to offline if scraping
+										break
 									# game.unk == principalId
 									users.append(game.unk)
 									#print(game.__dict__)
@@ -120,7 +123,7 @@ async def main():
 								for ti in t:
 									work = False
 									for l in list_:
-										if l[0] == ti.unk1 and time.time() - l[1] <= 1200:
+										if (l[0] == ti.unk1 and time.time() - l[1] <= 1200) or scrape_only:
 											work = True
 									if not work:
 										continue
@@ -159,6 +162,10 @@ async def main():
 					print('An error occurred!\n%s' % e)
 					print(traceback.format_exc())
 					time.sleep(2)
+			
+			if scrape_only:
+				print('Done scraping.')
+				break
 
 if __name__ == '__main__':
 	try:
