@@ -53,7 +53,7 @@ async def main():
 							friends_client = friends.FriendsClientV1(client)
 							if time.time() - begun < 30:
 								time.sleep(delay)
-								await friends_client.update_comment('3dsrpc.com')
+								await friends_client.update_comment('Discord: Preloading')
 							since = time.time()
 
 							if time.time() - since > 3600:
@@ -64,7 +64,7 @@ async def main():
 							removables = await friends_client.get_all_friends()
 							for friend in removables:
 								time.sleep(delay / quicker)
-								await friends_client.remove_friend_by_principal_id(friend.unk1)
+								await friends_client.remove_friend_by_principal_id(friend.pid)
 							print('Removed %s friends' % str(len(removables)))
 
 							removeList = []
@@ -76,15 +76,15 @@ async def main():
 							t = await friends_client.get_all_friends()
 							if len(t) < len(rotation):
 								for ID in rotation:
-									if ID not in [ f.unk1 for f in t ]:
+									if ID not in [ f.pid for f in t ]:
 										removeList.append(ID)
 							x = t
 							t = []
 							for t1 in x:
-								if t1.unk1 in rotation:
+								if t1.pid in rotation:
 									t.append(t1)
 								else:
-									cleanUp.append(t1.unk1)
+									cleanUp.append(t1.pid)
 
 							for remover in removeList:
 								cursor.execute('DELETE FROM friends WHERE friendCode = ?', (str(convertPrincipalIdtoFriendCode(remover)).zfill(12),))
@@ -93,11 +93,11 @@ async def main():
 
 							if len(t) > 0:
 								time.sleep(delay)
-								f = await friends_client.get_friend_presence([ e.unk1 for e in t ])
+								f = await friends_client.get_friend_presence([ e.pid for e in t ])
 								users = []
 								for game in f:
 									# game.unk == principalId
-									users.append(game.unk)
+									users.append(game.pid)
 									#print(game.__dict__)
 									#print(game.presence.__dict__)
 									#print(game.presence.game_key.__dict__)
@@ -120,16 +120,16 @@ async def main():
 								for ti in t:
 									work = False
 									for l in list_:
-										if l[0] == ti.unk1 and time.time() - l[1] <= 600:
+										if l[0] == ti.pid and time.time() - l[1] <= 600:
 											work = True
 									if not work:
 										continue
 
 									time.sleep(delay)
 
-									ti.unk2 = 0 # A cursed (but operable) 'hack'
+									ti.friend_code = 0 # A cursed (but operable) 'hack'
 									try:
-										j1 = await friends_client.get_friend_persistent_info([ti.unk1,])
+										j1 = await friends_client.get_friend_persistent_info([ti.pid,])
 									except:
 										continue
 									comment = j1[0].message
@@ -139,7 +139,7 @@ async def main():
 									if not comment.endswith(' '):
 										# Get user's mii + username from mii
 										m = await friends_client.get_friend_mii([ti,])
-										username = m[0].mii.unk1
+										username = m[0].mii.name
 										mii_data = m[0].mii.mii_data
 										obj = MiiData()
 										obj.decode(obj.convert(io.BytesIO(mii_data)))
@@ -149,7 +149,7 @@ async def main():
 										jeuFavori = j1[0].game_key.title_id
 									else:
 										comment = ''
-									cursor.execute('UPDATE friends SET username = ?, message = ?, mii = ?, jeuFavori = ? WHERE friendCode = ?', (username, comment, face, jeuFavori, str(convertPrincipalIdtoFriendCode(ti.unk1)).zfill(12)))
+									cursor.execute('UPDATE friends SET username = ?, message = ?, mii = ?, jeuFavori = ? WHERE friendCode = ?', (username, comment, face, jeuFavori, str(convertPrincipalIdtoFriendCode(ti.pid)).zfill(12)))
 									con.commit()
 
 							for friend in rotation + cleanUp:

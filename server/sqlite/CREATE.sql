@@ -26,8 +26,8 @@ Create Table discord(
   token text UNIQUE,
   lastAccessed bigint NOT NULL,
   generationDate bigint NOT NULL,
-  showProfileButton boolean NOT NULL,
-  showSmallImage boolean NOT NULL
+  showProfileButton boolean,
+  showSmallImage boolean
 );
 
 Create Table discordFriends(
