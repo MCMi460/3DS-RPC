@@ -53,7 +53,7 @@ async def main():
 							friends_client = friends.FriendsClientV1(client)
 							if time.time() - begun < 30:
 								time.sleep(delay)
-								await friends_client.update_comment('Discord: Preloading')
+								await friends_client.update_comment('3dsrpc.com')
 							since = time.time()
 
 							if time.time() - since > 3600:
