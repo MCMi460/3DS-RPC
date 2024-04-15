@@ -11,7 +11,9 @@ Create Table friends(
   joinable boolean,
   gameDescription text,
   lastOnline bigint NOT NULL,
-  jeuFavori bigint NOT NULL
+  jeuFavori bigint NOT NULL,
+  -- Nintendo Network = 0, Pretendo Network = 1
+  network tinyint NOT NULL
 );
 
 Create Table config(
