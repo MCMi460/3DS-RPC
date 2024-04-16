@@ -4,6 +4,7 @@
 from nintendo import nasc
 from nintendo.nex import backend, friends, settings, streams
 from nintendo.nex import common
+from enum import Enum
 import anyio, time, sqlite3, sys, traceback
 sys.path.append('../')
 from api.private import SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME, REGION, LANGUAGE, NINTENDO_PID, PRETENDO_PID, PID_HMAC, NINTENDO_NEX_PASSWORD, PRETENDO_NEX_PASSWORD
@@ -19,16 +20,21 @@ quicker = 6
 begun = time.time()
 startDBTime(begun)
 
-networkToOpenNext:int = 0
+network:int = 0
 
-async def main(network:int):
+class NetworkIDsToName(Enum): # i mean it is horrible, but technically it allows somewhat easier addition of networks (if that ever happens, which i doubt)
+	nintendo = 0
+	pretendo = 1
+
+
+async def main():
 	while True:
 		time.sleep(1)
 		print('Grabbing new friends...')
 		with sqlite3.connect('sqlite/fcLibrary.db') as con:
 			cursor = con.cursor()
 
-			cursor.execute('SELECT friendCode, lastAccessed FROM friends WHERE network = ' + str(network))
+			cursor.execute('SELECT ?, lastAccessed FROM friends', network + "_friends")
 			result = cursor.fetchall()
 			if not result:
 				continue
@@ -175,20 +181,33 @@ async def main(network:int):
 					print('An error occurred!\n%s' % e)
 					print(traceback.format_exc())
 					time.sleep(2)
-
-async def openNextNetwork(): # Some lovely hacked together code
-	global networkToOpenNext
-	await main(networkToOpenNext)
-
+def invalidArgument(): 
+	print("Missing or Invalid Network Selection!") # Probs a better way to do these prints, but oh well, if it works, it works
+	print("")
+	print("Valid options are (seperated by commas):")
+	print("nintendo, 0,")
+	print("pretendo, 1")
+	exit()
+	
 if __name__ == '__main__':
 	try:
-		anyio.run(openNextNetwork)
-	except (KeyboardInterrupt, Exception) as e:
-		startDBTime(0)
-		print(e)
-	networkToOpenNext += 1
-	try:
-		anyio.run(openNextNetwork)
+		if len(sys.argv) <= 1:
+			invalidArgument()
+		if sys.argv[1].isnumeric(): # number check!
+			if (int(sys.argv[1]) in [e.value for e in NetworkIDsToName]):
+				network = int(sys.argv[1])
+			else:
+				invalidArgument()
+		else:
+			if (sys.argv[1] in [e.name for e in NetworkIDsToName]):
+				network = int(NetworkIDsToName[sys.argv[1]].value)
+			else:
+				invalidArgument()
+
+		
+		
+		
+		anyio.run(main)
 	except (KeyboardInterrupt, Exception) as e:
 		startDBTime(0)
 		print(e)
