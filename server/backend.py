@@ -6,7 +6,7 @@ from nintendo.nex import backend, friends, settings, streams
 from nintendo.nex import common
 import anyio, time, sqlite3, sys, traceback
 sys.path.append('../')
-from api.private import SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME, REGION, LANGUAGE, PID, PID_HMAC, NEX_PASSWORD
+from api.private import SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME, REGION, LANGUAGE, NINTENDO_PID, PRETENDO_PID, PID_HMAC, NINTENDO_NEX_PASSWORD, PRETENDO_NEX_PASSWORD
 from api import *
 from api.love2 import *
 
@@ -19,14 +19,16 @@ quicker = 6
 begun = time.time()
 startDBTime(begun)
 
-async def main():
+networkToOpenNext:int = 0
+
+async def main(network:int):
 	while True:
 		time.sleep(1)
 		print('Grabbing new friends...')
 		with sqlite3.connect('sqlite/fcLibrary.db') as con:
 			cursor = con.cursor()
 
-			cursor.execute('SELECT friendCode, lastAccessed FROM friends')
+			cursor.execute('SELECT friendCode, lastAccessed FROM friends WHERE network = ' + str(network))
 			result = cursor.fetchall()
 			if not result:
 				continue
@@ -39,15 +41,29 @@ async def main():
 
 				try:
 					client = nasc.NASCClient()
-					client.set_title(0x0004013000003202, 20)
+					client.set_title(0x0004013000003202, 20) # to be honest, this should be seperate between networks, so if one eg, gets banned, you still get to keep the friend code for the other network, but i'm lazy.
 					client.set_device(SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME)
 					client.set_locale(REGION, LANGUAGE)
-					client.set_user(PID, PID_HMAC)
 
+					if network == 0: # Nintendo Network
+						client.set_url("nasc.nintendowifi.net")
+						PID = NINTENDO_PID
+						NEX_PASSWORD = NINTENDO_NEX_PASSWORD
+						ACCESS_KEY:str = "ridfebb9"
+						
+					elif network == 1:
+						client.set_url("nasc.pretendo.cc")
+						PID = PRETENDO_PID
+						NEX_PASSWORD = PRETENDO_NEX_PASSWORD
+						ACCESS_KEY:str = "9f2b4678"
+						
+					else:
+						raise Exception(network + " is not a valid network \"id\"")
+					client.set_user(PID , PID_HMAC)
 					response = await client.login(0x3200)
 
 					s = settings.load('friends')
-					s.configure("ridfebb9", 20000)
+					s.configure(ACCESS_KEY, 20000)
 					async with backend.connect(s, response.host, response.port) as be:
 						async with be.login(str(PID), NEX_PASSWORD) as client:
 							friends_client = friends.FriendsClientV1(client)
@@ -160,9 +176,19 @@ async def main():
 					print(traceback.format_exc())
 					time.sleep(2)
 
+async def openNextNetwork(): # Some lovely hacked together code
+	global networkToOpenNext
+	await main(networkToOpenNext)
+
 if __name__ == '__main__':
 	try:
-		anyio.run(main)
+		anyio.run(openNextNetwork)
+	except (KeyboardInterrupt, Exception) as e:
+		startDBTime(0)
+		print(e)
+	networkToOpenNext += 1
+	try:
+		anyio.run(openNextNetwork)
 	except (KeyboardInterrupt, Exception) as e:
 		startDBTime(0)
 		print(e)
