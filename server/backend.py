@@ -33,8 +33,9 @@ async def main():
 		print('Grabbing new friends...')
 		with sqlite3.connect('sqlite/fcLibrary.db') as con:
 			cursor = con.cursor()
-
-			cursor.execute('SELECT ?, lastAccessed FROM friends', network + "_friends")
+			print(1)
+			cursor.execute('SELECT ?, lastAccessed FROM friends', (str(network) + "_friends",))
+			print(2)
 			result = cursor.fetchall()
 			if not result:
 				continue
@@ -203,10 +204,7 @@ if __name__ == '__main__':
 				network = int(NetworkIDsToName[sys.argv[1]].value)
 			else:
 				invalidArgument()
-
-		
-		
-		
+				
 		anyio.run(main)
 	except (KeyboardInterrupt, Exception) as e:
 		startDBTime(0)

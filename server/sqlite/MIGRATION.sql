@@ -1,7 +1,10 @@
 -- This migrates the old database to support pretendo. Don't forget to backup the database first.
 ALTER TABLE discordFriends
 ADD network tinyint; 
-UPDATE discordFriends set network=0
+UPDATE discordFriends set network=0;
+
+ALTER TABLE friends
+RENAME TO nintendo_friends;
 
 Create Table pretendo_friends(
   friendCode text NOT NULL UNIQUE,
