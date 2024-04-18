@@ -1,5 +1,6 @@
 # Created by Deltaion Lee (MCMi460) on Github
 
+from enum import Enum
 from flask import Flask, make_response, request, redirect, render_template, send_file
 from flask_limiter import Limiter
 from flask_sqlalchemy import SQLAlchemy
@@ -8,6 +9,7 @@ sys.path.append('../')
 from api import *
 from api.love2 import *
 from api.private import CLIENT_ID, CLIENT_SECRET, HOST
+from api.public import pretendoBotFC, nintendoBotFC
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.abspath('sqlite/fcLibrary.db')
@@ -23,7 +25,7 @@ version = 0.31
 agent = '3DS-RPC/'
 
 startTime = time.time() # Frontend
-startDBTime(0)
+startDBTime(0, 0) #todo fix this
 startTime2 = 0 # Backend
 
 @app.errorhandler(404)
@@ -49,6 +51,10 @@ titleDatabase = []
 titlesToUID = []
 
 requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
+
+class NetworkIDsToName(Enum):
+	nintendo = 0
+	pretendo = 1
 
 # Create title cache
 def cacheTitles():
@@ -89,18 +95,20 @@ def cacheTitles():
         print('[Saved database to file]')
 
 # Create entry in database with friendCode
-def createUser(friendCode:int, addNewInstance:bool = False):
-    if int(friendCode) == int(botFC):
+def createUser(friendCode:int, network:int, addNewInstance:bool = False):
+    if int(friendCode) == int(pretendoBotFC):
+        raise Exception('invalid FC')
+    if int(friendCode) == int(nintendoBotFC):
         raise Exception('invalid FC')
     try:
         convertFriendCodeToPrincipalId(friendCode)
         if not addNewInstance:
             raise Exception('UNIQUE constraint failed: friends.friendCode')
-        db.session.execute('INSERT INTO friends (friendCode, online, titleID, updID, lastAccessed, accountCreation, lastOnline, jeuFavori) VALUES (\'%s\', %s, %s, %s, %s, %s, %s, %s)' % (str(friendCode).zfill(12), False, '0', '0', time.time() + 300, time.time(), time.time(), 0))
+        db.session.execute('INSERT INTO %s (friendCode, online, titleID, updID, lastAccessed, accountCreation, lastOnline, jeuFavori) VALUES (\'%s\', %s, %s, %s, %s, %s, %s, %s)' % (NetworkIDsToName[network].name + "_friends", str(friendCode).zfill(12), False, '0', '0', time.time() + 300, time.time(), time.time(), 0))
         db.session.commit()
     except Exception as e:
         if 'UNIQUE constraint failed: friends.friendCode' in str(e):
-            db.session.execute('UPDATE friends SET lastAccessed = %s WHERE friendCode = \'%s\'' % (time.time(), str(friendCode).zfill(12)))
+            db.session.execute('UPDATE %s SET lastAccessed = %s WHERE friendCode = \'%s\'' % (NetworkIDsToName[network].name + "_friends", time.time(), str(friendCode).zfill(12)))
             db.session.commit()
 
 def fetchBearerToken(code:str):
@@ -184,9 +192,9 @@ def sidenav():
     startTime2Pretendo = resultPretendo[0]
     data = {
         'uptime': str(datetime.timedelta(seconds= int(time.time() - startTime))),
-        'uptime-backend': ( 'Nintendo Backend has been up for %s...' % str(datetime.timedelta(seconds= int(time.time() - int(startTime2Nintendo)))) if not startTime2Nintendo == 0 else 'Nintendo Backend: Offline' + 
-                           '<br>' +
-                           'Pretendo Backend has been up for %s...' % str(datetime.timedelta(seconds= int(time.time() - int(startTime2Pretendo)))) if not startTime2Pretendo == 0 else 'Pretendo Backend: Offline'),
+        'uptime-backend': (( 'Nintendo Backend has been up for %s...' % str(datetime.timedelta(seconds= int(time.time() - int(startTime2Nintendo)))) if not startTime2Nintendo == 0 else 'Nintendo Backend: Offline') + 
+                           'todo figure out linebreaks so i can be lazy' +
+                           ('Pretendo Backend has been up for %s...' % str(datetime.timedelta(seconds= int(time.time() - int(startTime2Pretendo)))) if not startTime2Pretendo == 0 else 'Pretendo Backend: Offline')),
         'status': 'Operational' if startTime2 != 0 else 'Offline',
     }
     return data
@@ -199,20 +207,20 @@ def userAgentCheck():
     except:
         raise Exception('this client is invalid')
 
-def getPresence(friendCode:int, *, créerCompte:bool = True, ignoreUserAgent = False, ignoreBackend = False):
+def getPresence(friendCode:int, network:int, *, createAccount:bool = True, ignoreUserAgent = False, ignoreBackend = False):
     try:
         if not ignoreUserAgent:
             userAgentCheck()
-        result = db.session.execute('SELECT BACKEND_UPTIME FROM config')
+        result = db.session.execute('SELECT BACKEND_UPTIME FROM config WHERE network = %s' % network)
         result = result.fetchone()
         startTime2 = result[0]
         if startTime2 == 0 and not ignoreBackend and not disableBackendWarnings:
-            raise Exception('backend currently offline. please try again later')
+            raise Exception('Backend currently offline. please try again later')
         friendCode = str(friendCode).zfill(12)
-        if créerCompte:
-            createUser(friendCode, False)
+        if createAccount:
+            createUser(friendCode, network, False)
         principalId = convertFriendCodeToPrincipalId(friendCode)
-        result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % friendCode)
+        result = db.session.execute('SELECT * FROM %s_friends WHERE friendCode = \'%s\'' % NetworkIDsToName[network].name, friendCode)
         result = result.fetchone()
         if not result:
             raise Exception('friendCode not recognized\nHint: You may not have added the bot as a friend')
@@ -260,7 +268,7 @@ def getPresence(friendCode:int, *, créerCompte:bool = True, ignoreUserAgent = F
 # Index page
 @app.route('/')
 def index():
-    results = db.session.execute('SELECT * FROM friends WHERE online = True AND username != "" ORDER BY lastAccessed DESC')
+    results = db.session.execute(' UNION '.join([f'SELECT * FROM {member.name}_friends WHERE online = True AND username != ""' for member in NetworkIDsToName]) + ' ORDER BY lastAccessed DESC') 
     results = results.fetchall()
     num = len(results)
     data = sidenav()
@@ -276,7 +284,7 @@ def index():
     }) for user in results if user[6] ]
     data['active'] = data['active'][:2]
 
-    results = db.session.execute('SELECT * FROM friends WHERE username != "" ORDER BY accountCreation DESC LIMIT 6')
+    results = db.session.execute(' UNION '.join([f'SELECT * FROM {member.name}_friends WHERE username != ""' for member in NetworkIDsToName]) + ' ORDER BY accountCreation DESC LIMIT 6')
     results = results.fetchall()
     data['new'] = [ ({
         'mii':MiiData().mii_studio_url(user[8]),
@@ -336,7 +344,7 @@ def settingsRedirect():
 # Roster page
 @app.route('/roster')
 def roster():
-    results = db.session.execute('SELECT * FROM friends WHERE username != "" ORDER BY accountCreation DESC LIMIT 8')
+    results = db.session.execute(' UNION '.join([f'SELECT * FROM {member.name}_friends WHERE username != ""' for member in NetworkIDsToName]) + ' ORDER BY accountCreation DESC LIMIT 8')
     results = results.fetchall()
     data = sidenav()
     data['title'] = 'New Users'
@@ -355,7 +363,7 @@ def roster():
 # Active page
 @app.route('/active')
 def active():
-    results = db.session.execute('SELECT * FROM friends WHERE online = True AND username != "" ORDER BY lastAccessed DESC')
+    results = db.session.execute(' UNION '.join([f'SELECT * FROM {member.name}_friends WHERE online = True AND username != ""' for member in NetworkIDsToName]) + ' ORDER BY lastAccessed DESC')
     results = results.fetchall()
     data = sidenav()
     data['title'] = 'Active Users'
