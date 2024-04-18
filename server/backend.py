@@ -33,9 +33,7 @@ async def main():
 		print('Grabbing new friends...')
 		with sqlite3.connect('sqlite/fcLibrary.db') as con:
 			cursor = con.cursor()
-			print(1)
-			cursor.execute('SELECT ?, lastAccessed FROM friends', (str(network) + "_friends",))
-			print(2)
+			cursor.execute('SELECT friendCode, lastAccessed FROM ' + NetworkIDsToName(network).name + "_friends")
 			result = cursor.fetchall()
 			if not result:
 				continue
@@ -49,7 +47,6 @@ async def main():
 				try:
 					client = nasc.NASCClient()
 					client.set_title(0x0004013000003202, 20) # to be honest, this should be seperate between networks, so if one eg, gets banned, you still get to keep the friend code for the other network, but i'm lazy.
-					client.set_device(SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME)
 					client.set_locale(REGION, LANGUAGE)
 
 					if network == 0: # Nintendo Network
@@ -60,13 +57,17 @@ async def main():
 						
 					elif network == 1:
 						client.set_url("nasc.pretendo.cc")
+						client.context.set_authority(None)
 						PID = PRETENDO_PID
 						NEX_PASSWORD = PRETENDO_NEX_PASSWORD
 						ACCESS_KEY:str = "9f2b4678"
 						
 					else:
 						raise Exception(network + " is not a valid network \"id\"")
+					
+					client.set_device(SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME)
 					client.set_user(PID , PID_HMAC)
+					
 					response = await client.login(0x3200)
 
 					s = settings.load('friends')
@@ -110,8 +111,8 @@ async def main():
 									cleanUp.append(t1.pid)
 
 							for remover in removeList:
-								cursor.execute('DELETE FROM friends WHERE friendCode = ?', (str(convertPrincipalIdtoFriendCode(remover)).zfill(12),))
-								cursor.execute('DELETE FROM discordFriends WHERE friendCode = ?', (str(convertPrincipalIdtoFriendCode(remover)).zfill(12),))
+								cursor.execute('DELETE FROM ' + NetworkIDsToName(network).name + "_friends" + ' WHERE friendCode = ?', (str(convertPrincipalIdtoFriendCode(remover)).zfill(12),))
+								cursor.execute('DELETE FROM discordFriends WHERE friendCode = ? AND network = ?', (str(convertPrincipalIdtoFriendCode(remover)).zfill(12), str(network)))
 							con.commit()
 
 							if len(t) > 0:
@@ -128,9 +129,9 @@ async def main():
 									if not gameDescription: gameDescription = ''
 									joinable = bool(game.presence.join_availability_flag)
 
-									cursor.execute('UPDATE friends SET online = ?, titleID = ?, updID = ?, joinable = ?, gameDescription = ?, lastOnline = ? WHERE friendCode = ?', (True, game.presence.game_key.title_id, game.presence.game_key.title_version, joinable, gameDescription, time.time(), str(convertPrincipalIdtoFriendCode(users[-1])).zfill(12)))
+									cursor.execute('UPDATE ' + NetworkIDsToName(network).name + "_friends" + ' SET online = ?, titleID = ?, updID = ?, joinable = ?, gameDescription = ?, lastOnline = ? WHERE friendCode = ?', (True, game.presence.game_key.title_id, game.presence.game_key.title_version, joinable, gameDescription, time.time(), str(convertPrincipalIdtoFriendCode(users[-1])).zfill(12)))
 								for user in [ h for h in rotation if not h in users ]:
-									cursor.execute('UPDATE friends SET online = ?, titleID = ?, updID = ? WHERE friendCode = ?', (False, 0, 0, str(convertPrincipalIdtoFriendCode(user)).zfill(12)))
+									cursor.execute('UPDATE ' + NetworkIDsToName(network).name + "_friends" + ' SET online = ?, titleID = ?, updID = ? WHERE friendCode = ?', (False, 0, 0, str(convertPrincipalIdtoFriendCode(user)).zfill(12)))
 
 								con.commit()
 
@@ -172,7 +173,7 @@ async def main():
 										jeuFavori = j1[0].game_key.title_id
 									else:
 										comment = ''
-									cursor.execute('UPDATE friends SET username = ?, message = ?, mii = ?, jeuFavori = ? WHERE friendCode = ?', (username, comment, face, jeuFavori, str(convertPrincipalIdtoFriendCode(ti.pid)).zfill(12)))
+									cursor.execute('UPDATE ' + NetworkIDsToName(network).name + "_friends" + ' SET username = ?, message = ?, mii = ?, jeuFavori = ? WHERE friendCode = ?', (username, comment, face, jeuFavori, str(convertPrincipalIdtoFriendCode(ti.pid)).zfill(12)))
 									con.commit()
 
 							for friend in rotation + cleanUp:
