@@ -108,7 +108,7 @@ def createUser(friendCode:int, network:int, addNewInstance:bool = False):
         db.session.commit()
     except Exception as e:
         if 'UNIQUE constraint failed: friends.friendCode' in str(e):
-            db.session.execute('UPDATE %s SET lastAccessed = %s WHERE friendCode = \'%s\'' % (NetworkIDsToName[network].name + "_friends", time.time(), str(friendCode).zfill(12)))
+            db.session.execute('UPDATE %s SET lastAccessed = %s WHERE friendCode = \'%s\'' % (NetworkIDsToName(network).name + "_friends", time.time(), str(friendCode).zfill(12)))
             db.session.commit()
 
 def fetchBearerToken(code:str):
@@ -181,7 +181,7 @@ def deleteDiscordUser(ID:int):
 def getConnectedConsoles(ID:int):
     result = db.session.execute('SELECT * FROM discordFriends WHERE ID = %s' % ID)
     result = result.fetchall()
-    return [ (result[1], bool(result[2])) for result in result ]
+    return [ (result[1], bool(result[2]), result[3]) for result in result ]
 
 def sidenav():
     resultNintendo = db.session.execute('SELECT BACKEND_UPTIME FROM config WHERE network=0')
@@ -431,8 +431,8 @@ def consoles():
             response.set_cookie('pfp', '', expires = 0)
             return response
         return redirect('/')
-    for console, active in getConnectedConsoles(id):
-        result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % console)
+    for console, active, network in getConnectedConsoles(id):
+        result = db.session.execute('SELECT * FROM ' + NetworkIDsToName(network).name + '_friends WHERE friendCode = \'%s\'' % console)
         result = result.fetchone()
         data['consoles'].append({
             'fc': '-'.join(console[i:i+4] for i in range(0, 12, 4)),
