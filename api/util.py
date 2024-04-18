@@ -39,12 +39,12 @@ def getPath(path):
 
     return os.path.join(root, path)
 
-def startDBTime(time):
+def startDBTime(time, network):
     with sqlite3.connect('sqlite/fcLibrary.db') as con:
-    	cursor = con.cursor()
-    	cursor.execute('DELETE FROM config')
-    	cursor.execute('INSERT INTO config (BACKEND_UPTIME) VALUES (%s)' % (time,))
-    	con.commit()
+        cursor = con.cursor()
+        cursor.execute('DELETE FROM config WHERE network=' + str(network)) # doing this isn't the most intelegent of ideas but oh well (i hope you don't need to ever add another config :D)
+        cursor.execute('INSERT INTO config (BACKEND_UPTIME, NETWORK) VALUES (%s, %s)' % (time, network,))
+        con.commit()
 
 try:
     terminalSize = os.get_terminal_size(0).columns - 2

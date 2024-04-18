@@ -20,5 +20,9 @@ ALTER TABLE discordFriends
 ADD network tinyint; 
 UPDATE discordFriends set network=0;
 
+ALTER TABLE config
+ADD network tinyint; 
+UPDATE config set network=0; -- This shouldn't be needed, but safe than sorry right?
+
 ALTER TABLE friends
 RENAME TO nintendo_friends;

@@ -18,7 +18,6 @@ delay = 2
 since = 0
 quicker = 6
 begun = time.time()
-startDBTime(begun)
 
 network:int = 0
 
@@ -205,8 +204,10 @@ if __name__ == '__main__':
 				network = int(NetworkIDsToName[sys.argv[1]].value)
 			else:
 				invalidArgument()
-				
+
+		startDBTime(begun, network)
 		anyio.run(main)
 	except (KeyboardInterrupt, Exception) as e:
-		startDBTime(0)
+		if network != None:
+			startDBTime(0, network)
 		print(e)

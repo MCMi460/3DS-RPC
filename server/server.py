@@ -176,12 +176,17 @@ def getConnectedConsoles(ID:int):
     return [ (result[1], bool(result[2])) for result in result ]
 
 def sidenav():
-    result = db.session.execute('SELECT BACKEND_UPTIME FROM config')
-    result = result.fetchone()
-    startTime2 = result[0]
+    resultNintendo = db.session.execute('SELECT BACKEND_UPTIME FROM config WHERE network=0')
+    resultNintendo = resultNintendo.fetchone()
+    startTime2Nintendo = resultNintendo[0]
+    resultPretendo = db.session.execute('SELECT BACKEND_UPTIME FROM config WHERE network=1') # Screw good coding practices and DRY
+    resultPretendo = resultPretendo.fetchone()
+    startTime2Pretendo = resultPretendo[0]
     data = {
         'uptime': str(datetime.timedelta(seconds= int(time.time() - startTime))),
-        'uptime-backend': ( 'Backend has been up for %s...' % str(datetime.timedelta(seconds= int(time.time() - int(startTime2)))) if not startTime2 == 0 else 'Backend: Offline' ),
+        'uptime-backend': ( 'Nintendo Backend has been up for %s...' % str(datetime.timedelta(seconds= int(time.time() - int(startTime2Nintendo)))) if not startTime2Nintendo == 0 else 'Nintendo Backend: Offline' + 
+                           '<br>' +
+                           'Pretendo Backend has been up for %s...' % str(datetime.timedelta(seconds= int(time.time() - int(startTime2Pretendo)))) if not startTime2Pretendo == 0 else 'Pretendo Backend: Offline'),
         'status': 'Operational' if startTime2 != 0 else 'Offline',
     }
     return data
