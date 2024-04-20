@@ -52,14 +52,12 @@ async def main():
 						client.set_url("nasc.nintendowifi.net")
 						PID = NINTENDO_PID
 						NEX_PASSWORD = NINTENDO_NEX_PASSWORD
-						ACCESS_KEY:str = "ridfebb9"
 						
 					elif network == 1:
 						client.set_url("nasc.pretendo.cc")
 						client.context.set_authority(None)
 						PID = PRETENDO_PID
 						NEX_PASSWORD = PRETENDO_NEX_PASSWORD
-						ACCESS_KEY:str = "9f2b4678"
 						
 					else:
 						raise Exception(network + " is not a valid network \"id\"")
@@ -70,7 +68,7 @@ async def main():
 					response = await client.login(0x3200)
 
 					s = settings.load('friends')
-					s.configure(ACCESS_KEY, 20000)
+					s.configure("ridfebb9", 20000)
 					async with backend.connect(s, response.host, response.port) as be:
 						async with be.login(str(PID), NEX_PASSWORD) as client:
 							friends_client = friends.FriendsClientV1(client)

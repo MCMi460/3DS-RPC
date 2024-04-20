@@ -104,11 +104,11 @@ def createUser(friendCode:int, network:int, addNewInstance:bool = False):
         convertFriendCodeToPrincipalId(friendCode)
         if not addNewInstance:
             raise Exception('UNIQUE constraint failed: friends.friendCode')
-        db.session.execute('INSERT INTO %s (friendCode, online, titleID, updID, lastAccessed, accountCreation, lastOnline, jeuFavori) VALUES (\'%s\', %s, %s, %s, %s, %s, %s, %s)' % (NetworkIDsToName[network].name + "_friends", str(friendCode).zfill(12), False, '0', '0', time.time() + 300, time.time(), time.time(), 0))
+        db.session.execute('INSERT INTO ' + NetworkIDsToName[network].name + '_friends (friendCode, online, titleID, updID, lastAccessed, accountCreation, lastOnline, jeuFavori) VALUES (\'%s\', %s, %s, %s, %s, %s, %s, %s)' % (str(friendCode).zfill(12), False, '0', '0', time.time() + 300, time.time(), time.time(), 0))
         db.session.commit()
     except Exception as e:
         if 'UNIQUE constraint failed: friends.friendCode' in str(e):
-            db.session.execute('UPDATE %s SET lastAccessed = %s WHERE friendCode = \'%s\'' % (NetworkIDsToName(network).name + "_friends", time.time(), str(friendCode).zfill(12)))
+            db.session.execute('UPDATE ' + NetworkIDsToName(network).name + '_friends SET lastAccessed = %s WHERE friendCode = \'%s\'' % (time.time(), str(friendCode).zfill(12)))
             db.session.commit()
 
 def fetchBearerToken(code:str):
@@ -267,7 +267,16 @@ def getBotFriendCodeFromNetworkId(network:int):
             return nintendoBotFC
         case 1:
             return pretendoBotFC
-        
+
+def nameToNetworkId(network:int):
+    if network == None:
+        network = 0
+    else:
+        try:
+            network = NetworkIDsToName[network].value
+        except:
+            network = 0
+    return network
 
 ##################
 # NON-API ROUTES #
@@ -397,7 +406,7 @@ def register():
     else:
         try:
             network = NetworkIDsToName[network].value
-            response = make_response(render_template('dist/register.html', data = {'botFC':'-'.join(getBotFriendCodeFromNetworkId(network)[i:i+4] for i in range(0, len(getBotFriendCodeFromNetworkId(network)), 4))}))
+            response = make_response(render_template('dist/register.html', data = {'botFC':'-'.join(getBotFriendCodeFromNetworkId(network)[i:i+4] for i in range(0, len(getBotFriendCodeFromNetworkId(network)), 4)), 'network':network}))
         except:
             network = 0
             response = make_response(render_template('dist/registerselectnetwork.html'))
@@ -428,6 +437,7 @@ def success():
     data = {
         'url': 'user/' + request.args.get('fc'),
         'fc': request.args.get('fc'),
+        'network': request.args.get('network')
     }
     return render_template('dist/success.html', data = data)
 
@@ -464,15 +474,8 @@ def consoles():
 @app.route('/user/<string:friendCode>/')
 def userPage(friendCode:str):
     try:
-        network = request.args.get('network')
-        if network == None:
-            network = 0
-        else:
-            try:
-                network = NetworkIDsToName[network].value
-            except:
-                network = 0
-        print(network)
+        network = nameToNetworkId(request.args.get('network'))
+
         userData = getPresence(int(friendCode.replace('-', '')), network, createAccount= False, ignoreUserAgent = True, ignoreBackend = True)
         if userData['Exception'] or not userData['User']['username']:
             raise Exception(userData['Exception'])
@@ -509,11 +512,11 @@ def terms():
 # Create entry in database with friendCode
 @app.route('/api/user/create/<int:friendCode>/', methods=['POST'])
 @limiter.limit(newUserLimit)
-def newUser(friendCode:int, userCheck:bool = True):
+def newUser(friendCode:int, network:int, userCheck:bool = True):
     try:
         if userCheck:
             userAgentCheck()
-        createUser(friendCode, True)
+        createUser(friendCode, network, True)
         return {
             'Exception': False,
         }
@@ -527,8 +530,8 @@ def newUser(friendCode:int, userCheck:bool = True):
 # Grab presence from friendCode
 @app.route('/api/user/<int:friendCode>/', methods=['GET'])
 @limiter.limit(userPresenceLimit)
-def userPresence(friendCode:int, *, créerCompte:bool = True, ignoreUserAgent = False, ignoreBackend = False):
-    return getPresence(friendCode, créerCompte = créerCompte, ignoreUserAgent = ignoreUserAgent, ignoreBackend = ignoreBackend)
+def userPresence(friendCode:int, *, createAccount:bool = True, ignoreUserAgent = False, ignoreBackend = False):
+    return getPresence(friendCode, createAccount=createAccount, ignoreUserAgent = ignoreUserAgent, ignoreBackend = ignoreBackend)
 
 # Alias
 @app.route('/api/u/<int:friendCode>/', methods=['GET'])
@@ -558,11 +561,12 @@ def newAlias3(friendCode:int):
 @app.route('/api/toggle/<int:friendCode>/', methods=['POST'])
 @limiter.limit(togglerLimit)
 def toggler(friendCode:int):
+    network = nameToNetworkId(request.data.decode('utf-8').split(',')[2])
     try:
         fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
     except:
         return 'failure!\nthat is not a real friendCode!'
-    result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % fc)
+    result = db.session.execute('SELECT * FROM ' + NetworkIDsToName(network).name + '_friends WHERE friendCode = \'%s\'' % fc)
     result = result.fetchone()
     if not result:
         return 'failure!\nthat is not an existing friendCode!'
@@ -570,21 +574,21 @@ def toggler(friendCode:int):
     token = f[0]
     active = bool(int(f[1]))
     id = userFromToken(token)[0]
-    result = db.session.execute('SELECT * FROM discordFriends WHERE ID = %s AND friendCode = \'%s\'' % (id, fc))
+    result = db.session.execute('SELECT * FROM discordFriends WHERE ID = %s AND friendCode = \'%s\' AND network = %s' % (id, fc, network))
     result = result.fetchone()
     if not result:
         thing = db.session.execute('SELECT * FROM discordFriends WHERE ID = %s' % id)
         thing = thing.fetchall()
-        if len(thing) >= 5:
-            return 'failure!\nyou can\'t have more than five consoles added at one time!'
+        if len(thing) >= 10:
+            return 'failure!\nyou can\'t have more than ten consoles added at one time!'
     if active:
         db.session.execute('UPDATE discordFriends SET active = %s WHERE active = %s AND ID = %s' % (False, True, id))
         db.session.commit()
     if result:
-        db.session.execute('UPDATE discordFriends SET active = %s WHERE friendCode = \'%s\' AND ID = %s' % (active, fc, id))
+        db.session.execute('UPDATE discordFriends SET active = %s WHERE friendCode = \'%s\' AND ID = %s AND network = %s' % (active, fc, id, network))
         db.session.commit()
     else:
-        db.session.execute('INSERT INTO discordFriends (ID, friendCode, active) VALUES (%s, \'%s\', %s)' % (id, fc, active))
+        db.session.execute('INSERT INTO discordFriends (ID, friendCode, active, network) VALUES (%s, \'%s\', %s, %s)' % (id, fc, active, network))
         db.session.commit()
     return 'success!'
 
@@ -638,10 +642,12 @@ def localImageCdn(file:str):
 def login():
     try:
         fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(request.form['fc']))).zfill(12)
-        newUser(fc, False)
+        networkName = NetworkIDsToName(int(request.form['network'])).name
+        networkId = request.form['network']
+        newUser(fc, networkId, False)
     except:
         return redirect('/failure.html')
-    return redirect(f'/success.html?fc={fc}')
+    return redirect(f'/success.html?fc={fc}&network={networkName}')
 
 # Discord route
 @app.route('/authorize')

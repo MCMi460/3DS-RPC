@@ -23,10 +23,11 @@ block content
 
     script.
         var fc = '{{ data["url"].replace("user/", "") }}';
+        var network = '{{ data["network"] }}'
         function addConsole() {
             var xmlHttp = new XMLHttpRequest();
             xmlHttp.open( "POST", "/api/toggle/" + fc, false );
-            xmlHttp.send( [token, 1] );
+            xmlHttp.send( [token, 1, network] );
         }
         onload = (event) => {
           if (document.cookie.includes('token')) {
