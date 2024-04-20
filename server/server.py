@@ -261,6 +261,14 @@ def getPresence(friendCode:int, network:int, *, createAccount:bool = True, ignor
     #         }
     #     }
 
+def getBotFriendCodeFromNetworkId(network:int):
+    match network:
+        case 0:
+            return nintendoBotFC
+        case 1:
+            return pretendoBotFC
+        
+
 ##################
 # NON-API ROUTES #
 ##################
@@ -382,7 +390,17 @@ def active():
 # Register page
 @app.route('/register.html')
 def register():
-    response = make_response(render_template('dist/registerselectnetwork.html', data = {'botFC':'-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4))}))
+    
+    network = request.args.get('network')
+    if network == None:
+        response = make_response(render_template('dist/registerselectnetwork.html'))
+    else:
+        try:
+            network = NetworkIDsToName[network].value
+            response = make_response(render_template('dist/register.html', data = {'botFC':'-'.join(getBotFriendCodeFromNetworkId(network)[i:i+4] for i in range(0, len(getBotFriendCodeFromNetworkId(network)), 4))}))
+        except:
+            network = 0
+            response = make_response(render_template('dist/registerselectnetwork.html'))
     return response
 
 # Register page redirect
