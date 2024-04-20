@@ -1,0 +1,31 @@
+extends ../layouts/authentication.pug
+
+block config
+    - var pageTitle = 'Register'
+
+
+
+block content
+    .container
+      
+        .row.justify-content-center
+            .col-lg-6
+                .card.shadow-lg.border-0.rounded-lg.mt-5
+                    .card-header
+                        h3.text-center.font-weight-light.my-4 Register
+                    .card-body
+                        h5.text-center Select the network you want to register with.
+                        p.lead.text-center (Hint: If your 3ds isn't modded, choose nintendo)
+                        .form-floating.d-flex.align-items-center.justify-content-center.mt-4.mb-0
+                            form
+                                button.btn.btn-primary.m-2(type = 'reset', onclick = 'location.href="/register?network=nintendo"' style = 'background-color: #f68b33;')
+                                    img(src = "{{ url_for('static',filename='assets/img/nintendo-icon-transparent.png') }}", height = "32px", width="32px")
+                                    span Register with Nintendo
+                                button.btn.btn-primary.m-2(type = 'reset', onclick = 'location.href="/register?network=pretendo"', style = 'background-color: #1b1f3b;')
+                                    img(src = "{{ url_for('static',filename='assets/img/pretendo-icon-transparent.png') }}", height = "32px", width="32px")
+                                    span Register with Pretendo
+                                
+                    .card-footer.text-center
+                        .small
+                          | By using this service, you agree to the
+                          a(href='/terms') Terms and Services

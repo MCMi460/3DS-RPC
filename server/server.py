@@ -208,7 +208,7 @@ def userAgentCheck():
         raise Exception('this client is invalid')
 
 def getPresence(friendCode:int, network:int, *, createAccount:bool = True, ignoreUserAgent = False, ignoreBackend = False):
-    try:
+    # try:
         if not ignoreUserAgent:
             userAgentCheck()
         result = db.session.execute('SELECT BACKEND_UPTIME FROM config WHERE network = %s' % network)
@@ -220,7 +220,7 @@ def getPresence(friendCode:int, network:int, *, createAccount:bool = True, ignor
         if createAccount:
             createUser(friendCode, network, False)
         principalId = convertFriendCodeToPrincipalId(friendCode)
-        result = db.session.execute('SELECT * FROM %s_friends WHERE friendCode = \'%s\'' % NetworkIDsToName[network].name, friendCode)
+        result = db.session.execute('SELECT * FROM ' + NetworkIDsToName(network).name + '_friends WHERE friendCode = \'%s\'' % friendCode)
         result = result.fetchone()
         if not result:
             raise Exception('friendCode not recognized\nHint: You may not have added the bot as a friend')
@@ -254,12 +254,12 @@ def getPresence(friendCode:int, network:int, *, createAccount:bool = True, ignor
                 'favoriteGame': result[12],
             }
         }
-    except Exception as e:
-        return {
-            'Exception': {
-                'Error': str(e),
-            }
-        }
+    # except Exception as e:
+    #     return {
+    #         'Exception': {
+    #             'Error': str(e),
+    #         }
+    #     }
 
 ##################
 # NON-API ROUTES #
@@ -382,7 +382,7 @@ def active():
 # Register page
 @app.route('/register.html')
 def register():
-    response = make_response(render_template('dist/register.html', data = {'botFC':'-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4))}))
+    response = make_response(render_template('dist/registerselectnetwork.html', data = {'botFC':'-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4))}))
     return response
 
 # Register page redirect
@@ -446,7 +446,16 @@ def consoles():
 @app.route('/user/<string:friendCode>/')
 def userPage(friendCode:str):
     try:
-        userData = getPresence(int(friendCode.replace('-', '')), créerCompte = False, ignoreUserAgent = True, ignoreBackend = True)
+        network = request.args.get('network')
+        if network == None:
+            network = 0
+        else:
+            try:
+                network = NetworkIDsToName[network].value
+            except:
+                network = 0
+        print(network)
+        userData = getPresence(int(friendCode.replace('-', '')), network, createAccount= False, ignoreUserAgent = True, ignoreBackend = True)
         if userData['Exception'] or not userData['User']['username']:
             raise Exception(userData['Exception'])
     except:
