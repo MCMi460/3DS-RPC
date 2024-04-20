@@ -90,8 +90,13 @@ async def main():
 
 							removeList = []
 							cleanUp = []
-							time.sleep(delay)
-							await friends_client.add_friend_by_principal_ids(0, rotation)
+							if network == 1:
+								for friend_pid in rotation:
+									time.sleep(delay)
+									await friends_client.add_friend_by_principal_id(0, friend_pid) # the add_friend_by_principal_ids hasn't been implemented yet on pretendo, so this is a fix for now. 
+							else:
+								await friends_client.add_friend_by_principal_ids(0, rotation)
+							
 
 							time.sleep(delay)
 							t = await friends_client.get_all_friends()
