@@ -18,10 +18,10 @@ block content
                         p.lead.text-center (Hint: If your 3ds isn't modded, choose nintendo)
                         .form-floating.d-flex.align-items-center.justify-content-center.mt-4.mb-0
                             form
-                                button.btn.btn-primary.m-2(type = 'reset', onclick = 'location.href="/register?network=nintendo"' style = 'background-color: #f68b33;')
+                                button.btn.btn-primary.m-2(type = 'reset', onclick = 'location.href="/register?network=nintendo"' style = 'background-color: #f68b33; border-color: #f68b33; border-radius: 0.4em;')
                                     img(src = "{{ url_for('static',filename='assets/img/nintendo-icon-transparent.png') }}", height = "32px", width="32px")
                                     span Register with Nintendo
-                                button.btn.btn-primary.m-2(type = 'reset', onclick = 'location.href="/register?network=pretendo"', style = 'background-color: #1b1f3b;')
+                                button.btn.btn-primary.m-2(type = 'reset', onclick = 'location.href="/register?network=pretendo"', style = 'background-color: #1b1f3b; border-color: #1b1f3b; border-radius: 0.4em;')
                                     img(src = "{{ url_for('static',filename='assets/img/pretendo-icon-transparent.png') }}", height = "32px", width="32px")
                                     span Register with Pretendo
                                 
