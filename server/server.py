@@ -104,7 +104,7 @@ def createUser(friendCode:int, network:int, addNewInstance:bool = False):
         convertFriendCodeToPrincipalId(friendCode)
         if not addNewInstance:
             raise Exception('UNIQUE constraint failed: friends.friendCode')
-        db.session.execute('INSERT INTO ' + NetworkIDsToName[network].name + '_friends (friendCode, online, titleID, updID, lastAccessed, accountCreation, lastOnline, jeuFavori) VALUES (\'%s\', %s, %s, %s, %s, %s, %s, %s)' % (str(friendCode).zfill(12), False, '0', '0', time.time() + 300, time.time(), time.time(), 0))
+        db.session.execute('INSERT INTO ' + NetworkIDsToName(network).name + '_friends (friendCode, online, titleID, updID, lastAccessed, accountCreation, lastOnline, jeuFavori) VALUES (\'%s\', %s, %s, %s, %s, %s, %s, %s)' % (str(friendCode).zfill(12), False, '0', '0', time.time() + 300, time.time(), time.time(), 0))
         db.session.commit()
     except Exception as e:
         if 'UNIQUE constraint failed: friends.friendCode' in str(e):
@@ -466,6 +466,7 @@ def consoles():
             'fc': '-'.join(console[i:i+4] for i in range(0, 12, 4)),
             'username': result[6],
             'active': active,
+            'network': NetworkIDsToName(network).name
         })
     data.update(sidenav())
     response = render_template('dist/consoles.html', data = data)
@@ -643,7 +644,7 @@ def login():
     try:
         fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(request.form['fc']))).zfill(12)
         networkName = NetworkIDsToName(int(request.form['network'])).name
-        networkId = request.form['network']
+        networkId = int(request.form['network'])
         newUser(fc, networkId, False)
     except:
         return redirect('/failure.html')

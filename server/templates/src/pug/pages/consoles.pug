@@ -24,20 +24,20 @@ block content
             }
             
         script.
-            function clicked(active, fc) {
+            function clicked(active, fc, network) {
                 active = active == 'False';
                 var xmlHttp = new XMLHttpRequest();
                 xmlHttp.open( "POST", "/api/toggle/" + fc, false );
-                xmlHttp.send( [token, +active] );
+                xmlHttp.send( [token, +active, network] );
                 if (xmlHttp.responseText != 'success!') {
                 } else {
                   location.reload();
                 }
             }
-            function deleteCode(fc) {
+            function deleteCode(fc, network) {
                 var xmlHttp = new XMLHttpRequest();
                 xmlHttp.open( "POST", "/api/delete/" + fc, false );
-                xmlHttp.send( token );
+                xmlHttp.send( token, network );
                 if (xmlHttp.responseText == 'success!') {
                     location.reload();
                 }
@@ -52,11 +52,11 @@ block content
                 html {% for console in data['consoles'] %}
                 .card.text-center.g-0.shadow-lg.border-0.rounded-lg.subsequentCard(style = 'margin-bottom: 25px;')
                     .card-header
-                        b Console {{ loop.index0 + 1 }} ({{ console['fc'] }})
+                        b Console {{ loop.index0 + 1 }} ({{ console['fc'] }} on {{ console['network'].capitalize() }})
                     .card-body.m-0.p-0
                         .row.g-0.m-0.p-3
                             .col-2.my-auto
-                                a(class = "icon {{ 'active' if console['active'] }}" href = "javascript:clicked('{{ console['active'] }}', {{ console['fc'].replace('-', '') }})")
+                                a(class = "icon {{ 'active' if console['active'] }}" href = "javascript:clicked('{{ console['active'] }}', {{ console['fc'].replace('-', '') }}, '{{ console['network'] }}')")
                                     html {% if not console['active'] %}
                                     img(src = '{{ url_for("static",filename="assets/img/star.svg") }}' width = '50vmax')
                                     html {% else %}
@@ -66,7 +66,7 @@ block content
                                 a(href = "/user/{{ console['fc'].replace('-', '') }}" style = 'text-decoration: none;')
                                     b {{ console['username'] }}
                             .col-2.my-auto
-                                a(href = "javascript:deleteCode({{ console['fc'].replace('-', '') }});" style = 'text-decoration: none;')
+                                a(href = "javascript:deleteCode({{ console['fc'].replace('-', '') }}, '{{ console['network']}}');" style = 'text-decoration: none;')
                                     b Delete
                 html {% endfor %}
         .card.text-center.shadow-lg.border-0.rounded-lg
