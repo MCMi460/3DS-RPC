@@ -1,4 +1,5 @@
 import time, sqlite3, sys, secrets, requests, json, pickle
+from enum import Enum
 sys.path.append('../')
 from api import *
 from api.love2 import *
@@ -10,6 +11,20 @@ with open('./cache/databases.dat', 'rb') as file:
 	t = pickle.loads(file.read())
 	titleDatabase = t[0]
 	titlesToUID = t[1]
+
+class NetworkIDsToName(Enum):
+	nintendo = 0
+	pretendo = 1
+
+def nameToNetworkId(network:int):
+    if network == None:
+        network = 0
+    else:
+        try:
+            network = NetworkIDsToName[network].value
+        except:
+            network = 0
+    return network
 
 class Session():
 	def __init__(self, con, cursor):
@@ -159,16 +174,16 @@ while True:
 		while time.time() - wait <= 1200:
 
 			cursor.execute('SELECT * FROM discordFriends WHERE active = ?', (True,))
-			v = cursor.fetchall()
+			discordFriends = cursor.fetchall()
 
 			cursor.execute('SELECT * FROM discord')
-			b = cursor.fetchall()
+			discordUsers = cursor.fetchall()
 			b1 = []
-			for e in b:
+			for e in discordUsers:
 				if any(e[0] == i[0] for i in b1):
 					continue
 				fail = False
-				for oe in v:
+				for oe in discordFriends:
 					if e[0] == oe[0]:
 						fail = True
 				if not fail:
@@ -185,13 +200,13 @@ while True:
 
 			time.sleep(delay)
 
-			print('[BATCH OF %s USERS]' % len(v))
-			if len(v) < 1:
+			print('[BATCH OF %s USERS]' % len(discordFriends))
+			if len(discordFriends) < 1:
 				time.sleep(delay)
 				continue
-			for r in v:
+			for r in discordFriends:
 				print('[RUNNING %s - %s]' % (r[0], r[1]))
-				cursor.execute('SELECT * FROM friends WHERE friendCode = ?', (r[1],))
+				cursor.execute('SELECT * FROM ' + NetworkIDsToName(r[2]).name + '_friends WHERE friendCode = ?', (r[1],))
 				v2 = cursor.fetchone()
 				cursor.execute('SELECT * FROM discord WHERE ID = ?', (r[0],))
 				v3 = cursor.fetchone()
