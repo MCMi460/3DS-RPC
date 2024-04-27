@@ -49,7 +49,7 @@ class Discord():
 		self.con = con
 		self.cursor = cursor
 
-	def updatePresence(self, bearer, refresh, session, lastAccessed, generationDate, userData, config):
+	def updatePresence(self, bearer, refresh, session, lastAccessed, generationDate, userData, config, network):
 		if time.time() - lastAccessed >= 1000:
 			session = Session(self.con, self.cursor).retire(refresh)
 		elif time.time() - lastAccessed <= 30:
@@ -76,7 +76,7 @@ class Discord():
 			if presence['gameDescription']:
 				data['activities'][0]['details'] = presence['gameDescription']
 			if userData['User']['username'] and bool(config[0]):
-				data['activities'][0]['buttons'] = [{'label': 'Profile', 'url': HOST + '/user/' + userData['User']['friendCode']},]
+				data['activities'][0]['buttons'] = [{'label': 'Profile', 'url': HOST + '/user/' + userData['User']['friendCode'] + '/?network=' + NetworkIDsToName(network).name},]
 			if userData['User']['username'] and game['icon_url'] and bool(config[1]):
 				data['activities'][0]['assets']['small_image'] = userData['User']['mii']['face']
 				data['activities'][0]['assets']['small_text'] = '-'.join(userData['User']['friendCode'][i:i+4] for i in range(0, 12, 4))
@@ -238,7 +238,7 @@ while True:
 										'mii': mii,
 										'lastAccessed': v2[4],
 									}
-								}, (v3[7], v3[8])):
+								}, (v3[7], v3[8]), r[2]):
 								time.sleep(delay)
 						except:
 							discord.deleteDiscordUser(v3[0])
