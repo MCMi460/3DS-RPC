@@ -37,7 +37,7 @@ block content
             function deleteCode(fc, network) {
                 var xmlHttp = new XMLHttpRequest();
                 xmlHttp.open( "POST", "/api/delete/" + fc, false );
-                xmlHttp.send( token, network );
+                xmlHttp.send([token, network]);
                 if (xmlHttp.responseText == 'success!') {
                     location.reload();
                 }

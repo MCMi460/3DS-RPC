@@ -25,8 +25,10 @@ version = 0.31
 agent = '3DS-RPC/'
 
 startTime = time.time() # Frontend
-startDBTime(0, 0) #todo fix this
-startTime2 = 0 # Backend
+startDBTime(0, 0)
+startDBTime(0, 1)
+startTime2Nintendo = 0 # Nintendo Backend
+startTime2Pretendo = 0 # Pretendo Backend
 
 @app.errorhandler(404)
 def handler404(e):
@@ -190,12 +192,18 @@ def sidenav():
     resultPretendo = db.session.execute('SELECT BACKEND_UPTIME FROM config WHERE network=1') # Screw good coding practices and DRY
     resultPretendo = resultPretendo.fetchone()
     startTime2Pretendo = resultPretendo[0]
+    #  if   elif startTime2Nintendo == 1 else 'Offline'
+    status = 'Offline'
+    if startTime2Nintendo != 0 and startTime2Pretendo != 0:
+        status = 'Operational'
+    elif (startTime2Nintendo != 0 and startTime2Pretendo == 0) or (startTime2Nintendo == 0 and startTime2Pretendo != 0):
+        status = 'Semi-Operational'
+
     data = {
         'uptime': str(datetime.timedelta(seconds= int(time.time() - startTime))),
-        'uptime-backend': (( 'Nintendo Backend has been up for %s...' % str(datetime.timedelta(seconds= int(time.time() - int(startTime2Nintendo)))) if not startTime2Nintendo == 0 else 'Nintendo Backend: Offline') + 
-                           'todo figure out linebreaks so i can be lazy' +
-                           ('Pretendo Backend has been up for %s...' % str(datetime.timedelta(seconds= int(time.time() - int(startTime2Pretendo)))) if not startTime2Pretendo == 0 else 'Pretendo Backend: Offline')),
-        'status': 'Operational' if startTime2 != 0 else 'Offline',
+        'nintendo-uptime-backend': ('Nintendo Backend has been up for %s...' % str(datetime.timedelta(seconds= int(time.time() - int(startTime2Nintendo)))) if not startTime2Nintendo == 0 else 'Nintendo Backend: Offline'),          
+        'pretendo-uptime-backend': ('Pretendo Backend has been up for %s...' % str(datetime.timedelta(seconds= int(time.time() - int(startTime2Pretendo)))) if not startTime2Pretendo == 0 else 'Pretendo Backend: Offline'),
+        'status': status,
     }
     return data
 
@@ -285,7 +293,7 @@ def nameToNetworkId(network:int):
 # Index page
 @app.route('/')
 def index():
-    results = db.session.execute(' UNION '.join([f'SELECT * FROM {member.name}_friends WHERE online = True AND username != ""' for member in NetworkIDsToName]) + ' ORDER BY lastAccessed DESC') 
+    results = db.session.execute(' UNION '.join([f'SELECT *, "{member.name}" FROM {member.name}_friends WHERE online = True AND username != ""' for member in NetworkIDsToName]) + ' ORDER BY lastAccessed DESC') 
     results = results.fetchall()
     num = len(results)
     data = sidenav()
@@ -298,10 +306,11 @@ def index():
         'game': getTitle(user[2], titlesToUID, titleDatabase),
         'friendCode': str(user[0]).zfill(12),
         'joinable': bool(user[9]),
+        'network': str(user[13]),
     }) for user in results if user[6] ]
     data['active'] = data['active'][:2]
 
-    results = db.session.execute(' UNION '.join([f'SELECT * FROM {member.name}_friends WHERE username != ""' for member in NetworkIDsToName]) + ' ORDER BY accountCreation DESC LIMIT 6')
+    results = db.session.execute(' UNION '.join([f'SELECT *, "{member.name}" FROM {member.name}_friends WHERE username != ""' for member in NetworkIDsToName]) + ' ORDER BY accountCreation DESC LIMIT 6')
     results = results.fetchall()
     data['new'] = [ ({
         'mii':MiiData().mii_studio_url(user[8]),
@@ -309,6 +318,7 @@ def index():
         'game': getTitle(user[2], titlesToUID, titleDatabase) if bool(user[1]) and int(user[2]) != 0 else '',
         'friendCode': str(user[0]).zfill(12),
         'joinable': bool(user[9]),
+        'network': str(user[13]),
     }) for user in results if user[6] ]
     data['new'] = data['new'][:2]
 
@@ -599,10 +609,29 @@ def toggler(friendCode:int):
 @limiter.limit(togglerLimit)
 def deleter(friendCode:int):
     fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
-    token = request.data.decode('utf-8')
+    if not ',' in request.data.decode('utf-8'): # Old API compatiblity. In the future this should be depercated.
+        token = request.data.decode('utf-8')
+        id = userFromToken(token)[0]
+        db.session.execute('DELETE FROM discordFriends WHERE friendCode = \'%s\' AND ID = %s AND network = 0' % (fc, id))
+        db.session.commit()
+
+        return 'success!'
+
+    data = request.data.decode('utf-8').split(',')
+    token = data[0]
+    network = nameToNetworkId(data[1])
     id = userFromToken(token)[0]
-    db.session.execute('DELETE FROM discordFriends WHERE friendCode = \'%s\' AND ID = %s' % (fc, id))
+    db.session.execute('DELETE FROM discordFriends WHERE friendCode = \'%s\' AND ID = %s AND network = %s' % (fc, id, network))
     db.session.commit()
+    # the following is optional, this deletes the friend data if you remove the console, and no one else is using the fc.
+    result = db.session.execute('SELECT * FROM discordFriends WHERE friendCode = \'%s\' AND network = %s' % (fc, network))
+    result = result.fetchone()
+    if result == None:
+        print(1)
+        db.session.execute('DELETE FROM ' + NetworkIDsToName(network).name + '_friends WHERE friendCode = \'%s\'' % (fc))
+        db.session.commit()
+    # end of optional
+    
     return 'success!'
 
 # Toggle one

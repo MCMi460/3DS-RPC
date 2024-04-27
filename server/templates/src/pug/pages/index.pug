@@ -24,7 +24,7 @@ block content
                             | Actively Playing Users...
                     .card-body
                         html {% for i in data['active'] %}
-                        a(href = "/user/{{ i['friendCode'] }}", style = 'text-decoration: none; color: #000;').card.mb-4
+                        a(href = "/user/{{ i['friendCode'] }}?network={{ i['network'] }}", style = 'text-decoration: none; color: #000;').card.mb-4
                             .card-body.d-flex.flex-row.flex-wrap.justify-content-center.align-items-begin
                                 div.d-flex.flex-column.align-items-center(style = 'padding-right: 10px; padding-bottom: 10px;')
                                     | User:
@@ -47,7 +47,7 @@ block content
                             | Recently Joined Users...
                     .card-body
                         html {% for i in data['new'] %}
-                        a(href = "/user/{{ i['friendCode'] }}", style = 'text-decoration: none; color: #000;').card.mb-4
+                        a(href = "/user/{{ i['friendCode'] }}?network={{ i['network'] }}", style = 'text-decoration: none; color: #000;').card.mb-4
                             .card-body.d-flex.flex-row.flex-wrap.justify-content-center.align-items-begin
                                 div.d-flex.flex-column.align-items-center(style = 'padding-right: 10px; padding-bottom: 10px;')
                                     | User:
