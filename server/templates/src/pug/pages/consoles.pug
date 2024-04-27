@@ -63,7 +63,7 @@ block content
                                     img(src = '{{ url_for("static",filename="assets/img/star-fill.svg") }}' width = '50vmax')
                                     html {% endif %}
                             .col-8.my-auto
-                                a(href = "/user/{{ console['fc'].replace('-', '') }}" style = 'text-decoration: none;')
+                                a(href = "/user/{{ console['fc'].replace('-', '') }}?network={{ console['network'] }}" style = 'text-decoration: none;')
                                     b {{ console['username'] }}
                             .col-2.my-auto
                                 a(href = "javascript:deleteCode({{ console['fc'].replace('-', '') }}, '{{ console['network']}}');" style = 'text-decoration: none;')
