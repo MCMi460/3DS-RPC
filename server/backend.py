@@ -92,9 +92,10 @@ async def main():
 							cleanUp = []
 							if network == 1:
 								for friend_pid in rotation:
-									time.sleep(delay)
+									time.sleep(delay / quicker)
 									await friends_client.add_friend_by_principal_id(0, friend_pid) # the add_friend_by_principal_ids hasn't been implemented yet on pretendo, so this is a fix for now. 
 							else:
+								time.sleep(delay)
 								await friends_client.add_friend_by_principal_ids(0, rotation)
 							
 
@@ -207,7 +208,10 @@ if __name__ == '__main__':
 				network = int(NetworkIDsToName[sys.argv[1]].value)
 			else:
 				invalidArgument()
-
+		if network == 1:
+			# I have no idea why getting rid of this delay works to fix pretendo, nor do i know why it was here in the first place, but dropping it for pretendo works, so who am i to judge?
+			delay = 0
+			quicker = 1
 		startDBTime(begun, network)
 		anyio.run(main)
 	except (KeyboardInterrupt, Exception) as e:
