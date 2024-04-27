@@ -361,17 +361,17 @@ def settingsRedirect():
 # Roster page
 @app.route('/roster')
 def roster():
-    results = db.session.execute(' UNION '.join([f'SELECT * FROM {member.name}_friends WHERE username != ""' for member in NetworkIDsToName]) + ' ORDER BY accountCreation DESC LIMIT 8')
+    results = db.session.execute(' UNION '.join([f'SELECT *, "{member.name}" AS network FROM {member.name}_friends WHERE username != ""' for member in NetworkIDsToName]) + ' ORDER BY accountCreation DESC LIMIT 8')
     results = results.fetchall()
     data = sidenav()
     data['title'] = 'New Users'
-
     data['users'] = [ ({
         'mii':MiiData().mii_studio_url(user[8]),
         'username':user[6],
         'game': getTitle(user[2], titlesToUID, titleDatabase),
         'friendCode': str(user[0]).zfill(12),
         'joinable': bool(user[9]),
+        'network': str(user[13]),
     }) for user in results if user[6] ]
 
     response = make_response(render_template('dist/users.html', data = data))
@@ -380,7 +380,7 @@ def roster():
 # Active page
 @app.route('/active')
 def active():
-    results = db.session.execute(' UNION '.join([f'SELECT * FROM {member.name}_friends WHERE online = True AND username != ""' for member in NetworkIDsToName]) + ' ORDER BY lastAccessed DESC')
+    results = db.session.execute(' UNION '.join([f'SELECT *, "{member.name}" AS network FROM {member.name}_friends WHERE online = True AND username != ""' for member in NetworkIDsToName]) + ' ORDER BY lastAccessed DESC')
     results = results.fetchall()
     data = sidenav()
     data['title'] = 'Active Users'
@@ -391,6 +391,7 @@ def active():
         'game': getTitle(user[2], titlesToUID, titleDatabase),
         'friendCode': str(user[0]).zfill(12),
         'joinable': bool(user[9]),
+        'network': str(user[13]),
     }) for user in results if user[6] ]
 
     response = make_response(render_template('dist/users.html', data = data))
