@@ -9,19 +9,25 @@ block content
     .container
       
         .row.justify-content-center
-            .col-lg-6
+            .col-lg-7
                 .card.shadow-lg.border-0.rounded-lg.mt-5
                     .card-header
                         h3.text-center.font-weight-light.my-4 Register
                     .card-body
                         h5.text-center Select the network you want to register with.
                         p.lead.text-center (Hint: If your 3ds isn't modded, choose nintendo)
+                        style.
+                            @media only screen and (max-width: 540px) {
+                                .networkButtons {
+                                    width: 100%;
+                                }
+                            }
                         .form-floating.d-flex.align-items-center.justify-content-center.mt-4.mb-0
                             form
-                                button.btn.btn-primary.m-2(type = 'reset', onclick = 'location.href="/register?network=nintendo"' style = 'background-color: #f68b33; border-color: #f68b33; border-radius: 0.4em;')
+                                button.btn.btn-primary.m-2.networkButtons(type = 'reset', onclick = 'location.href="/register?network=nintendo"' style = 'background-color: #f68b33; border-color: #f68b33; border-radius: 0.4em;')
                                     img(src = "{{ url_for('static',filename='assets/img/nintendo-icon-transparent.png') }}", height = "32px", width="32px")
                                     span Register with Nintendo
-                                button.btn.btn-primary.m-2(type = 'reset', onclick = 'location.href="/register?network=pretendo"', style = 'background-color: #1b1f3b; border-color: #1b1f3b; border-radius: 0.4em;')
+                                button.btn.btn-primary.m-2.networkButtons(type = 'reset', onclick = 'location.href="/register?network=pretendo"', style = 'background-color: #1b1f3b; border-color: #1b1f3b; border-radius: 0.4em;')
                                     img(src = "{{ url_for('static',filename='assets/img/pretendo-icon-transparent.png') }}", height = "32px", width="32px")
                                     span Register with Pretendo
                                 
