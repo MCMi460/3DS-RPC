@@ -11,7 +11,7 @@ block content
                 .text-center.mt-4
                     h3 Your account has been created!
                     p.lead But it'll take a minute or two for your profile to be loaded.
-                    a(href='/{{ data["url"] }}')
+                    a(href='/{{ data["url"] }}?network={{ data["network"]}}')
                         | Try Profile
                     br
                     a(href='/consoles')#addToConsoles
