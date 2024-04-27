@@ -542,32 +542,32 @@ def newUser(friendCode:int, network:int, userCheck:bool = True):
 # Grab presence from friendCode
 @app.route('/api/user/<int:friendCode>/', methods=['GET'])
 @limiter.limit(userPresenceLimit)
-def userPresence(friendCode:int, *, createAccount:bool = True, ignoreUserAgent = False, ignoreBackend = False):
-    return getPresence(friendCode, createAccount=createAccount, ignoreUserAgent = ignoreUserAgent, ignoreBackend = ignoreBackend)
+def userPresence(friendCode:int, network:str="nintendo", *, createAccount:bool = True, ignoreUserAgent = False, ignoreBackend = False):
+    return getPresence(friendCode, nameToNetworkId(network), createAccount=createAccount, ignoreUserAgent = ignoreUserAgent, ignoreBackend = ignoreBackend)
 
 # Alias
 @app.route('/api/u/<int:friendCode>/', methods=['GET'])
 @limiter.limit(userPresenceLimit)
 def userAlias(friendCode:int):
-    return userPresence(friendCode)
+    return userPresence(friendCode, request.args.get('network'))
 
 # Alias
 @app.route('/api/u/c/<int:friendCode>/', methods=['POST'])
 @limiter.limit(newUserLimit)
 def newAlias1(friendCode:int):
-    return newUser(friendCode)
+    return newUser(friendCode, nameToNetworkId((request.data.decode('utf-8').split(','))[0]))
 
 # Alias
 @app.route('/api/user/c/<int:friendCode>/', methods=['POST'])
 @limiter.limit(newUserLimit)
 def newAlias2(friendCode:int):
-    return newUser(friendCode)
+    return newUser(friendCode, nameToNetworkId((request.data.decode('utf-8').split(','))[0]))
 
 # Alias
 @app.route('/api/u/create/<int:friendCode>/', methods=['POST'])
 @limiter.limit(newUserLimit)
 def newAlias3(friendCode:int):
-    return newUser(friendCode)
+    return newUser(friendCode, nameToNetworkId((request.data.decode('utf-8').split(','))[0]))
 
 # Toggle
 @app.route('/api/toggle/<int:friendCode>/', methods=['POST'])
