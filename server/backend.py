@@ -60,7 +60,7 @@ async def main():
 						NEX_PASSWORD = PRETENDO_NEX_PASSWORD
 						
 					else:
-						raise Exception(network + " is not a valid network \"id\"")
+						raise Exception(NetworkIDsToName(network).name + " is not a valid network")
 					
 					client.set_device(SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME)
 					client.set_user(PID , PID_HMAC)
@@ -193,15 +193,13 @@ if __name__ == '__main__':
 		parser.add_argument('--network', choices=[member.name.lower() for member in NetworkIDsToName], required=True)
 		args = parser.parse_args()
 
-		network = NetworkIDsToName[args.network.lower()]
-		
-		if network == NetworkIDsToName.pretendo:
+		network = NetworkIDsToName[args.network.lower()].value
+		if network == NetworkIDsToName.pretendo.value:
 			# I have no idea why getting rid of this delay works to fix pretendo, nor do i know why it was here in the first place, but dropping it for pretendo works, so who am i to judge?
 			delay, quicker = 0, 1
-
-		startDBTime(begun, network.value)
+		startDBTime(begun, network)
 		anyio.run(main)
 	except (KeyboardInterrupt, Exception) as e:
 		if network is not None:
-			startDBTime(0, network.value)
+			startDBTime(0, network)
 		print(e)
