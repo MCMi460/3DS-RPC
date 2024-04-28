@@ -79,7 +79,7 @@ class Discord():
 				data['activities'][0]['buttons'] = [{'label': 'Profile', 'url': HOST + '/user/' + userData['User']['friendCode'] + '/?network=' + NetworkIDsToName(network).name},]
 			if userData['User']['username'] and game['icon_url'] and bool(config[1]):
 				data['activities'][0]['assets']['small_image'] = userData['User']['mii']['face']
-				data['activities'][0]['assets']['small_text'] = '-'.join(userData['User']['friendCode'][i:i+4] for i in range(0, 12, 4))
+				data['activities'][0]['assets']['small_text'] = '-'.join(userData['User']['friendCode'][i:i+4] for i in range(0, 12, 4)) + ' on ' + NetworkIDsToName(network).name.capitalize()
 			if session:
 				data['token'] = session
 			headers = {
