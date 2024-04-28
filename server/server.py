@@ -555,7 +555,7 @@ def userPresence(friendCode:int, network:str="nintendo", *, createAccount:bool =
 @limiter.limit(userPresenceLimit)
 def userAlias(friendCode:int):
     network = 0
-    if request.args.get('network') == None:
+    if request.args.get('network') != None:
         network = nameToNetworkId(request.args.get('network'))
     return userPresence(friendCode, network)
 
@@ -564,7 +564,7 @@ def userAlias(friendCode:int):
 @limiter.limit(newUserLimit)
 def newAlias1(friendCode:int):
     network = 0
-    if (request.data.decode('utf-8').split(','))[0] == None:
+    if (request.data.decode('utf-8').split(','))[0] != None:
         network = nameToNetworkId((request.data.decode('utf-8').split(','))[0])
     return newUser(friendCode, network)
 
@@ -573,7 +573,7 @@ def newAlias1(friendCode:int):
 @limiter.limit(newUserLimit)
 def newAlias2(friendCode:int):
     network = 0
-    if (request.data.decode('utf-8').split(','))[0] == None:
+    if (request.data.decode('utf-8').split(','))[0] != None:
         network = nameToNetworkId((request.data.decode('utf-8').split(','))[0])
     return newUser(friendCode, network)
 
@@ -582,7 +582,7 @@ def newAlias2(friendCode:int):
 @limiter.limit(newUserLimit)
 def newAlias3(friendCode:int):
     network = 0
-    if (request.data.decode('utf-8').split(','))[0] == None:
+    if (request.data.decode('utf-8').split(','))[0] != None:
         network = nameToNetworkId((request.data.decode('utf-8').split(','))[0])
     return newUser(friendCode, network)
 
@@ -591,7 +591,7 @@ def newAlias3(friendCode:int):
 @limiter.limit(togglerLimit)
 def toggler(friendCode:int):
     network = 0
-    if request.data.decode('utf-8').split(',')[2] == None:
+    if request.data.decode('utf-8').split(',')[2] != None:
         network = nameToNetworkId(request.data.decode('utf-8').split(',')[2])
     try:
         fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
