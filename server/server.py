@@ -646,7 +646,6 @@ def deleter(friendCode:int):
     result = db.session.execute('SELECT * FROM discordFriends WHERE friendCode = \'%s\' AND network = %s' % (fc, network))
     result = result.fetchone()
     if result == None:
-        print(1)
         db.session.execute('DELETE FROM ' + NetworkIDsToName(network).name + '_friends WHERE friendCode = \'%s\'' % (fc))
         db.session.commit()
     # end of optional
