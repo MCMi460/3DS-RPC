@@ -529,6 +529,10 @@ def newUser(friendCode:int, network:int, userCheck:bool = True):
     try:
         if userCheck:
             userAgentCheck()
+        if network == None:
+            network = 0
+            if request.data.decode('utf-8').split(',')[0] != None:
+                network = NetworkIDsToName(request.data.decode('utf-8').split(',')[0]).value
         createUser(friendCode, network, True)
         return {
             'Exception': False,
@@ -550,31 +554,45 @@ def userPresence(friendCode:int, network:str="nintendo", *, createAccount:bool =
 @app.route('/api/u/<int:friendCode>/', methods=['GET'])
 @limiter.limit(userPresenceLimit)
 def userAlias(friendCode:int):
-    return userPresence(friendCode, request.args.get('network'))
+    network = 0
+    if request.args.get('network') == None:
+        network = nameToNetworkId(request.args.get('network'))
+    return userPresence(friendCode, network)
 
 # Alias
 @app.route('/api/u/c/<int:friendCode>/', methods=['POST'])
 @limiter.limit(newUserLimit)
 def newAlias1(friendCode:int):
-    return newUser(friendCode, nameToNetworkId((request.data.decode('utf-8').split(','))[0]))
+    network = 0
+    if (request.data.decode('utf-8').split(','))[0] == None:
+        network = nameToNetworkId((request.data.decode('utf-8').split(','))[0])
+    return newUser(friendCode, network)
 
 # Alias
 @app.route('/api/user/c/<int:friendCode>/', methods=['POST'])
 @limiter.limit(newUserLimit)
 def newAlias2(friendCode:int):
-    return newUser(friendCode, nameToNetworkId((request.data.decode('utf-8').split(','))[0]))
+    network = 0
+    if (request.data.decode('utf-8').split(','))[0] == None:
+        network = nameToNetworkId((request.data.decode('utf-8').split(','))[0])
+    return newUser(friendCode, network)
 
 # Alias
 @app.route('/api/u/create/<int:friendCode>/', methods=['POST'])
 @limiter.limit(newUserLimit)
 def newAlias3(friendCode:int):
-    return newUser(friendCode, nameToNetworkId((request.data.decode('utf-8').split(','))[0]))
+    network = 0
+    if (request.data.decode('utf-8').split(','))[0] == None:
+        network = nameToNetworkId((request.data.decode('utf-8').split(','))[0])
+    return newUser(friendCode, network)
 
 # Toggle
 @app.route('/api/toggle/<int:friendCode>/', methods=['POST'])
 @limiter.limit(togglerLimit)
 def toggler(friendCode:int):
-    network = nameToNetworkId(request.data.decode('utf-8').split(',')[2])
+    network = 0
+    if request.data.decode('utf-8').split(',')[2] == None:
+        network = nameToNetworkId(request.data.decode('utf-8').split(',')[2])
     try:
         fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
     except:
@@ -674,8 +692,11 @@ def localImageCdn(file:str):
 def login():
     try:
         fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(request.form['fc']))).zfill(12)
-        networkName = NetworkIDsToName(int(request.form['network'])).name
-        networkId = int(request.form['network'])
+        if request.form['network'] == None:
+            networkName = NetworkIDsToName(0).name
+        else:
+            networkName = NetworkIDsToName(int(request.form['network'])).name
+        networkId = nameToNetworkId(networkName)
         newUser(fc, networkId, False)
     except:
         return redirect('/failure.html')
