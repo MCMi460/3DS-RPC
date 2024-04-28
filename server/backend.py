@@ -190,7 +190,7 @@ async def main():
 if __name__ == '__main__':
 	try:
 		parser = argparse.ArgumentParser()
-		parser.add_argument('--network', choices=[member.name.lower() for member in NetworkIDsToName], required=True)
+		parser.add_argument('-n', '--network', choices=[member.name.lower() for member in NetworkIDsToName], required=True)
 		args = parser.parse_args()
 
 		network = NetworkIDsToName[args.network.lower()].value
