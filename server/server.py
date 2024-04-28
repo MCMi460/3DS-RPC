@@ -496,6 +496,7 @@ def userPage(friendCode:str):
     if not userData['User']['online'] or not userData['User']['Presence']:
         userData['User']['Presence']['game'] = None
     userData['User']['favoriteGame'] = getTitle(userData['User']['favoriteGame'], titlesToUID, titleDatabase)
+    userData['User']['network'] = request.args.get('network')
     if userData['User']['favoriteGame']['name'] == 'Home Screen':
         userData['User']['favoriteGame'] = None
     for i in ('accountCreation','lastAccessed','lastOnline'):

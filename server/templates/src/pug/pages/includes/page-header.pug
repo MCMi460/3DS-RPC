@@ -30,5 +30,5 @@ script.
           xmlHttp.send( [token, 1] );
           window.location.href = "/consoles";
       }
-      x.textContent = '(' + (x.textContent.match(/.{1,4}/g) ?? []).join('-') + ')';
+      x.textContent = '(' + (x.textContent.match(/.{1,4}/g) ?? []).join('-') + ' on ' + '#{network}'.charAt(0).toUpperCase() + '#{network}'.slice(1) + ')';
     }
