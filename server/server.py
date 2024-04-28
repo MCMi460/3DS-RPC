@@ -216,7 +216,7 @@ def userAgentCheck():
         raise Exception('this client is invalid')
 
 def getPresence(friendCode:int, network:int, *, createAccount:bool = True, ignoreUserAgent = False, ignoreBackend = False):
-    # try:
+    try:
         if not ignoreUserAgent:
             userAgentCheck()
         result = db.session.execute('SELECT BACKEND_UPTIME FROM config WHERE network = %s' % network)
@@ -262,12 +262,12 @@ def getPresence(friendCode:int, network:int, *, createAccount:bool = True, ignor
                 'favoriteGame': result[12],
             }
         }
-    # except Exception as e:
-    #     return {
-    #         'Exception': {
-    #             'Error': str(e),
-    #         }
-    #     }
+    except Exception as e:
+        return {
+            'Exception': {
+                'Error': str(e),
+            }
+        }
 
 def getBotFriendCodeFromNetworkId(network:int):
     match network:
