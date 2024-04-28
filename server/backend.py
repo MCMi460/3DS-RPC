@@ -5,7 +5,7 @@ from nintendo import nasc
 from nintendo.nex import backend, friends, settings, streams
 from nintendo.nex import common
 from enum import Enum
-import anyio, time, sqlite3, sys, traceback
+import anyio, time, sqlite3, sys, traceback, argparse
 sys.path.append('../')
 from api.private import SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME, REGION, LANGUAGE, NINTENDO_PID, PRETENDO_PID, PID_HMAC, NINTENDO_NEX_PASSWORD, PRETENDO_NEX_PASSWORD
 from api import *
@@ -186,35 +186,22 @@ async def main():
 					print('An error occurred!\n%s' % e)
 					print(traceback.format_exc())
 					time.sleep(2)
-def invalidArgument(): 
-	print("Missing or Invalid Network Selection!") # Probs a better way to do these prints, but oh well, if it works, it works
-	print("")
-	print("Valid options are (seperated by commas):")
-	print("nintendo, 0,")
-	print("pretendo, 1")
-	exit()
 	
 if __name__ == '__main__':
 	try:
-		if len(sys.argv) <= 1:
-			invalidArgument()
-		if sys.argv[1].isnumeric(): # number check!
-			if (int(sys.argv[1]) in [e.value for e in NetworkIDsToName]):
-				network = int(sys.argv[1])
-			else:
-				invalidArgument()
-		else:
-			if (sys.argv[1] in [e.name for e in NetworkIDsToName]):
-				network = int(NetworkIDsToName[sys.argv[1]].value)
-			else:
-				invalidArgument()
-		if network == 1:
+		parser = argparse.ArgumentParser()
+		parser.add_argument('--network', choices=[member.name.lower() for member in NetworkIDsToName], required=True)
+		args = parser.parse_args()
+
+		network = NetworkIDsToName[args.network.lower()]
+		
+		if network == NetworkIDsToName.pretendo:
 			# I have no idea why getting rid of this delay works to fix pretendo, nor do i know why it was here in the first place, but dropping it for pretendo works, so who am i to judge?
-			delay = 0
-			quicker = 1
-		startDBTime(begun, network)
+			delay, quicker = 0, 1
+
+		startDBTime(begun, network.value)
 		anyio.run(main)
 	except (KeyboardInterrupt, Exception) as e:
-		if network != None:
-			startDBTime(0, network)
+		if network is not None:
+			startDBTime(0, network.value)
 		print(e)
