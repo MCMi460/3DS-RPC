@@ -31,7 +31,8 @@ Create Table pretendo_friends(
 );
 
 Create Table config(
-  BACKEND_UPTIME bigint NOT NULL
+  BACKEND_UPTIME bigint NOT NULL,
+  network tinyint NOT NULL
 );
 
 Create Table discord(
@@ -42,8 +43,8 @@ Create Table discord(
   token text UNIQUE,
   lastAccessed bigint NOT NULL,
   generationDate bigint NOT NULL,
-  showProfileButton boolean,
-  showSmallImage boolean
+  showProfileButton boolean NOT NULL DEFAULT TRUE,
+  showSmallImage boolean NOT NULL DEFAULT TRUE
 );
 
 Create Table discordFriends(
