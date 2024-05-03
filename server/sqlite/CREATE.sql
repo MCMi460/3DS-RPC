@@ -11,7 +11,7 @@ Create Table nintendo_friends(
   joinable boolean,
   gameDescription text,
   lastOnline bigint NOT NULL,
-  jeuFavori bigint NOT NULL,
+  jeuFavori bigint NOT NULL
 );
 
 Create Table pretendo_friends(
@@ -27,7 +27,7 @@ Create Table pretendo_friends(
   joinable boolean,
   gameDescription text,
   lastOnline bigint NOT NULL,
-  jeuFavori bigint NOT NULL,
+  jeuFavori bigint NOT NULL
 );
 
 Create Table config(
