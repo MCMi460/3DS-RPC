@@ -1,6 +1,6 @@
 # Created by Deltaion Lee (MCMi460) on Github
 
-from enum import Enum
+from enum import IntEnum
 from flask import Flask, make_response, request, redirect, render_template, send_file
 from flask_limiter import Limiter
 from flask_sqlalchemy import SQLAlchemy
@@ -10,6 +10,7 @@ from api import *
 from api.love2 import *
 from api.private import CLIENT_ID, CLIENT_SECRET, HOST
 from api.public import pretendoBotFC, nintendoBotFC
+from api.networks import NetworkIDsToName, nameToNetworkId, getBotFriendCodeFromNetworkId
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.abspath('sqlite/fcLibrary.db')
@@ -53,10 +54,6 @@ titleDatabase = []
 titlesToUID = []
 
 requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
-
-class NetworkIDsToName(Enum):
-	nintendo = 0
-	pretendo = 1
 
 # Create title cache
 def cacheTitles():
@@ -268,23 +265,6 @@ def getPresence(friendCode:int, network:int, *, createAccount:bool = True, ignor
                 'Error': str(e),
             }
         }
-
-def getBotFriendCodeFromNetworkId(network:int):
-    match network:
-        case 0:
-            return nintendoBotFC
-        case 1:
-            return pretendoBotFC
-
-def nameToNetworkId(network:int):
-    if network == None:
-        network = 0
-    else:
-        try:
-            network = NetworkIDsToName[network].value
-        except:
-            network = 0
-    return network
 
 ##################
 # NON-API ROUTES #

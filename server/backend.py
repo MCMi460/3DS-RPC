@@ -10,6 +10,7 @@ sys.path.append('../')
 from api.private import SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME, REGION, LANGUAGE, NINTENDO_PID, PRETENDO_PID, PID_HMAC, NINTENDO_NEX_PASSWORD, PRETENDO_NEX_PASSWORD
 from api import *
 from api.love2 import *
+from api.networks import NetworkIDsToName
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -20,11 +21,6 @@ quicker = 6
 begun = time.time()
 
 network:int = 0
-
-class NetworkIDsToName(Enum): # i mean it is horrible, but technically it allows somewhat easier addition of networks (if that ever happens, which i doubt)
-	nintendo = 0
-	pretendo = 1
-
 
 async def main():
 	while True:

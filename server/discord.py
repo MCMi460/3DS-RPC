@@ -4,6 +4,7 @@ sys.path.append('../')
 from api import *
 from api.love2 import *
 from api.private import CLIENT_ID, CLIENT_SECRET, HOST
+from api.networks import NetworkIDsToName, nameToNetworkId
 
 API_ENDPOINT:str = 'https://discord.com/api/v10'
 
@@ -11,20 +12,6 @@ with open('./cache/databases.dat', 'rb') as file:
 	t = pickle.loads(file.read())
 	titleDatabase = t[0]
 	titlesToUID = t[1]
-
-class NetworkIDsToName(Enum):
-	nintendo = 0
-	pretendo = 1
-
-def nameToNetworkId(network:int):
-    if network == None:
-        network = 0
-    else:
-        try:
-            network = NetworkIDsToName[network].value
-        except:
-            network = 0
-    return network
 
 class Session():
 	def __init__(self, con, cursor):
