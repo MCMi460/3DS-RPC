@@ -65,6 +65,8 @@ async def main():
 
 					s = settings.load('friends')
 					s.configure("ridfebb9", 20000)
+					if network == 1:
+						s["prudp.ping_timeout"] = 100000000000 # oh my god this is horrifying, but it makes it works, so who am i to care
 					async with backend.connect(s, response.host, response.port) as be:
 						async with be.login(str(PID), NEX_PASSWORD) as client:
 							friends_client = friends.FriendsClientV1(client)
@@ -191,7 +193,8 @@ if __name__ == '__main__':
 
 		network = NetworkIDsToName[args.network.lower()].value
 		if network == NetworkIDsToName.pretendo.value:
-			# I have no idea why getting rid of this delay works to fix pretendo, nor do i know why it was here in the first place, but dropping it for pretendo works, so who am i to judge?
+			# Pretendo shouldn't care about a delay, like maybe nintendo? Since this was here just to prevent spamming Nintendo, we don't need it for pretendo. It will also make it faster.
+			# Maybe later it should just not have a delay for all networks?
 			delay, quicker = 0, 1
 		startDBTime(begun, network)
 		anyio.run(main)
