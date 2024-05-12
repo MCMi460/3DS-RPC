@@ -65,8 +65,10 @@ async def main():
 
 					s = settings.load('friends')
 					s.configure("ridfebb9", 20000)
-					if network == 1:
+
+					if network == 1: # If the app starts randomly hanging on Pretendo, try removing this, and the next line.
 						s["prudp.ping_timeout"] = 100000000000 # oh my god this is horrifying, but it makes it works, so who am i to care
+						
 					async with backend.connect(s, response.host, response.port) as be:
 						async with be.login(str(PID), NEX_PASSWORD) as client:
 							friends_client = friends.FriendsClientV1(client)
