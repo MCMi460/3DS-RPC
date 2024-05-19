@@ -23,7 +23,7 @@ if local:
 ## The below contains 3dsrpc.com-specific information
 ## You will have to provide your own 'bot' FC if you are planning
 ## on running your own front and backend.
-convertFriendCodeToPrincipalId(botFC) # A quick verification check
+convertFriendCodeToPrincipalId(nintendoBotFC) # A quick verification check
 
 _REGION = typing.Literal['ALL', 'US', 'JP', 'GB', 'KR', 'TW']
 path = getAppPath()
@@ -132,7 +132,7 @@ class Client():
             APIExcept(r)
         if r['Exception']:
             if 'not recognized' in r['Exception']['Error']:
-                print('%sRemember, the bot\'s friend code is as follows:\n%s%s' % (Color.YELLOW, '-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4)), Color.DEFAULT))
+                print('%sRemember, the bot\'s friend code is as follows:\n%s%s' % (Color.YELLOW, '-'.join(nintendoBotFC[i:i+4] for i in range(0, len(nintendoBotFC), 4)), Color.DEFAULT))
             raise APIException(r['Exception'])
         return r
 
@@ -215,7 +215,7 @@ def main():
         else:
             raise Exception()
     except:
-        print('%sPlease take this time to add the bot\'s FC to your target 3DS\' friends list.\n%sBot FC: %s%s' % (Color.YELLOW, Color.DEFAULT, Color.BLUE, '-'.join(botFC[i:i+4] for i in range(0, 12, 4))))
+        print('%sPlease take this time to add the bot\'s FC to your target 3DS\' friends list.\n%sBot FC: %s%s' % (Color.YELLOW, Color.DEFAULT, Color.BLUE, '-'.join(nintendoBotFC[i:i+4] for i in range(0, 12, 4))))
         input('%s[Press enter to continue]%s' % (Color.GREEN, Color.DEFAULT))
         friendCode = input('Please enter your 3DS\' friend code\n> %s' % Color.PURPLE)
         config = {}

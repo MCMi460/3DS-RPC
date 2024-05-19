@@ -476,7 +476,7 @@ def userPage(friendCode:str):
     if not userData['User']['online'] or not userData['User']['Presence']:
         userData['User']['Presence']['game'] = None
     userData['User']['favoriteGame'] = getTitle(userData['User']['favoriteGame'], titlesToUID, titleDatabase)
-    userData['User']['network'] = request.args.get('network')
+    userData['User']['network'] = NetworkIDsToName(nameToNetworkId(request.args.get('network'))).name
     if userData['User']['favoriteGame']['name'] == 'Home Screen':
         userData['User']['favoriteGame'] = None
     for i in ('accountCreation','lastAccessed','lastOnline'):
@@ -505,13 +505,13 @@ def terms():
 # Create entry in database with friendCode
 @app.route('/api/user/create/<int:friendCode>/', methods=['POST'])
 @limiter.limit(newUserLimit)
-def newUser(friendCode:int, network:int, userCheck:bool = True):
+def newUser(friendCode:int, network:int=-1, userCheck:bool = True):
     try:
         if userCheck:
             userAgentCheck()
-        if network == None:
+        if network == -1:
             network = 0
-            if request.data.decode('utf-8').split(',')[0] != None:
+            if request.data.decode('utf-8').split(',')[0].isnumeric():
                 network = NetworkIDsToName(request.data.decode('utf-8').split(',')[0]).value
         createUser(friendCode, network, True)
         return {

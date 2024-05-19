@@ -75,7 +75,7 @@ class GUI(Ui_MainWindow):
 
         self.loginButton.clicked.connect(self.changeState)
 
-        self.botFCLabel.setText('-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4)))
+        self.botFCLabel.setText('-'.join(nintendoBotFC[i:i+4] for i in range(0, len(nintendoBotFC), 4)))
 
     def stylize(self):
         self.underLyingButton.click()
