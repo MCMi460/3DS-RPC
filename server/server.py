@@ -1,5 +1,6 @@
 # Created by Deltaion Lee (MCMi460) on Github
 
+from enum import IntEnum
 from flask import Flask, make_response, request, redirect, render_template, send_file
 from flask_limiter import Limiter
 from flask_sqlalchemy import SQLAlchemy
@@ -8,6 +9,8 @@ sys.path.append('../')
 from api import *
 from api.love2 import *
 from api.private import CLIENT_ID, CLIENT_SECRET, HOST
+from api.public import pretendoBotFC, nintendoBotFC
+from api.networks import NetworkIDsToName, nameToNetworkId, getBotFriendCodeFromNetworkId
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.abspath('sqlite/fcLibrary.db')
@@ -23,8 +26,10 @@ version = 0.31
 agent = '3DS-RPC/'
 
 startTime = time.time() # Frontend
-startDBTime(0)
-startTime2 = 0 # Backend
+startDBTime(0, 0)
+startDBTime(0, 1)
+startTime2Nintendo = 0 # Nintendo Backend
+startTime2Pretendo = 0 # Pretendo Backend
 
 @app.errorhandler(404)
 def handler404(e):
@@ -89,18 +94,20 @@ def cacheTitles():
         print('[Saved database to file]')
 
 # Create entry in database with friendCode
-def createUser(friendCode:int, addNewInstance:bool = False):
-    if int(friendCode) == int(botFC):
+def createUser(friendCode:int, network:int, addNewInstance:bool = False):
+    if int(friendCode) == int(pretendoBotFC):
+        raise Exception('invalid FC')
+    if int(friendCode) == int(nintendoBotFC):
         raise Exception('invalid FC')
     try:
         convertFriendCodeToPrincipalId(friendCode)
         if not addNewInstance:
             raise Exception('UNIQUE constraint failed: friends.friendCode')
-        db.session.execute('INSERT INTO friends (friendCode, online, titleID, updID, lastAccessed, accountCreation, lastOnline, jeuFavori) VALUES (\'%s\', %s, %s, %s, %s, %s, %s, %s)' % (str(friendCode).zfill(12), False, '0', '0', time.time() + 2400, time.time(), time.time(), 0))
+        db.session.execute('INSERT INTO ' + NetworkIDsToName(network).name + '_friends (friendCode, online, titleID, updID, lastAccessed, accountCreation, lastOnline, jeuFavori) VALUES (\'%s\', %s, %s, %s, %s, %s, %s, %s)' % (str(friendCode).zfill(12), False, '0', '0', time.time() + 300, time.time(), time.time(), 0))
         db.session.commit()
     except Exception as e:
         if 'UNIQUE constraint failed: friends.friendCode' in str(e):
-            db.session.execute('UPDATE friends SET lastAccessed = %s WHERE friendCode = \'%s\'' % (time.time(), str(friendCode).zfill(12)))
+            db.session.execute('UPDATE ' + NetworkIDsToName(network).name + '_friends SET lastAccessed = %s WHERE friendCode = \'%s\'' % (time.time(), str(friendCode).zfill(12)))
             db.session.commit()
 
 def fetchBearerToken(code:str):
@@ -173,16 +180,27 @@ def deleteDiscordUser(ID:int):
 def getConnectedConsoles(ID:int):
     result = db.session.execute('SELECT * FROM discordFriends WHERE ID = %s' % ID)
     result = result.fetchall()
-    return [ (result[1], bool(result[2])) for result in result ]
+    return [ (result[1], bool(result[2]), result[3]) for result in result ]
 
 def sidenav():
-    result = db.session.execute('SELECT BACKEND_UPTIME FROM config')
-    result = result.fetchone()
-    startTime2 = result[0]
+    resultNintendo = db.session.execute('SELECT BACKEND_UPTIME FROM config WHERE network=0')
+    resultNintendo = resultNintendo.fetchone()
+    startTime2Nintendo = resultNintendo[0]
+    resultPretendo = db.session.execute('SELECT BACKEND_UPTIME FROM config WHERE network=1') # Screw good coding practices and DRY
+    resultPretendo = resultPretendo.fetchone()
+    startTime2Pretendo = resultPretendo[0]
+    #  if   elif startTime2Nintendo == 1 else 'Offline'
+    status = 'Offline'
+    if startTime2Nintendo != 0 and startTime2Pretendo != 0:
+        status = 'Operational'
+    elif (startTime2Nintendo != 0 and startTime2Pretendo == 0) or (startTime2Nintendo == 0 and startTime2Pretendo != 0):
+        status = 'Semi-Operational'
+
     data = {
         'uptime': str(datetime.timedelta(seconds= int(time.time() - startTime))),
-        'uptime-backend': ( 'Backend has been up for %s...' % str(datetime.timedelta(seconds= int(time.time() - int(startTime2)))) if not startTime2 == 0 else 'Backend: Offline' ),
-        'status': 'Operational' if startTime2 != 0 else 'Offline',
+        'nintendo-uptime-backend': ('Nintendo Backend has been up for %s...' % str(datetime.timedelta(seconds= int(time.time() - int(startTime2Nintendo)))) if not startTime2Nintendo == 0 else 'Nintendo Backend: Offline'),          
+        'pretendo-uptime-backend': ('Pretendo Backend has been up for %s...' % str(datetime.timedelta(seconds= int(time.time() - int(startTime2Pretendo)))) if not startTime2Pretendo == 0 else 'Pretendo Backend: Offline'),
+        'status': status,
     }
     return data
 
@@ -194,20 +212,20 @@ def userAgentCheck():
     except:
         raise Exception('this client is invalid')
 
-def getPresence(friendCode:int, *, créerCompte:bool = True, ignoreUserAgent = False, ignoreBackend = False):
+def getPresence(friendCode:int, network:int, *, createAccount:bool = True, ignoreUserAgent = False, ignoreBackend = False):
     try:
         if not ignoreUserAgent:
             userAgentCheck()
-        result = db.session.execute('SELECT BACKEND_UPTIME FROM config')
+        result = db.session.execute('SELECT BACKEND_UPTIME FROM config WHERE network = %s' % network)
         result = result.fetchone()
         startTime2 = result[0]
         if startTime2 == 0 and not ignoreBackend and not disableBackendWarnings:
-            raise Exception('backend currently offline. please try again later')
+            raise Exception('Backend currently offline. please try again later')
         friendCode = str(friendCode).zfill(12)
-        if créerCompte:
-            createUser(friendCode, False)
+        if createAccount:
+            createUser(friendCode, network, False)
         principalId = convertFriendCodeToPrincipalId(friendCode)
-        result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % friendCode)
+        result = db.session.execute('SELECT * FROM ' + NetworkIDsToName(network).name + '_friends WHERE friendCode = \'%s\'' % friendCode)
         result = result.fetchone()
         if not result:
             raise Exception('friendCode not recognized\nHint: You may not have added the bot as a friend')
@@ -255,7 +273,7 @@ def getPresence(friendCode:int, *, créerCompte:bool = True, ignoreUserAgent = F
 # Index page
 @app.route('/')
 def index():
-    results = db.session.execute('SELECT * FROM friends WHERE online = True AND username != "" ORDER BY lastAccessed DESC')
+    results = db.session.execute(' UNION '.join([f'SELECT *, "{network.name}" FROM {network.name}_friends WHERE online = True AND username != ""' for network in NetworkIDsToName]) + ' ORDER BY lastAccessed DESC') 
     results = results.fetchall()
     num = len(results)
     data = sidenav()
@@ -268,10 +286,11 @@ def index():
         'game': getTitle(user[2], titlesToUID, titleDatabase),
         'friendCode': str(user[0]).zfill(12),
         'joinable': bool(user[9]),
+        'network': str(user[13]),
     }) for user in results if user[6] ]
     data['active'] = data['active'][:2]
 
-    results = db.session.execute('SELECT * FROM friends WHERE username != "" ORDER BY accountCreation DESC LIMIT 6')
+    results = db.session.execute(' UNION '.join([f'SELECT *, "{network.name}" FROM {network.name}_friends WHERE username != ""' for network in NetworkIDsToName]) + ' ORDER BY accountCreation DESC LIMIT 6')
     results = results.fetchall()
     data['new'] = [ ({
         'mii':MiiData().mii_studio_url(user[8]),
@@ -279,6 +298,7 @@ def index():
         'game': getTitle(user[2], titlesToUID, titleDatabase) if bool(user[1]) and int(user[2]) != 0 else '',
         'friendCode': str(user[0]).zfill(12),
         'joinable': bool(user[9]),
+        'network': str(user[13]),
     }) for user in results if user[6] ]
     data['new'] = data['new'][:2]
 
@@ -331,17 +351,17 @@ def settingsRedirect():
 # Roster page
 @app.route('/roster')
 def roster():
-    results = db.session.execute('SELECT * FROM friends WHERE username != "" ORDER BY accountCreation DESC LIMIT 8')
+    results = db.session.execute(' UNION '.join([f'SELECT *, "{network.name}" AS network FROM {network.name}_friends WHERE username != ""' for network in NetworkIDsToName]) + ' ORDER BY accountCreation DESC LIMIT 8')
     results = results.fetchall()
     data = sidenav()
     data['title'] = 'New Users'
-
     data['users'] = [ ({
         'mii':MiiData().mii_studio_url(user[8]),
         'username':user[6],
         'game': getTitle(user[2], titlesToUID, titleDatabase),
         'friendCode': str(user[0]).zfill(12),
         'joinable': bool(user[9]),
+        'network': str(user[13]),
     }) for user in results if user[6] ]
 
     response = make_response(render_template('dist/users.html', data = data))
@@ -350,7 +370,7 @@ def roster():
 # Active page
 @app.route('/active')
 def active():
-    results = db.session.execute('SELECT * FROM friends WHERE online = True AND username != "" ORDER BY lastAccessed DESC')
+    results = db.session.execute(' UNION '.join([f'SELECT *, "{network.name}" AS network FROM {network.name}_friends WHERE online = True AND username != ""' for network in NetworkIDsToName]) + ' ORDER BY lastAccessed DESC')
     results = results.fetchall()
     data = sidenav()
     data['title'] = 'Active Users'
@@ -361,6 +381,7 @@ def active():
         'game': getTitle(user[2], titlesToUID, titleDatabase),
         'friendCode': str(user[0]).zfill(12),
         'joinable': bool(user[9]),
+        'network': str(user[13]),
     }) for user in results if user[6] ]
 
     response = make_response(render_template('dist/users.html', data = data))
@@ -369,7 +390,17 @@ def active():
 # Register page
 @app.route('/register.html')
 def register():
-    response = make_response(render_template('dist/register.html', data = {'botFC':'-'.join(botFC[i:i+4] for i in range(0, len(botFC), 4))}))
+    
+    network = request.args.get('network')
+    if network == None:
+        response = make_response(render_template('dist/registerselectnetwork.html'))
+    else:
+        try:
+            network = NetworkIDsToName[network].value
+            response = make_response(render_template('dist/register.html', data = {'botFC':'-'.join(getBotFriendCodeFromNetworkId(network)[i:i+4] for i in range(0, len(getBotFriendCodeFromNetworkId(network)), 4)), 'network':network}))
+        except:
+            network = 0
+            response = make_response(render_template('dist/registerselectnetwork.html'))
     return response
 
 # Register page redirect
@@ -397,6 +428,7 @@ def success():
     data = {
         'url': 'user/' + request.args.get('fc'),
         'fc': request.args.get('fc'),
+        'network': request.args.get('network')
     }
     return render_template('dist/success.html', data = data)
 
@@ -418,13 +450,14 @@ def consoles():
             response.set_cookie('pfp', '', expires = 0)
             return response
         return redirect('/')
-    for console, active in getConnectedConsoles(id):
-        result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % console)
+    for console, active, network in getConnectedConsoles(id):
+        result = db.session.execute('SELECT * FROM ' + NetworkIDsToName(network).name + '_friends WHERE friendCode = \'%s\'' % console)
         result = result.fetchone()
         data['consoles'].append({
             'fc': '-'.join(console[i:i+4] for i in range(0, 12, 4)),
             'username': result[6],
             'active': active,
+            'network': NetworkIDsToName(network).name
         })
     data.update(sidenav())
     response = render_template('dist/consoles.html', data = data)
@@ -433,7 +466,9 @@ def consoles():
 @app.route('/user/<string:friendCode>/')
 def userPage(friendCode:str):
     try:
-        userData = getPresence(int(friendCode.replace('-', '')), créerCompte = False, ignoreUserAgent = True, ignoreBackend = True)
+        network = nameToNetworkId(request.args.get('network'))
+
+        userData = getPresence(int(friendCode.replace('-', '')), network, createAccount= False, ignoreUserAgent = True, ignoreBackend = True)
         if userData['Exception'] or not userData['User']['username']:
             raise Exception(userData['Exception'])
     except:
@@ -441,6 +476,7 @@ def userPage(friendCode:str):
     if not userData['User']['online'] or not userData['User']['Presence']:
         userData['User']['Presence']['game'] = None
     userData['User']['favoriteGame'] = getTitle(userData['User']['favoriteGame'], titlesToUID, titleDatabase)
+    userData['User']['network'] = NetworkIDsToName(nameToNetworkId(request.args.get('network'))).name
     if userData['User']['favoriteGame']['name'] == 'Home Screen':
         userData['User']['favoriteGame'] = None
     for i in ('accountCreation','lastAccessed','lastOnline'):
@@ -469,11 +505,15 @@ def terms():
 # Create entry in database with friendCode
 @app.route('/api/user/create/<int:friendCode>/', methods=['POST'])
 @limiter.limit(newUserLimit)
-def newUser(friendCode:int, userCheck:bool = True):
+def newUser(friendCode:int, network:int=-1, userCheck:bool = True):
     try:
         if userCheck:
             userAgentCheck()
-        createUser(friendCode, True)
+        if network == -1:
+            network = 0
+            if request.data.decode('utf-8').split(',')[0].isnumeric():
+                network = NetworkIDsToName(request.data.decode('utf-8').split(',')[0]).value
+        createUser(friendCode, network, True)
         return {
             'Exception': False,
         }
@@ -487,42 +527,57 @@ def newUser(friendCode:int, userCheck:bool = True):
 # Grab presence from friendCode
 @app.route('/api/user/<int:friendCode>/', methods=['GET'])
 @limiter.limit(userPresenceLimit)
-def userPresence(friendCode:int, *, créerCompte:bool = True, ignoreUserAgent = False, ignoreBackend = False):
-    return getPresence(friendCode, créerCompte = créerCompte, ignoreUserAgent = ignoreUserAgent, ignoreBackend = ignoreBackend)
+def userPresence(friendCode:int, network:str="nintendo", *, createAccount:bool = True, ignoreUserAgent = False, ignoreBackend = False):
+    return getPresence(friendCode, nameToNetworkId(network), createAccount=createAccount, ignoreUserAgent = ignoreUserAgent, ignoreBackend = ignoreBackend)
 
 # Alias
 @app.route('/api/u/<int:friendCode>/', methods=['GET'])
 @limiter.limit(userPresenceLimit)
 def userAlias(friendCode:int):
-    return userPresence(friendCode)
+    network = 0
+    if request.args.get('network') != None:
+        network = nameToNetworkId(request.args.get('network'))
+    return userPresence(friendCode, network)
 
 # Alias
 @app.route('/api/u/c/<int:friendCode>/', methods=['POST'])
 @limiter.limit(newUserLimit)
 def newAlias1(friendCode:int):
-    return newUser(friendCode)
+    network = 0
+    if (request.data.decode('utf-8').split(','))[0] != None:
+        network = nameToNetworkId((request.data.decode('utf-8').split(','))[0])
+    return newUser(friendCode, network)
 
 # Alias
 @app.route('/api/user/c/<int:friendCode>/', methods=['POST'])
 @limiter.limit(newUserLimit)
 def newAlias2(friendCode:int):
-    return newUser(friendCode)
+    network = 0
+    if (request.data.decode('utf-8').split(','))[0] != None:
+        network = nameToNetworkId((request.data.decode('utf-8').split(','))[0])
+    return newUser(friendCode, network)
 
 # Alias
 @app.route('/api/u/create/<int:friendCode>/', methods=['POST'])
 @limiter.limit(newUserLimit)
 def newAlias3(friendCode:int):
-    return newUser(friendCode)
+    network = 0
+    if (request.data.decode('utf-8').split(','))[0] != None:
+        network = nameToNetworkId((request.data.decode('utf-8').split(','))[0])
+    return newUser(friendCode, network)
 
 # Toggle
 @app.route('/api/toggle/<int:friendCode>/', methods=['POST'])
 @limiter.limit(togglerLimit)
 def toggler(friendCode:int):
+    network = 0
+    if request.data.decode('utf-8').split(',')[2] != None:
+        network = nameToNetworkId(request.data.decode('utf-8').split(',')[2])
     try:
         fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
     except:
         return 'failure!\nthat is not a real friendCode!'
-    result = db.session.execute('SELECT * FROM friends WHERE friendCode = \'%s\'' % fc)
+    result = db.session.execute('SELECT * FROM ' + NetworkIDsToName(network).name + '_friends WHERE friendCode = \'%s\'' % fc)
     result = result.fetchone()
     if not result:
         return 'failure!\nthat is not an existing friendCode!'
@@ -530,21 +585,21 @@ def toggler(friendCode:int):
     token = f[0]
     active = bool(int(f[1]))
     id = userFromToken(token)[0]
-    result = db.session.execute('SELECT * FROM discordFriends WHERE ID = %s AND friendCode = \'%s\'' % (id, fc))
+    result = db.session.execute('SELECT * FROM discordFriends WHERE ID = %s AND friendCode = \'%s\' AND network = %s' % (id, fc, network))
     result = result.fetchone()
     if not result:
         thing = db.session.execute('SELECT * FROM discordFriends WHERE ID = %s' % id)
         thing = thing.fetchall()
-        if len(thing) >= 5:
-            return 'failure!\nyou can\'t have more than five consoles added at one time!'
+        if len(thing) >= 10:
+            return 'failure!\nyou can\'t have more than ten consoles added at one time!'
     if active:
         db.session.execute('UPDATE discordFriends SET active = %s WHERE active = %s AND ID = %s' % (False, True, id))
         db.session.commit()
     if result:
-        db.session.execute('UPDATE discordFriends SET active = %s WHERE friendCode = \'%s\' AND ID = %s' % (active, fc, id))
+        db.session.execute('UPDATE discordFriends SET active = %s WHERE friendCode = \'%s\' AND ID = %s AND network = %s' % (active, fc, id, network))
         db.session.commit()
     else:
-        db.session.execute('INSERT INTO discordFriends (ID, friendCode, active) VALUES (%s, \'%s\', %s)' % (id, fc, active))
+        db.session.execute('INSERT INTO discordFriends (ID, friendCode, active, network) VALUES (%s, \'%s\', %s, %s)' % (id, fc, active, network))
         db.session.commit()
     return 'success!'
 
@@ -553,10 +608,28 @@ def toggler(friendCode:int):
 @limiter.limit(togglerLimit)
 def deleter(friendCode:int):
     fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
-    token = request.data.decode('utf-8')
+    if not ',' in request.data.decode('utf-8'): # Old API compatiblity. In the future this should be depercated.
+        token = request.data.decode('utf-8')
+        id = userFromToken(token)[0]
+        db.session.execute('DELETE FROM discordFriends WHERE friendCode = \'%s\' AND ID = %s AND network = 0' % (fc, id))
+        db.session.commit()
+
+        return 'success!'
+
+    data = request.data.decode('utf-8').split(',')
+    token = data[0]
+    network = nameToNetworkId(data[1])
     id = userFromToken(token)[0]
-    db.session.execute('DELETE FROM discordFriends WHERE friendCode = \'%s\' AND ID = %s' % (fc, id))
+    db.session.execute('DELETE FROM discordFriends WHERE friendCode = \'%s\' AND ID = %s AND network = %s' % (fc, id, network))
     db.session.commit()
+    # the following is optional, this deletes the friend data if you remove the console, and no one else is using the fc.
+    result = db.session.execute('SELECT * FROM discordFriends WHERE friendCode = \'%s\' AND network = %s' % (fc, network))
+    result = result.fetchone()
+    if result == None:
+        db.session.execute('DELETE FROM ' + NetworkIDsToName(network).name + '_friends WHERE friendCode = \'%s\'' % (fc))
+        db.session.commit()
+    # end of optional
+    
     return 'success!'
 
 # Toggle one
@@ -598,10 +671,15 @@ def localImageCdn(file:str):
 def login():
     try:
         fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(request.form['fc']))).zfill(12)
-        newUser(fc, False)
+        if request.form['network'] == None:
+            networkName = NetworkIDsToName(0).name
+        else:
+            networkName = NetworkIDsToName(int(request.form['network'])).name
+        networkId = nameToNetworkId(networkName)
+        newUser(fc, networkId, False)
     except:
         return redirect('/failure.html')
-    return redirect(f'/success.html?fc={fc}')
+    return redirect(f'/success.html?fc={fc}&network={networkName}')
 
 # Discord route
 @app.route('/authorize')

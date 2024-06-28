@@ -1,8 +1,10 @@
 import time, sqlite3, sys, secrets, requests, json, pickle
+from enum import Enum
 sys.path.append('../')
 from api import *
 from api.love2 import *
 from api.private import CLIENT_ID, CLIENT_SECRET, HOST
+from api.networks import NetworkIDsToName, nameToNetworkId
 
 API_ENDPOINT:str = 'https://discord.com/api/v10'
 
@@ -34,7 +36,7 @@ class Discord():
 		self.con = con
 		self.cursor = cursor
 
-	def updatePresence(self, bearer, refresh, session, lastAccessed, generationDate, userData, config):
+	def updatePresence(self, bearer, refresh, session, lastAccessed, generationDate, userData, config, network):
 		if time.time() - lastAccessed >= 1000:
 			session = Session(self.con, self.cursor).retire(refresh)
 		elif time.time() - lastAccessed <= 30:
@@ -61,10 +63,10 @@ class Discord():
 			if presence['gameDescription']:
 				data['activities'][0]['details'] = presence['gameDescription']
 			if userData['User']['username'] and bool(config[0]):
-				data['activities'][0]['buttons'] = [{'label': 'Profile', 'url': HOST + '/user/' + userData['User']['friendCode']},]
+				data['activities'][0]['buttons'] = [{'label': 'Profile', 'url': HOST + '/user/' + userData['User']['friendCode'] + '/?network=' + NetworkIDsToName(network).name},]
 			if userData['User']['username'] and game['icon_url'] and bool(config[1]):
 				data['activities'][0]['assets']['small_image'] = userData['User']['mii']['face']
-				data['activities'][0]['assets']['small_text'] = '-'.join(userData['User']['friendCode'][i:i+4] for i in range(0, 12, 4))
+				data['activities'][0]['assets']['small_text'] = '-'.join(userData['User']['friendCode'][i:i+4] for i in range(0, 12, 4)) + ' on ' + NetworkIDsToName(network).name.capitalize()
 			if session:
 				data['token'] = session
 			headers = {
@@ -159,16 +161,16 @@ while True:
 		while time.time() - wait <= 1200:
 
 			cursor.execute('SELECT * FROM discordFriends WHERE active = ?', (True,))
-			v = cursor.fetchall()
+			discordFriends = cursor.fetchall()
 
 			cursor.execute('SELECT * FROM discord')
-			b = cursor.fetchall()
+			discordUsers = cursor.fetchall()
 			b1 = []
-			for e in b:
+			for e in discordUsers:
 				if any(e[0] == i[0] for i in b1):
 					continue
 				fail = False
-				for oe in v:
+				for oe in discordFriends:
 					if e[0] == oe[0]:
 						fail = True
 				if not fail:
@@ -185,13 +187,13 @@ while True:
 
 			time.sleep(delay)
 
-			print('[BATCH OF %s USERS]' % len(v))
-			if len(v) < 1:
+			print('[BATCH OF %s USERS]' % len(discordFriends))
+			if len(discordFriends) < 1:
 				time.sleep(delay)
 				continue
-			for r in v:
+			for r in discordFriends:
 				print('[RUNNING %s - %s]' % (r[0], r[1]))
-				cursor.execute('SELECT * FROM friends WHERE friendCode = ?', (r[1],))
+				cursor.execute('SELECT * FROM ' + NetworkIDsToName(r[2]).name + '_friends WHERE friendCode = ?', (r[1],))
 				v2 = cursor.fetchone()
 				cursor.execute('SELECT * FROM discord WHERE ID = ?', (r[0],))
 				v3 = cursor.fetchone()
@@ -223,7 +225,7 @@ while True:
 										'mii': mii,
 										'lastAccessed': v2[4],
 									}
-								}, (v3[7], v3[8])):
+								}, (v3[7], v3[8]), r[2]):
 								time.sleep(delay)
 						except:
 							discord.deleteDiscordUser(v3[0])

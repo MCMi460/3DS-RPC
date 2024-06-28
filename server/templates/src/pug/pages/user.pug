@@ -6,6 +6,7 @@ block config
     - var fc = "{{ data['User']['friendCode'] }}"
     - var sidenavStyle = 'sb-sidenav-dark'
     - var description = "{{ (data['User']['message'] + '\n') if data['User']['message'] }}{{ 'Favorite game: ' + data['User']['favoriteGame']['name'] if data['User']['favoriteGame'] }}"
+    - var network = "{{ data['User']['network']}}"
 
 block content
     

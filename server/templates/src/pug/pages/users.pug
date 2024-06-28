@@ -11,7 +11,7 @@ block content
 
         .row.gy-3
             html {% for i in data['users'] %}
-            a.col-sm-3.col-6(href = '/user/{{ i["friendCode"] }}' style = 'text-decoration: none; color: inherit;')
+            a.col-sm-3.col-6(href = '/user/{{ i["friendCode"] }}?network={{ i["network" ]}}' style = 'text-decoration: none; color: inherit;')
                 .card.p-1
                     .card-body.p-0(style = 'background: linear-gradient(0deg, rgb(255, 198, 147) 0%, rgb(254, 245, 239, 0.1) 100%);')
                         .col-12.d-flex.align-items-end.justify-content-between.p-0.m-0(style = 'height: 70%;')

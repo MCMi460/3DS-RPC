@@ -19,6 +19,9 @@ block content
                             b {{ data['botFC'] }}
                         
                         form(action = '/login', method = 'POST')
+                            input(type='hidden' name="network" value='{{ data["network"] }}') 
+                            // 
+                                the above is a hack, but it'll work
                             .form-floating.mb-3
                                 input#inputFC.form-control(type = 'text', placeholder = '1234-5678-9012', name = 'fc', value = '')
                                 label(for = 'inputFC') Friend Code

@@ -11,7 +11,7 @@ block content
                 .text-center.mt-4
                     h3 Your account has been created!
                     p.lead But it'll take a minute or two for your profile to be loaded.
-                    a(href='/{{ data["url"] }}')
+                    a(href='/{{ data["url"] }}?network={{ data["network"]}}')
                         | Try Profile
                     br
                     a(href='/consoles')#addToConsoles
@@ -23,10 +23,11 @@ block content
 
     script.
         var fc = '{{ data["url"].replace("user/", "") }}';
+        var network = '{{ data["network"] }}'
         function addConsole() {
             var xmlHttp = new XMLHttpRequest();
             xmlHttp.open( "POST", "/api/toggle/" + fc, false );
-            xmlHttp.send( [token, 1] );
+            xmlHttp.send( [token, 1, network] );
         }
         onload = (event) => {
           if (document.cookie.includes('token')) {
