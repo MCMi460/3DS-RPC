@@ -4,7 +4,7 @@ sys.path.append('../')
 from api import *
 from api.love2 import *
 from api.private import CLIENT_ID, CLIENT_SECRET, HOST
-from api.networks import NetworkIDsToName, nameToNetworkId
+from api.networks import NetworkType
 
 API_ENDPOINT:str = 'https://discord.com/api/v10'
 
@@ -63,10 +63,10 @@ class Discord():
 			if presence['gameDescription']:
 				data['activities'][0]['details'] = presence['gameDescription']
 			if userData['User']['username'] and bool(config[0]):
-				data['activities'][0]['buttons'] = [{'label': 'Profile', 'url': HOST + '/user/' + userData['User']['friendCode'] + '/?network=' + NetworkIDsToName(network).name},]
+				data['activities'][0]['buttons'] = [{'label': 'Profile', 'url': HOST + '/user/' + userData['User']['friendCode'] + '/?network=' + NetworkType(network).name},]
 			if userData['User']['username'] and game['icon_url'] and bool(config[1]):
 				data['activities'][0]['assets']['small_image'] = userData['User']['mii']['face']
-				data['activities'][0]['assets']['small_text'] = '-'.join(userData['User']['friendCode'][i:i+4] for i in range(0, 12, 4)) + ' on ' + NetworkIDsToName(network).name.capitalize()
+				data['activities'][0]['assets']['small_text'] = '-'.join(userData['User']['friendCode'][i:i+4] for i in range(0, 12, 4)) + ' on ' + NetworkType(network).name.capitalize()
 			if session:
 				data['token'] = session
 			headers = {
@@ -193,7 +193,7 @@ while True:
 				continue
 			for r in discordFriends:
 				print('[RUNNING %s - %s]' % (r[0], r[1]))
-				cursor.execute('SELECT * FROM ' + NetworkIDsToName(r[2]).name + '_friends WHERE friendCode = ?', (r[1],))
+				cursor.execute('SELECT * FROM ' + NetworkType(r[2]).column_name() + ' WHERE friendCode = ?', (r[1],))
 				v2 = cursor.fetchone()
 				cursor.execute('SELECT * FROM discord WHERE ID = ?', (r[0],))
 				v3 = cursor.fetchone()
