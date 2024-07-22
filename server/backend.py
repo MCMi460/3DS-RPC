@@ -37,11 +37,11 @@ async def main():
 			if not result:
 				continue
 
-			list_ = [ (convertFriendCodeToPrincipalId(f[0]), f[1]) for f in result ]
-			lst = [ f[0] for f in list_ ]
+			all_friends = [ (convertFriendCodeToPrincipalId(f[0]), f[1]) for f in result ]
+			friend_codes = [ f[0] for f in all_friends ]
 
-			for i in range(0, len(lst), 100):
-				rotation = lst[i:i+100]
+			for i in range(0, len(friend_codes), 100):
+				rotation = friend_codes[i:i+100]
 
 				try:
 					client = nasc.NASCClient()
@@ -61,7 +61,7 @@ async def main():
 						raise InvalidNetworkError(f"Network type {network} is not configured for querying")
 					
 					client.set_device(SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME)
-					client.set_user(PID , PID_HMAC)
+					client.set_user(PID, PID_HMAC)
 					
 					response = await client.login(0x3200)
 
@@ -151,7 +151,7 @@ async def main():
 
 								for ti in t:
 									work = False
-									for l in list_:
+									for l in all_friends:
 										if (l[0] == ti.pid and time.time() - l[1] <= 600) or scrape_only:
 											work = True
 									if not work:
