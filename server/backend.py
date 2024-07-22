@@ -6,6 +6,9 @@ from nintendo.nex import backend, friends, settings, streams
 from nintendo.nex import common
 from enum import Enum
 import anyio, time, sqlite3, sys, traceback, argparse
+
+from database import start_db_time
+
 sys.path.append('../')
 from api.private import SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME, REGION, LANGUAGE, NINTENDO_PID, PRETENDO_PID, PID_HMAC, NINTENDO_NEX_PASSWORD, PRETENDO_NEX_PASSWORD
 from api import *
@@ -200,9 +203,9 @@ if __name__ == '__main__':
 		args = parser.parse_args()
 
 		network = NetworkType[args.network.upper()]
-		startDBTime(begun, network)
+		start_db_time(begun, network)
 		anyio.run(main)
 	except (KeyboardInterrupt, Exception) as e:
 		if network is not None:
-			startDBTime(0, network)
+			start_db_time(0, network)
 		print(e)

@@ -5,6 +5,9 @@ from flask import Flask, make_response, request, redirect, render_template, send
 from flask_limiter import Limiter
 from flask_sqlalchemy import SQLAlchemy
 import sqlite3, requests, sys, os, time, json, multiprocessing, datetime, xmltodict, pickle, secrets
+
+from server.database import start_db_time
+
 sys.path.append('../')
 from api import *
 from api.love2 import *
@@ -26,8 +29,8 @@ version = 0.31
 agent = '3DS-RPC/'
 
 startTime = time.time() # Frontend
-startDBTime(0, 0)
-startDBTime(0, 1)
+start_db_time(0, NetworkType.NINTENDO)
+start_db_time(0, NetworkType.PRETENDO)
 startTime2Nintendo = 0 # Nintendo Backend
 startTime2Pretendo = 0 # Pretendo Backend
 
