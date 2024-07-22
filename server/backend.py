@@ -2,12 +2,12 @@
 # Based from NintendoClients' `examples/3ds/friends.py`
 
 from nintendo import nasc
-from nintendo.nex import backend, friends, settings, streams
-from nintendo.nex import common
-from enum import Enum
-import anyio, time, sqlite3, sys, traceback, argparse
+from nintendo.nex import backend, friends, settings
+from sqlalchemy import create_engine, delete, select, update
+from sqlalchemy.orm import Session
+import anyio, sys, argparse
 
-from database import start_db_time
+from database import start_db_time, NintendoFriends, PretendoFriends, DiscordFriends
 
 sys.path.append('../')
 from api.private import SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME, REGION, LANGUAGE, NINTENDO_PID, PRETENDO_PID, PID_HMAC, NINTENDO_NEX_PASSWORD, PRETENDO_NEX_PASSWORD
@@ -26,18 +26,29 @@ scrape_only = False
 
 network: NetworkType = NetworkType.NINTENDO
 
+
 async def main():
+	engine = create_engine('sqlite:///' + os.path.abspath('sqlite/fcLibrary.db'))
+
 	while True:
 		time.sleep(1)
 		print('Grabbing new friends...')
-		with sqlite3.connect('sqlite/fcLibrary.db') as con:
-			cursor = con.cursor()
-			cursor.execute('SELECT friendCode, lastAccessed FROM ' + network.column_name())
-			result = cursor.fetchall()
-			if not result:
+		with Session(engine) as session:
+			# We have two separate tables for each network type.
+			if network == NetworkType.NINTENDO:
+				network_model = NintendoFriends
+			elif network == NetworkType.PRETENDO:
+				network_model = PretendoFriends
+			else:
+				raise InvalidNetworkError(f"Network type {network} is not configured for querying")
+
+			# In order to assist IDEs with typing, we specify this as an array of NintendoFriends.
+			# This may truly be an array of PretendoFriends, but the two tables share the same properties.
+			queried_friends: [NintendoFriends] = session.scalars(select(network_model)).all()
+			if not queried_friends:
 				continue
 
-			all_friends = [ (convertFriendCodeToPrincipalId(f[0]), f[1]) for f in result ]
+			all_friends = [ (convertFriendCodeToPrincipalId(f.friend_code), f.last_accessed) for f in queried_friends ]
 			friend_codes = [ f[0] for f in all_friends ]
 
 			for i in range(0, len(friend_codes), 100):
@@ -45,7 +56,11 @@ async def main():
 
 				try:
 					client = nasc.NASCClient()
-					client.set_title(0x0004013000003202, 20) # to be honest, this should be seperate between networks, so if one eg, gets banned, you still get to keep the friend code for the other network, but i'm lazy.
+
+					# TODO: This should be separate between networks.
+					# E.g. if the friend code was is banned on one network,
+					# you'd still be able to keep the friend code for the other network.
+					client.set_title(0x0004013000003202, 20)
 					client.set_locale(REGION, LANGUAGE)
 
 					if network == NetworkType.NINTENDO:
@@ -87,7 +102,7 @@ async def main():
 								await friends_client.remove_friend_by_principal_id(friend.pid)
 							print('Removed %s friends' % str(len(removables)))
 
-							removeList = []
+							removal_list = []
 							cleanUp = []
 
 							# The add_friend_by_principal_ids method is not yet
@@ -99,49 +114,79 @@ async def main():
 							else:
 								time.sleep(delay)
 								await friends_client.add_friend_by_principal_ids(0, rotation)
-							
 
 							time.sleep(delay)
-							t = await friends_client.get_all_friends()
-							if len(t) < len(rotation):
-								for ID in rotation:
-									if ID not in [ f.pid for f in t ]:
-										removeList.append(ID)
-							x = t
-							t = []
+
+							# Determine which remote friends failed to add, and thus have unfriended us.
+							network_friends = await friends_client.get_all_friends()
+							if len(network_friends) < len(rotation):
+								for current_pid in rotation:
+									if current_pid not in [ f.pid for f in network_friends ]:
+										removal_list.append(current_pid)
+
+							# Keep track of which current friends are within our current rotation.
+							# We'll remove them once game presences are updated.
+							x = network_friends
+							network_friends = []
 							for t1 in x:
 								if t1.pid in rotation:
-									t.append(t1)
+									network_friends.append(t1)
 								else:
 									cleanUp.append(t1.pid)
 
-							for remover in removeList:
-								column_name = network.column_name()
-								cursor.execute('DELETE FROM ' + column_name + ' WHERE friendCode = ?', (str(convertPrincipalIdtoFriendCode(remover)).zfill(12),))
-								cursor.execute('DELETE FROM discordFriends WHERE friendCode = ? AND network = ?', (str(convertPrincipalIdtoFriendCode(remover)).zfill(12), str(network)))
-							con.commit()
+							for removed_friend in removal_list:
+								removed_friend_code = str(convertPrincipalIdtoFriendCode(removed_friend)).zfill(12)
 
-							if len(t) > 0:
+								# Remove this friend code from both our tracked network friends and Discord friend codes.
+								session.execute(delete(network_model).where(network_model.friend_code == removed_friend_code))
+								session.execute(delete(DiscordFriends).where(
+									DiscordFriends.friend_code == removed_friend_code,
+									DiscordFriends.network == network)
+								)
+
+							if len(network_friends) > 0:
 								time.sleep(delay)
-								f = await friends_client.get_friend_presence([ e.pid for e in t ])
+								tracked_presences = await friends_client.get_friend_presence([ e.pid for e in network_friends ])
 								users = []
-								for game in f:
-									if scrape_only: # Set all to offline if scraping
+								for game in tracked_presences:
+									# Set all to offline if scraping
+									if scrape_only:
 										break
-									# game.unk == principalId
+
 									users.append(game.pid)
-									#print(game.__dict__)
-									#print(game.presence.__dict__)
-									#print(game.presence.game_key.__dict__)
-									gameDescription = game.presence.game_mode_description
-									if not gameDescription: gameDescription = ''
+									game_description = game.presence.game_mode_description
+									if not game_description:
+										game_description = ''
 									joinable = bool(game.presence.join_availability_flag)
 
-									cursor.execute('UPDATE ' + network.column_name() + ' SET online = ?, titleID = ?, updID = ?, joinable = ?, gameDescription = ?, lastOnline = ? WHERE friendCode = ?', (True, game.presence.game_key.title_id, game.presence.game_key.title_version, joinable, gameDescription, time.time(), str(convertPrincipalIdtoFriendCode(users[-1])).zfill(12)))
-								for user in [ h for h in rotation if not h in users ]:
-									cursor.execute('UPDATE ' + network.column_name() + ' SET online = ?, titleID = ?, updID = ? WHERE friendCode = ?', (False, 0, 0, str(convertPrincipalIdtoFriendCode(user)).zfill(12)))
+									friend_code = str(convertPrincipalIdtoFriendCode(users[-1])).zfill(12)
+									session.execute(
+										update(network_model)
+										.where(network_model.friend_code == friend_code)
+										.values(
+											online=True,
+											title_id=game.presence.game_key.title_id,
+											upd_id=game.presence.game_key.title_version,
+											joinable=joinable,
+											game_description=game_description,
+											last_online=time.time()
+										)
+									)
 
-								con.commit()
+								for user in [ h for h in rotation if not h in users ]:
+									friend_code = str(convertPrincipalIdtoFriendCode(user)).zfill(12)
+									session.execute(
+										update(network_model)
+										.where(network_model.friend_code == friend_code)
+										.values(
+											online=True,
+											title_id=game.presence.game_key.title_id,
+											upd_id=game.presence.game_key.title_version,
+											joinable=joinable,
+											game_description=game_description,
+											last_online=time.time()
+										)
+									)
 
 								# I just do not understand what I'm doing wrong with get_friend_mii_list
 								# The docs do not specify much
@@ -149,28 +194,28 @@ async def main():
 								# I do not give up, but until I figure it out, the slower method (get_friend_mii)
 								# will have to do.
 
-								for ti in t:
+								for current_friend in network_friends:
 									work = False
 									for l in all_friends:
-										if (l[0] == ti.pid and time.time() - l[1] <= 600) or scrape_only:
+										if (l[0] == current_friend.pid and time.time() - l[1] <= 600) or scrape_only:
 											work = True
 									if not work:
 										continue
 
 									time.sleep(delay)
 
-									ti.friend_code = 0 # A cursed (but operable) 'hack'
+									current_friend.friend_code = 0 # A cursed (but operable) 'hack'
 									try:
-										j1 = await friends_client.get_friend_persistent_info([ti.pid,])
+										current_info = await friends_client.get_friend_persistent_info([current_friend.pid,])
 									except:
 										continue
-									comment = j1[0].message
-									jeuFavori = 0
+									comment = current_info[0].message
+									jeu_favori = 0
 									username = ''
 									face = ''
 									if not comment.endswith(' '):
 										# Get user's mii + username from mii
-										m = await friends_client.get_friend_mii([ti,])
+										m = await friends_client.get_friend_mii([current_friend,])
 										username = m[0].mii.name
 										mii_data = m[0].mii.mii_data
 										obj = MiiData()
@@ -178,11 +223,21 @@ async def main():
 										face = obj.mii_studio()['data']
 
 										# Get user's favorite game
-										jeuFavori = j1[0].game_key.title_id
+										jeu_favori = current_info[0].game_key.title_id
 									else:
 										comment = ''
-									cursor.execute('UPDATE ' + network.column_name() + ' SET username = ?, message = ?, mii = ?, jeuFavori = ? WHERE friendCode = ?', (username, comment, face, jeuFavori, str(convertPrincipalIdtoFriendCode(ti.pid)).zfill(12)))
-									con.commit()
+
+									friend_code = str(convertPrincipalIdtoFriendCode(current_friend.pid)).zfill(12)
+									session.execute(
+										update(network_model)
+										.where(network_model.friend_code == friend_code)
+										.values(
+											username=username,
+											message=comment,
+											mii=face,
+											jeu_favori=jeu_favori
+										)
+									)
 
 							for friend in rotation + cleanUp:
 								time.sleep(delay / quicker)
