@@ -5,9 +5,9 @@ from nintendo import nasc
 from nintendo.nex import backend, friends, settings, streams
 from nintendo.nex import common
 from enum import Enum
-import anyio, time, sqlite3, sys, traceback, argparse
+import anyio, time, sys, traceback, argparse
 sys.path.append('../')
-from api.private import SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME, REGION, LANGUAGE, NINTENDO_PID, PRETENDO_PID, PID_HMAC, NINTENDO_NEX_PASSWORD, PRETENDO_NEX_PASSWORD
+from api.private import SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME, REGION, LANGUAGE, NINTENDO_PID, PRETENDO_PID, PID_HMAC, NINTENDO_NEX_PASSWORD, PRETENDO_NEX_PASSWORD, IS_SQLITE
 from api import *
 from api.love2 import *
 from api.networks import NetworkIDsToName
@@ -19,7 +19,6 @@ delay = 2
 since = 0
 quicker = 15
 begun = time.time()
-startDBTime(begun)
 scrape_only = False
 
 network:int = 0
@@ -28,7 +27,7 @@ async def main():
 	while True:
 		time.sleep(1)
 		print('Grabbing new friends...')
-		with sqlite3.connect('sqlite/fcLibrary.db') as con:
+		with connectDB() as con:
 			cursor = con.cursor()
 			cursor.execute('SELECT friendCode, lastAccessed FROM ' + NetworkIDsToName(network).name + "_friends")
 			result = cursor.fetchall()
@@ -116,8 +115,12 @@ async def main():
 									cleanUp.append(t1.pid)
 
 							for remover in removeList:
-								cursor.execute('DELETE FROM ' + NetworkIDsToName(network).name + "_friends" + ' WHERE friendCode = ?', (str(convertPrincipalIdtoFriendCode(remover)).zfill(12),))
-								cursor.execute('DELETE FROM discordFriends WHERE friendCode = ? AND network = ?', (str(convertPrincipalIdtoFriendCode(remover)).zfill(12), str(network)))
+								if IS_SQLITE:
+									cursor.execute('DELETE FROM ' + NetworkIDsToName(network).name + "_friends" + ' WHERE friendCode = ?', (str(convertPrincipalIdtoFriendCode(remover)).zfill(12),))
+									cursor.execute('DELETE FROM discordFriends WHERE friendCode = ? AND network = ?', (str(convertPrincipalIdtoFriendCode(remover)).zfill(12), str(network)))
+								else:
+									cursor.execute('DELETE FROM ' + NetworkIDsToName(network).name + "_friends" + ' WHERE friendCode = %s', (str(convertPrincipalIdtoFriendCode(remover)).zfill(12),))
+									cursor.execute('DELETE FROM discordFriends WHERE friendCode = %s AND network = %s', (str(convertPrincipalIdtoFriendCode(remover)).zfill(12), str(network)))
 							con.commit()
 
 							if len(t) > 0:
@@ -135,10 +138,15 @@ async def main():
 									gameDescription = game.presence.game_mode_description
 									if not gameDescription: gameDescription = ''
 									joinable = bool(game.presence.join_availability_flag)
-
-									cursor.execute('UPDATE ' + NetworkIDsToName(network).name + "_friends" + ' SET online = ?, titleID = ?, updID = ?, joinable = ?, gameDescription = ?, lastOnline = ? WHERE friendCode = ?', (True, game.presence.game_key.title_id, game.presence.game_key.title_version, joinable, gameDescription, time.time(), str(convertPrincipalIdtoFriendCode(users[-1])).zfill(12)))
+									if IS_SQLITE:
+										cursor.execute('UPDATE ' + NetworkIDsToName(network).name + "_friends" + ' SET online = ?, titleID = ?, updID = ?, joinable = ?, gameDescription = ?, lastOnline = ? WHERE friendCode = ?', (True, game.presence.game_key.title_id, game.presence.game_key.title_version, joinable, gameDescription, time.time(), str(convertPrincipalIdtoFriendCode(users[-1])).zfill(12)))
+									else:
+										cursor.execute('UPDATE ' + NetworkIDsToName(network).name + "_friends" + ' SET online = %s, titleID = %s, updID = %s, joinable = %s, gameDescription = %s, lastOnline = %s WHERE friendCode = %s', (True, game.presence.game_key.title_id, game.presence.game_key.title_version, joinable, gameDescription, time.time(), str(convertPrincipalIdtoFriendCode(users[-1])).zfill(12)))
 								for user in [ h for h in rotation if not h in users ]:
-									cursor.execute('UPDATE ' + NetworkIDsToName(network).name + "_friends" + ' SET online = ?, titleID = ?, updID = ? WHERE friendCode = ?', (False, 0, 0, str(convertPrincipalIdtoFriendCode(user)).zfill(12)))
+									if IS_SQLITE:
+										cursor.execute('UPDATE ' + NetworkIDsToName(network).name + "_friends" + ' SET online = ?, titleID = ?, updID = ? WHERE friendCode = ?', (False, 0, 0, str(convertPrincipalIdtoFriendCode(user)).zfill(12)))
+									else:
+										cursor.execute('UPDATE ' + NetworkIDsToName(network).name + "_friends" + ' SET online = %s, titleID = %s, updID = %s WHERE friendCode = %s', (False, 0, 0, str(convertPrincipalIdtoFriendCode(user)).zfill(12)))
 
 								con.commit()
 
@@ -180,7 +188,10 @@ async def main():
 										jeuFavori = j1[0].game_key.title_id
 									else:
 										comment = ''
-									cursor.execute('UPDATE ' + NetworkIDsToName(network).name + "_friends" + ' SET username = ?, message = ?, mii = ?, jeuFavori = ? WHERE friendCode = ?', (username, comment, face, jeuFavori, str(convertPrincipalIdtoFriendCode(ti.pid)).zfill(12)))
+									if IS_SQLITE:
+										cursor.execute('UPDATE ' + NetworkIDsToName(network).name + "_friends" + ' SET username = ?, message = ?, mii = ?, jeuFavori = ? WHERE friendCode = ?', (username, comment, face, jeuFavori, str(convertPrincipalIdtoFriendCode(ti.pid)).zfill(12)))
+									else:
+										cursor.execute('UPDATE ' + NetworkIDsToName(network).name + "_friends" + ' SET username = %s, message = %s, mii = %s, jeuFavori = %s WHERE friendCode = %s', (username, comment, face, jeuFavori, str(convertPrincipalIdtoFriendCode(ti.pid)).zfill(12)))
 									con.commit()
 
 							for friend in rotation + cleanUp:

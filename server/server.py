@@ -4,16 +4,20 @@ from enum import IntEnum
 from flask import Flask, make_response, request, redirect, render_template, send_file
 from flask_limiter import Limiter
 from flask_sqlalchemy import SQLAlchemy
-import sqlite3, requests, sys, os, time, json, multiprocessing, datetime, xmltodict, pickle, secrets
+import requests, sys, os, time, json, multiprocessing, datetime, xmltodict, pickle, secrets, urllib.parse
 sys.path.append('../')
 from api import *
 from api.love2 import *
-from api.private import CLIENT_ID, CLIENT_SECRET, HOST
+from api.private import CLIENT_ID, CLIENT_SECRET, HOST, IS_SQLITE, DB_HOST, DB_NAME, DB_PASSWORD, DB_USERNAME
 from api.public import pretendoBotFC, nintendoBotFC
 from api.networks import NetworkIDsToName, nameToNetworkId, getBotFriendCodeFromNetworkId
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.abspath('sqlite/fcLibrary.db')
+if IS_SQLITE:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.abspath('sqlite/fcLibrary.db')
+else:
+    print('mysql+pymysql://' + urllib.parse.quote_plus(DB_USERNAME) + ':' + urllib.parse.quote_plus(DB_PASSWORD) + '@' + DB_HOST + '/' + urllib.parse.quote_plus(DB_NAME))
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://' + urllib.parse.quote_plus(DB_USERNAME) + ':' + urllib.parse.quote_plus(DB_PASSWORD) + '@' + DB_HOST + '/' + urllib.parse.quote_plus(DB_NAME)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 limiter = Limiter(app, key_func = lambda : request.access_route[-1])
@@ -166,7 +170,7 @@ def createDiscordUser(code:str, response:dict = None):
         db.session.execute('INSERT INTO discord (ID, refresh, bearer, session, token, lastAccessed, generationDate) VALUES (%s, \'%s\', \'%s\', \'%s\', \'%s\', %s, %s)' % (user['id'], response['refresh_token'], response['access_token'], '', token, 0, time.time()))
         db.session.commit()
     except Exception as e:
-        if 'UNIQUE constraint failed' in str(e):
+        if 'UNIQUE constraint failed' in str(e) or 'Duplicate entry' in str(e):
             old_token = tokenFromID(user['id'])
             db.session.execute('UPDATE discord SET refresh = \'%s\', bearer = \'%s\', generationDate = %s, token = \'%s\' WHERE token = \'%s\'' % (response['refresh_token'], response['access_token'], time.time(), token, old_token))
             db.session.commit()
@@ -644,9 +648,9 @@ def settingsToggler(which:str):
     else:
         which = 'showProfileButton'
     try:
-        db.session.execute('UPDATE discord SET \'%s\' = %s WHERE token = \'%s\'' % (which, toggle, request.cookies['token']))
+        db.session.execute('UPDATE discord SET %s = %s WHERE token = \'%s\'' % (which, toggle, request.cookies['token']))
         db.session.commit()
-    except:
+    except Exception as e:
         return 'failure!'
     return 'success!'
 

@@ -2,9 +2,11 @@
 
 import os, sys
 import sqlite3
+import pymysql
 import time
 import threading
 import traceback
+from api.private import DB_HOST, DB_NAME, DB_PASSWORD, DB_USERNAME, IS_SQLITE
 if os.name == 'nt':
     import pyreadline3
 else:
@@ -40,12 +42,22 @@ def getPath(path):
     return os.path.join(root, path)
 
 def startDBTime(time, network):
-    with sqlite3.connect('sqlite/fcLibrary.db') as con:
+    with connectDB() as con:
         cursor = con.cursor()
         cursor.execute('DELETE FROM config WHERE network=' + str(network)) # doing this isn't the most intelegent of ideas but oh well (i hope you don't need to ever add another config :D)
         cursor.execute('INSERT INTO config (BACKEND_UPTIME, NETWORK) VALUES (%s, %s)' % (time, network,))
         con.commit()
-
+def connectDB():
+	if IS_SQLITE:
+		return sqlite3.connect('sqlite/fcLibrary.db')
+	else:
+		return pymysql.connect( 
+			host=DB_HOST, 
+			user=DB_USERNAME,  
+			password = DB_PASSWORD, 
+			db=DB_NAME, 
+		)
+    
 try:
     terminalSize = os.get_terminal_size(0).columns - 2
 except OSError:

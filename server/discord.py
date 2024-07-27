@@ -1,10 +1,10 @@
-import time, sqlite3, sys, secrets, requests, json, pickle
-from enum import Enum
+import time, sys, secrets, requests, json, pickle
 sys.path.append('../')
 from api import *
 from api.love2 import *
-from api.private import CLIENT_ID, CLIENT_SECRET, HOST
-from api.networks import NetworkIDsToName, nameToNetworkId
+from api.private import CLIENT_ID, CLIENT_SECRET, HOST, IS_SQLITE
+from api.networks import NetworkIDsToName
+from api.util import connectDB
 
 API_ENDPOINT:str = 'https://discord.com/api/v10'
 
@@ -19,16 +19,25 @@ class Session():
 		self.cursor = cursor
 
 	def retire(self, refresh):
-		self.cursor.execute('UPDATE discord SET session = ? WHERE refresh = ?', ('', refresh))
+		if IS_SQLITE:
+			self.cursor.execute('UPDATE discord SET session = ? WHERE refresh = ?', ('', refresh))
+		else:
+			self.cursor.execute('UPDATE discord SET session = %s WHERE refresh = %s', ('', refresh))
 		self.con.commit()
 
 	def create(self, refresh, session):
-		self.cursor.execute('UPDATE discord SET session = ? WHERE refresh = ?', (session, refresh))
+		if IS_SQLITE:
+			self.cursor.execute('UPDATE discord SET session = ? WHERE refresh = ?', (session, refresh))
+		else:
+			self.cursor.execute('UPDATE discord SET session = %s WHERE refresh = %s', (session, refresh))
 		self.con.commit()
 		return session
 
 	def update(self, session):
-		self.cursor.execute('UPDATE discord SET lastAccessed = ? WHERE session = ?', (time.time(), session))
+		if IS_SQLITE:
+			self.cursor.execute('UPDATE discord SET lastAccessed = ? WHERE session = ?', (time.time(), session))
+		else:
+			self.cursor.execute('UPDATE discord SET lastAccessed = %s WHERE session = %s', (time.time(), session))
 		self.con.commit()
 
 class Discord():
@@ -120,20 +129,31 @@ class Discord():
 		r.raise_for_status()
 		response = r.json()
 		self.cursor = con.cursor()
-		self.cursor.execute('UPDATE discord SET refresh = ?, bearer = ?, generationDate = ? WHERE refresh = ?', (response['refresh_token'], response['access_token'], time.time(), refresh))
+		if IS_SQLITE:
+			self.cursor.execute('UPDATE discord SET refresh = ?, bearer = ?, generationDate = ? WHERE refresh = ?', (response['refresh_token'], response['access_token'], time.time(), refresh))
+		else:
+			self.cursor.execute('UPDATE discord SET refresh = %s, bearer = %s, generationDate = %s WHERE refresh = %s', (response['refresh_token'], response['access_token'], time.time(), refresh))
 		self.con.commit()
 		return True
 
 	def deleteDiscordUser(self, ID:int):
 		print('[DELETING %s]' % ID)
-		self.cursor.execute('DELETE FROM discord WHERE ID = ?', (ID,))
-		self.cursor.execute('DELETE FROM discordFriends WHERE ID = ?', (ID,))
+		if IS_SQLITE:
+			self.cursor.execute('DELETE FROM discord WHERE ID = ?', (ID,))
+			self.cursor.execute('DELETE FROM discordFriends WHERE ID = ?', (ID,))
+		else:
+			self.cursor.execute('DELETE FROM discord WHERE ID = %s', (ID,))
+			self.cursor.execute('DELETE FROM discordFriends WHERE ID = %s', (ID,))
 		self.con.commit()
 
 	def deactivateDiscordUser(self, ID:int):
 		print('[DEACTIVATING %s]' % ID)
-		self.cursor.execute('DELETE FROM discord WHERE ID = ?', (ID,))
-		self.cursor.execute('DELETE FROM discordFriends WHERE ID = ?', (ID,))
+		if IS_SQLITE:
+			self.cursor.execute('DELETE FROM discord WHERE ID = ?', (ID,))
+			self.cursor.execute('DELETE FROM discordFriends WHERE ID = ?', (ID,))
+		else:
+			self.cursor.execute('DELETE FROM discord WHERE ID = %s', (ID,))
+			self.cursor.execute('DELETE FROM discordFriends WHERE ID = %s', (ID,))
 		self.con.commit()
 
 delay = 2
@@ -141,7 +161,7 @@ delay = 2
 while True:
 	time.sleep(delay)
 
-	with sqlite3.connect('sqlite/fcLibrary.db') as con:
+	with connectDB() as con:
 		cursor = con.cursor()
 
 		discord = Discord(con, cursor)
@@ -159,10 +179,11 @@ while True:
 		wait = time.time()
 
 		while time.time() - wait <= 1200:
-
-			cursor.execute('SELECT * FROM discordFriends WHERE active = ?', (True,))
+			if IS_SQLITE:
+				cursor.execute('SELECT * FROM discordFriends WHERE active = ?', (True,))
+			else:
+				cursor.execute('SELECT * FROM discordFriends WHERE active = %s', (True,))
 			discordFriends = cursor.fetchall()
-
 			cursor.execute('SELECT * FROM discord')
 			discordUsers = cursor.fetchall()
 			b1 = []
@@ -193,9 +214,14 @@ while True:
 				continue
 			for r in discordFriends:
 				print('[RUNNING %s - %s]' % (r[0], r[1]))
-				cursor.execute('SELECT * FROM ' + NetworkIDsToName(r[2]).name + '_friends WHERE friendCode = ?', (r[1],))
-				v2 = cursor.fetchone()
-				cursor.execute('SELECT * FROM discord WHERE ID = ?', (r[0],))
+				if IS_SQLITE:
+					cursor.execute('SELECT * FROM ' + NetworkIDsToName(r[2]).name + '_friends WHERE friendCode = ?', (r[1],))
+					v2 = cursor.fetchone()
+					cursor.execute('SELECT * FROM discord WHERE ID = ?', (r[0],))
+				else:
+					cursor.execute('SELECT * FROM ' + NetworkIDsToName(r[2]).name + '_friends WHERE friendCode = %s', (r[1],))
+					v2 = cursor.fetchone()
+					cursor.execute('SELECT * FROM discord WHERE ID = %s', (r[0],))
 				v3 = cursor.fetchone()
 				if time.time() - v3[5] >= 60 and v2:
 					principalId = convertFriendCodeToPrincipalId(v2[0])
