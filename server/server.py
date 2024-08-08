@@ -6,7 +6,7 @@ from flask_limiter import Limiter
 from flask_sqlalchemy import SQLAlchemy
 import sqlite3, requests, sys, os, time, json, multiprocessing, datetime, xmltodict, pickle, secrets
 
-from server.database import start_db_time
+from database import start_db_time
 
 sys.path.append('../')
 from api import *
