@@ -6,7 +6,7 @@ from flask_limiter import Limiter
 from flask_sqlalchemy import SQLAlchemy
 import sqlite3, requests, sys, os, time, json, multiprocessing, datetime, xmltodict, pickle, secrets
 
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, select, update, insert, delete
 from sqlalchemy.orm import Session
 
 from database import start_db_time, Friend, DiscordFriends, Discord, Config
@@ -484,6 +484,7 @@ def register():
             'botFC': '-'.join(network.friend_code()[i:i+4] for i in range(0, len(network.friend_code()), 4)),
             'network': network
         }))
+        return response
     except:
         return make_response(render_template('dist/registerselectnetwork.html'))
 
@@ -525,7 +526,7 @@ def consoles():
         'consoles': [],
     }
     try:
-        id = userFromToken(request.cookies['token'])[0]
+        id = userFromToken(request.cookies['token']).id
     except Exception as e:
         if 'invalid token' in str(e):
             response = make_response(redirect('/'))
@@ -672,59 +673,102 @@ def toggler(friendCode:int):
         fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
     except:
         return 'failure!\nthat is not a real friendCode!'
-    result = db.session.execute('SELECT * FROM ' + NetworkType(network).column_name() + ' WHERE friendCode = \'%s\'' % fc)
-    result = result.fetchone()
+    session = Session(engine)
+
+    stmt = (
+        select(Friend)
+        .where(Friend.friend_code == fc)
+        .where(Friend.network == network)
+    )
+    result = session.scalar(stmt)
     if not result:
         return 'failure!\nthat is not an existing friendCode!'
+    
     f = request.data.decode('utf-8').split(',')
     token = f[0]
     active = bool(int(f[1]))
-    id = userFromToken(token)[0]
-    result = db.session.execute('SELECT * FROM discordFriends WHERE ID = %s AND friendCode = \'%s\' AND network = %s' % (id, fc, network))
-    result = result.fetchone()
+    id = userFromToken(token).id
+    stmt = (
+        select(DiscordFriends)
+        .where(DiscordFriends.id == id)
+        .where(DiscordFriends.friend_code == fc)
+        .where(DiscordFriends.network == network)
+    )
+    result = session.scalar(stmt)
+
     if not result:
-        thing = db.session.execute('SELECT * FROM discordFriends WHERE ID = %s' % id)
-        thing = thing.fetchall()
-        if len(thing) >= 10:
+        stmt = select(DiscordFriends).where(DiscordFriends.id == id)
+        allFriends = session.scalars(stmt).all()
+        if len(allFriends) >= 10:
             return 'failure!\nyou can\'t have more than ten consoles added at one time!'
+        
     if active:
-        db.session.execute('UPDATE discordFriends SET active = %s WHERE active = %s AND ID = %s' % (False, True, id))
-        db.session.commit()
+        stmt = (
+            update(DiscordFriends)
+            .where(DiscordFriends.active)
+            .where(DiscordFriends.id == id)
+            .values(active = False)
+        )
+        session.execute(stmt)
     if result:
-        db.session.execute('UPDATE discordFriends SET active = %s WHERE friendCode = \'%s\' AND ID = %s AND network = %s' % (active, fc, id, network))
-        db.session.commit()
+        stmt = (
+            update(DiscordFriends)
+            .where(DiscordFriends.friend_code == fc)
+            .where(DiscordFriends.network == network)
+            .where(DiscordFriends.id == id)
+            .values(active=active)
+        )
+        session.execute(stmt)
     else:
-        db.session.execute('INSERT INTO discordFriends (ID, friendCode, active, network) VALUES (%s, \'%s\', %s, %s)' % (id, fc, active, network))
-        db.session.commit()
+        stmt = (
+            insert(DiscordFriends)
+            .values(id=id, friend_code=fc, active=active, network=network)
+        )
+        session.execute(stmt)
+    session.commit()
     return 'success!'
 
 # Delete
 @app.route('/api/delete/<int:friendCode>/', methods=['POST'])
 @limiter.limit(togglerLimit)
 def deleter(friendCode:int):
+    session = Session(engine)
     fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
     if not ',' in request.data.decode('utf-8'): # Old API compatiblity. In the future this should be depercated.
         token = request.data.decode('utf-8')
-        id = userFromToken(token)[0]
-        db.session.execute('DELETE FROM discordFriends WHERE friendCode = \'%s\' AND ID = %s AND network = 0' % (fc, id))
-        db.session.commit()
+        id = userFromToken(token).id
+        
+        session.execute(
+            delete(DiscordFriends)
+            .where(DiscordFriends.friend_code == fc)
+            .where(DiscordFriends.network == NetworkType.NINTENDO)
+            .where(DiscordFriends.id == id)
+        )
+        session.commit()
 
         return 'success!'
 
     data = request.data.decode('utf-8').split(',')
     token = data[0]
     network = nameToNetworkType(data[1])
-    id = userFromToken(token)[0]
-    db.session.execute('DELETE FROM discordFriends WHERE friendCode = \'%s\' AND ID = %s AND network = %s' % (fc, id, network))
-    db.session.commit()
+    id = userFromToken(token).id
+
+    session.execute(
+            delete(DiscordFriends)
+            .where(DiscordFriends.friend_code == fc)
+            .where(DiscordFriends.network == network)
+            .where(DiscordFriends.id == id)
+        )
     # the following is optional, this deletes the friend data if you remove the console, and no one else is using the fc.
-    result = db.session.execute('SELECT * FROM discordFriends WHERE friendCode = \'%s\' AND network = %s' % (fc, network))
-    result = result.fetchone()
+    result = session.scalar(
+        select(DiscordFriends)
+        .where(DiscordFriends.friend_code == fc)
+        .where(DiscordFriends.network == network)
+    )
     if result == None:
-        db.session.execute('DELETE FROM ' + network.column_name() + ' WHERE friendCode = \'%s\'' % (fc))
-        db.session.commit()
+        session.delete(result)
     # end of optional
-    
+    session.commit()
     return 'success!'
 
 # Toggle one
@@ -735,12 +779,19 @@ def settingsToggler(which:str):
     if not which in ('smallImage', 'profileButton'):
         return 'failure!'
     if which == 'smallImage':
-        which = 'showSmallImage'
+        which = 'show_small_image'
     else:
-        which = 'showProfileButton'
+        which = 'show_profile_button'
     try:
-        db.session.execute('UPDATE discord SET \'%s\' = %s WHERE token = \'%s\'' % (which, toggle, request.cookies['token']))
-        db.session.commit()
+        session = Session(engine)
+        
+        session.execute(
+            update(Discord)
+            .where(Discord.token == request.cookies['token'])
+            .values({getattr(Discord, which): toggle})
+        )
+
+        session.commit() 
     except:
         return 'failure!'
     return 'success!'
@@ -799,7 +850,7 @@ def refresh():
             response.set_cookie('pfp', pfp, expires = datetime.datetime.now() + datetime.timedelta(days = 30))
             return response
         except:
-            deleteDiscordUser(userFromToken(request.cookies['token'])[0])
+            deleteDiscordUser(userFromToken(request.cookies['token']).id)
     return redirect('/404.html')
 
 if __name__ == '__main__':
