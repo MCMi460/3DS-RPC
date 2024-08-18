@@ -6,7 +6,10 @@ from flask_limiter import Limiter
 from flask_sqlalchemy import SQLAlchemy
 import sqlite3, requests, sys, os, time, json, multiprocessing, datetime, xmltodict, pickle, secrets
 
-from database import start_db_time
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session
+
+from database import start_db_time, Friend, DiscordFriends, Discord, Config
 
 sys.path.append('../')
 from api import *
@@ -17,8 +20,9 @@ from api.networks import NetworkType, nameToNetworkType
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.abspath('sqlite/fcLibrary.db')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+engine = create_engine(app)
+
 limiter = Limiter(app, key_func = lambda : request.access_route[-1])
 
 API_ENDPOINT:str = 'https://discord.com/api/v10'
@@ -106,12 +110,30 @@ def createUser(friendCode:int, network:NetworkType, addNewInstance:bool = False)
         convertFriendCodeToPrincipalId(friendCode)
         if not addNewInstance:
             raise Exception('UNIQUE constraint failed: friends.friendCode')
-        db.session.execute('INSERT INTO ' + network.column_name() + ' (friendCode, online, titleID, updID, lastAccessed, accountCreation, lastOnline, jeuFavori) VALUES (\'%s\', %s, %s, %s, %s, %s, %s, %s)' % (str(friendCode).zfill(12), False, '0', '0', time.time() + 300, time.time(), time.time(), 0))
-        db.session.commit()
+        with Session(engine) as session:
+            session.add(Friend(
+                friend_code=str(friendCode).zfill(12),
+                network=network,
+                online=False,
+                title_id='0',
+                upd_id='0',
+                last_accessed=time.time() + 300,
+                account_creation=time.time(),
+                last_online=time.time(),
+                jeu_favori=0
+            ))
+            session.commit()
     except Exception as e:
-        if 'UNIQUE constraint failed: friends.friendCode' in str(e):
-            db.session.execute('UPDATE ' + network.column_name() + ' SET lastAccessed = %s WHERE friendCode = \'%s\'' % (time.time(), str(friendCode).zfill(12)))
-            db.session.commit()
+        if 'UNIQUE constraint failed: friends.friendCode' in str(e): # TODO: Make this check work with ORM & combined network friendslists
+            with Session(engine) as session:
+                stmt = (
+                    select(Friend)
+                    .where(Friend.friend_code == str(friendCode).zfill(12))
+                    .where(Friend.network == network)
+                    )
+                friend = session.scalar(stmt)
+                friend.last_accessed = time.time()
+                session.commit()
 
 def fetchBearerToken(code:str):
     data = {
@@ -145,16 +167,18 @@ def refreshBearer(token:str):
     return token, user, pfp
 
 def tokenFromID(ID:int):
-    result = db.session.execute('SELECT * FROM discord WHERE ID = %s' % ID)
-    result = result.fetchone()
-    return result[4]
+    with Session(engine) as session:
+        stmt = select(Discord).where(Discord.id == ID)
+        result = session.scalar(stmt)
+    return result.token
 
 def userFromToken(token:str):
-    result = db.session.execute('SELECT * FROM discord WHERE token = \'%s\'' % token)
-    result = result.fetchone()
+    with Session(engine) as session:
+        stmt = select(Discord).where(Discord.token == token)
+        result = session.scalar(stmt)
     if not result:
         raise Exception('invalid token!')
-    return result[0:4]
+    return result
 
 def createDiscordUser(code:str, response:dict = None):
     if not response:
@@ -166,43 +190,59 @@ def createDiscordUser(code:str, response:dict = None):
     user = new.json()
     token = secrets.token_hex(20)
     try:
-        db.session.execute('INSERT INTO discord (ID, refresh, bearer, session, token, lastAccessed, generationDate) VALUES (%s, \'%s\', \'%s\', \'%s\', \'%s\', %s, %s)' % (user['id'], response['refresh_token'], response['access_token'], '', token, 0, time.time()))
-        db.session.commit()
+        with Session(engine) as session:
+            session.add(Discord(
+                id=user['id'],
+                refresh=response['refresh_token'],
+                bearer=response['access_token'],
+                session='',
+                token=token,
+                last_accessed=0,
+                generation_date=time.time()
+            ))
+            session.commit()
     except Exception as e:
-        if 'UNIQUE constraint failed' in str(e):
+        if 'UNIQUE constraint failed' in str(e): # TODO: Fix this constraint check to whatever ORM accepts
             old_token = tokenFromID(user['id'])
-            db.session.execute('UPDATE discord SET refresh = \'%s\', bearer = \'%s\', generationDate = %s, token = \'%s\' WHERE token = \'%s\'' % (response['refresh_token'], response['access_token'], time.time(), token, old_token))
-            db.session.commit()
+
+            discord_user = userFromToken(old_token)
+            discord_user.refresh = response['refresh_token']
+            discord_user.bearer = response['access_token']
+            discord_user.generation_date = time.time()
+            discord_user.token = token
+
+            session.commit()
     return token, user['username'], ('https://cdn.discordapp.com/avatars/%s/%s.%s' % (user['id'], user['avatar'], 'gif' if user['avatar'].startswith('a_') else 'png') if user['avatar'] else '')
 
 def deleteDiscordUser(ID:int):
-    db.session.execute('DELETE FROM discord WHERE ID = %s' % ID)
-    db.session.execute('DELETE FROM discordFriends WHERE ID = %s' % ID)
-    db.session.commit()
+    with Session(engine) as session:
+        session.delete(session.get(Discord, ID))
+        session.delete(session.get(DiscordFriends, ID))
+        session.commit()
 
 def getConnectedConsoles(ID:int):
-    result = db.session.execute('SELECT * FROM discordFriends WHERE ID = %s' % ID)
-    result = result.fetchall()
-    return [ (result[1], bool(result[2]), result[3]) for result in result ]
+    session = Session(engine)
+
+    stmt = select(DiscordFriends).where(DiscordFriends.id == ID)
+    result = session.scalars(stmt).all()
+    
+    return [ (result.friend_code, result.active, result.network) for result in result ]
 
 def sidenav():
-    resultNintendo = db.session.execute('SELECT BACKEND_UPTIME FROM config WHERE network=0')
-    resultNintendo = resultNintendo.fetchone()
-    startTime2Nintendo = resultNintendo[0]
-    resultPretendo = db.session.execute('SELECT BACKEND_UPTIME FROM config WHERE network=1') # Screw good coding practices and DRY
-    resultPretendo = resultPretendo.fetchone()
-    startTime2Pretendo = resultPretendo[0]
-    #  if   elif startTime2Nintendo == 1 else 'Offline'
+    session = Session(engine)
+    startTimeNintendo = session.get(Config, NetworkType.NINTENDO).backend_uptime
+    startTimePretendo = session.get(Config, NetworkType.PRETENDO).backend_uptime
+
     status = 'Offline'
-    if startTime2Nintendo != 0 and startTime2Pretendo != 0:
+    if startTimeNintendo != 0 and startTimePretendo != 0:
         status = 'Operational'
-    elif (startTime2Nintendo != 0 and startTime2Pretendo == 0) or (startTime2Nintendo == 0 and startTime2Pretendo != 0):
+    elif (startTimeNintendo != 0 and startTimePretendo == 0) or (startTimeNintendo == 0 and startTimePretendo != 0):
         status = 'Semi-Operational'
 
     data = {
         'uptime': str(datetime.timedelta(seconds= int(time.time() - startTime))),
-        'nintendo-uptime-backend': ('Nintendo Backend has been up for %s...' % str(datetime.timedelta(seconds= int(time.time() - int(startTime2Nintendo)))) if not startTime2Nintendo == 0 else 'Nintendo Backend: Offline'),          
-        'pretendo-uptime-backend': ('Pretendo Backend has been up for %s...' % str(datetime.timedelta(seconds= int(time.time() - int(startTime2Pretendo)))) if not startTime2Pretendo == 0 else 'Pretendo Backend: Offline'),
+        'nintendo-uptime-backend': ('Nintendo Backend has been up for %s...' % str(datetime.timedelta(seconds= int(time.time() - int(startTimeNintendo)))) if not startTimeNintendo == 0 else 'Nintendo Backend: Offline'),          
+        'pretendo-uptime-backend': ('Pretendo Backend has been up for %s...' % str(datetime.timedelta(seconds= int(time.time() - int(startTimePretendo)))) if not startTimePretendo == 0 else 'Pretendo Backend: Offline'),
         'status': status,
     }
     return data
@@ -219,31 +259,39 @@ def getPresence(friendCode:int, network:NetworkType, *, createAccount:bool = Tru
     try:
         if not ignoreUserAgent:
             userAgentCheck()
-        result = db.session.execute('SELECT BACKEND_UPTIME FROM config WHERE network = %s' % network)
-        result = result.fetchone()
-        startTime2 = result[0]
-        if startTime2 == 0 and not ignoreBackend and not disableBackendWarnings:
+
+        session = Session(engine)
+
+        startTime = session.get(Config, network).backend_uptime
+        if startTime == 0 and not ignoreBackend and not disableBackendWarnings:
             raise Exception('Backend currently offline. please try again later')
+        
         friendCode = str(friendCode).zfill(12)
         if createAccount:
             createUser(friendCode, network, False)
         principalId = convertFriendCodeToPrincipalId(friendCode)
-        result = db.session.execute('SELECT * FROM ' + network.column_name() + ' WHERE friendCode = \'%s\'' % friendCode)
-        result = result.fetchone()
+
+        stmt = (
+            select(Friend)
+            .where(Friend.friend_code == friendCode)
+            .where(Friend.network == network)
+            )
+        result = session.scalar(stmt)
+
         if not result:
             raise Exception('friendCode not recognized\nHint: You may not have added the bot as a friend')
-        if result[1] != 0:
+        if result.online:
             presence = {
-                'titleID': result[2],
-                'updateID': result[3],
-                'joinable': bool(result[9]),
-                'gameDescription': result[10],
-                'game': getTitle(result[2], titlesToUID, titleDatabase),
+                'titleID': result.title_id,
+                'updateID': result.upd_id,
+                'joinable': result.joinable,
+                'gameDescription': result.game_description,
+                'game': getTitle(result.title_id, titlesToUID, titleDatabase),
                 'disclaimer': 'all information regarding the title (User/Presence/game) is downloaded from Nintendo APIs',
             }
         else:
             presence = {}
-        mii = result[8]
+        mii = result.mii
         if mii:
             mii = MiiData().mii_studio_url(mii)
         return {
@@ -251,15 +299,15 @@ def getPresence(friendCode:int, network:NetworkType, *, createAccount:bool = Tru
             'User': {
                 'principalId': principalId,
                 'friendCode': str(convertPrincipalIdtoFriendCode(principalId)).zfill(12),
-                'online': bool(result[1]),
+                'online': result.online,
                 'Presence': presence,
-                'username': result[6],
-                'message': result[7],
+                'username': result.username,
+                'message': result.message,
                 'mii': mii,
-                'accountCreation': result[5],
-                'lastAccessed': result[4],
-                'lastOnline': result[11],
-                'favoriteGame': result[12],
+                'accountCreation': result.account_creation,
+                'lastAccessed': result.last_accessed,
+                'lastOnline': result.last_online,
+                'favoriteGame': result.favorite_game,
             }
         }
     except Exception as e:
