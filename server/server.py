@@ -21,7 +21,9 @@ from api.networks import NetworkType, nameToNetworkType
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.abspath('sqlite/fcLibrary.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
-engine = create_engine(app)
+#db1 = SQLAlchemy(app)
+
+engine = create_engine('sqlite:///' + os.path.abspath('sqlite/fcLibrary.db'))
 
 limiter = Limiter(app, key_func = lambda : request.access_route[-1])
 
@@ -324,34 +326,44 @@ def getPresence(friendCode:int, network:NetworkType, *, createAccount:bool = Tru
 # Index page
 @app.route('/')
 def index():
-    results = db.session.execute(' UNION '.join([f'SELECT *, "{network.lower_name()}" FROM {network.column_name()} WHERE online = True AND username != ""' for network in NetworkType]) + ' ORDER BY lastAccessed DESC')
-    results = results.fetchall()
+    session = Session(engine)
+
+    stmt = (
+        select(Friend)
+        .where(Friend.online == True)
+        .where(Friend.username != None)
+        .order_by(Friend.last_accessed.desc())
+        )
+    results = session.scalars(stmt).all()
     num = len(results)
     data = sidenav()
 
-    results = results[:6]
-
     data['active'] = [ ({
-        'mii':MiiData().mii_studio_url(user[8]),
-        'username':user[6],
-        'game': getTitle(user[2], titlesToUID, titleDatabase),
-        'friendCode': str(user[0]).zfill(12),
-        'joinable': bool(user[9]),
-        # Adjust for uppercase enum naming.
-        'network': str(user[13]),
-    }) for user in results if user[6] ]
+        'mii':MiiData().mii_studio_url(user.mii),
+        'username':user.username,
+        'game': getTitle(user.title_id, titlesToUID, titleDatabase),
+        'friendCode': user.friend_code.zfill(12),
+        'joinable': user.joinable,
+        'network': user.network.lower_name(),
+    }) for user in results if user.username ]
     data['active'] = data['active'][:2]
 
-    results = db.session.execute(' UNION '.join([f'SELECT *, "{network.lower_name()}" FROM {network.column_name()} WHERE username != ""' for network in NetworkType]) + ' ORDER BY accountCreation DESC LIMIT 6')
-    results = results.fetchall()
+    stmt = (
+        select(Friend)
+        .where(Friend.username != None)
+        .order_by(Friend.account_creation.desc())
+        .limit(6)
+        )
+    results = session.scalars(stmt).all()
+
     data['new'] = [ ({
-        'mii':MiiData().mii_studio_url(user[8]),
-        'username':user[6],
-        'game': getTitle(user[2], titlesToUID, titleDatabase) if bool(user[1]) and int(user[2]) != 0 else '',
-        'friendCode': str(user[0]).zfill(12),
-        'joinable': bool(user[9]),
-        'network': str(user[13]),
-    }) for user in results if user[6] ]
+        'mii':MiiData().mii_studio_url(user.mii),
+        'username': user.username,
+        'game': getTitle(user.title_id, titlesToUID, titleDatabase) if bool(user[1]) and int(user[2]) != 0 else '',
+        'friendCode': user.friend_code.zfill(12),
+        'joinable': user.joinable,
+        'network': user.network.lower_name(),
+    }) for user in results if user.username ]
     data['new'] = data['new'][:2]
 
     data['num'] = num
@@ -379,8 +391,10 @@ def settings():
     }
     data = sidenav()
     try:
-        result = db.session.execute('SELECT * FROM discord WHERE token = \'%s\'' % request.cookies['token'])
-        result = result.fetchone()
+        session = Session(engine)
+
+        stmt = select(Discord).where(Discord.token == request.cookies['token'])
+        result = session.scalar(stmt)
     except Exception as e:
         if 'invalid token' in str(e):
             response = make_response(redirect('/'))
@@ -390,8 +404,8 @@ def settings():
             return response
         return redirect('/')
 
-    data['profileButton'] = bool(result[7])
-    data['smallImage'] = bool(result[8])
+    data['profileButton'] = result.show_profile_button
+    data['smallImage'] = result.show_small_image
 
     response = make_response(render_template('dist/settings.html', data = data))
     return response
@@ -403,18 +417,27 @@ def settingsRedirect():
 # Roster page
 @app.route('/roster')
 def roster():
-    results = db.session.execute(' UNION '.join([f'SELECT *, "{network.lower_name()}" AS network FROM {network.column_name()} WHERE username != ""' for network in NetworkType]) + ' ORDER BY accountCreation DESC LIMIT 8')
-    results = results.fetchall()
+    session = Session(engine)
+
+    stmt = (
+        select(Friend)
+        .where(Friend.username)
+        .order_by(Friend.account_creation.desc())
+        .limit(8)
+    )
+    results = session.scalars(stmt).all()
+
     data = sidenav()
+
     data['title'] = 'New Users'
     data['users'] = [ ({
-        'mii':MiiData().mii_studio_url(user[8]),
-        'username':user[6],
-        'game': getTitle(user[2], titlesToUID, titleDatabase),
-        'friendCode': str(user[0]).zfill(12),
-        'joinable': bool(user[9]),
-        'network': str(user[13]),
-    }) for user in results if user[6] ]
+        'mii':MiiData().mii_studio_url(user.mii),
+        'username':user.username,
+        'game': getTitle(user.title_id, titlesToUID, titleDatabase),
+        'friendCode': user.friend_code.zfill(12),
+        'joinable': user.joinable,
+        'network': user.network.lower_name(),
+    }) for user in results if user.username ]
 
     response = make_response(render_template('dist/users.html', data = data))
     return response
@@ -422,18 +445,26 @@ def roster():
 # Active page
 @app.route('/active')
 def active():
-    results = db.session.execute(' UNION '.join([f'SELECT *, "{network.lower_name()}" AS network FROM {network.column_name()} WHERE online = True AND username != ""' for network in NetworkType]) + ' ORDER BY lastAccessed DESC')
-    results = results.fetchall()
+    session = Session(engine)
+
+    stmt = (
+        select(Friend)
+        .where(Friend.username)
+        .where(Friend.online)
+        .order_by(Friend.account_creation.desc())
+    )
+    results = session.scalars(stmt).all()
+
     data = sidenav()
     data['title'] = 'Active Users'
 
     data['users'] = [ ({
-        'mii':MiiData().mii_studio_url(user[8]),
-        'username':user[6],
-        'game': getTitle(user[2], titlesToUID, titleDatabase),
-        'friendCode': str(user[0]).zfill(12),
-        'joinable': bool(user[9]),
-        'network': str(user[13]),
+        'mii':MiiData().mii_studio_url(user.mii),
+        'username':user.username,
+        'game': getTitle(user.title_id, titlesToUID, titleDatabase),
+        'friendCode': user.friend_code.zfill(12),
+        'joinable': user.joinable,
+        'network': user.network.lower_name(),
     }) for user in results if user[6] ]
 
     response = make_response(render_template('dist/users.html', data = data))
@@ -503,13 +534,18 @@ def consoles():
             response.set_cookie('pfp', '', expires = 0)
             return response
         return redirect('/')
+    session = Session(engine)
     for console, active, network_type in getConnectedConsoles(id):
         network = NetworkType(network_type)
-        result = db.session.execute('SELECT * FROM ' + network.column_name() + ' WHERE friendCode = \'%s\'' % console)
-        result = result.fetchone()
+        stmt = (
+            select(Friend)
+            .where(Friend.friend_code == console)
+            .where(Friend.network == network)
+        )
+        result = session.scalar(stmt)
         data['consoles'].append({
             'fc': '-'.join(console[i:i+4] for i in range(0, 12, 4)),
-            'username': result[6],
+            'username': result.username,
             'active': active,
             'network': network.lower_name()
         })
