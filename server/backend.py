@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, delete, select, update
 from sqlalchemy.orm import Session
 import anyio, sys, argparse
 
-from database import start_db_time, NintendoFriends, PretendoFriends, DiscordFriends
+from database import start_db_time, Friend, DiscordFriends
 
 sys.path.append('../')
 from api.private import SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME, REGION, LANGUAGE, NINTENDO_PID, PRETENDO_PID, PID_HMAC, NINTENDO_NEX_PASSWORD, PRETENDO_NEX_PASSWORD
@@ -34,17 +34,8 @@ async def main():
 		time.sleep(1)
 		print('Grabbing new friends...')
 		with Session(engine) as session:
-			# We have two separate tables for each network type.
-			if network == NetworkType.NINTENDO:
-				network_model = NintendoFriends
-			elif network == NetworkType.PRETENDO:
-				network_model = PretendoFriends
-			else:
-				raise InvalidNetworkError(f"Network type {network} is not configured for querying")
-
-			# In order to assist IDEs with typing, we specify this as an array of NintendoFriends.
-			# This may truly be an array of PretendoFriends, but the two tables share the same properties.
-			queried_friends: [NintendoFriends] = session.scalars(select(network_model)).all()
+			
+			queried_friends = session.scalars(select(Friend).where(Friend.network == network)).all()
 			if not queried_friends:
 				continue
 
@@ -138,11 +129,12 @@ async def main():
 								removed_friend_code = str(convertPrincipalIdtoFriendCode(removed_friend)).zfill(12)
 
 								# Remove this friend code from both our tracked network friends and Discord friend codes.
-								session.execute(delete(network_model).where(network_model.friend_code == removed_friend_code))
+								session.execute(delete(Friend).where(Friend.friend_code == removed_friend_code).where(Friend.network == network))
 								session.execute(delete(DiscordFriends).where(
 									DiscordFriends.friend_code == removed_friend_code,
 									DiscordFriends.network == network)
 								)
+								session.commit()
 
 							if len(network_friends) > 0:
 								time.sleep(delay)
@@ -161,8 +153,9 @@ async def main():
 
 									friend_code = str(convertPrincipalIdtoFriendCode(users[-1])).zfill(12)
 									session.execute(
-										update(network_model)
-										.where(network_model.friend_code == friend_code)
+										update(Friend)
+										.where(Friend.friend_code == friend_code)
+										.where(Friend.network == network)
 										.values(
 											online=True,
 											title_id=game.presence.game_key.title_id,
@@ -172,21 +165,21 @@ async def main():
 											last_online=time.time()
 										)
 									)
+									session.commit()
 
 								for user in [ h for h in rotation if not h in users ]:
 									friend_code = str(convertPrincipalIdtoFriendCode(user)).zfill(12)
 									session.execute(
-										update(network_model)
-										.where(network_model.friend_code == friend_code)
+										update(Friend)
+										.where(Friend.friend_code == friend_code)
+										.where(Friend.network == network)
 										.values(
 											online=True,
-											title_id=game.presence.game_key.title_id,
-											upd_id=game.presence.game_key.title_version,
-											joinable=joinable,
-											game_description=game_description,
-											last_online=time.time()
+											title_id=0,
+											upd_id=0
 										)
 									)
+									session.commit()
 
 								# I just do not understand what I'm doing wrong with get_friend_mii_list
 								# The docs do not specify much
@@ -197,7 +190,7 @@ async def main():
 								for current_friend in network_friends:
 									work = False
 									for l in all_friends:
-										if (l[0] == current_friend.pid and time.time() - l[1] <= 600) or scrape_only:
+										if (l[0] == current_friend.pid and time.time() - l[1] <= 600000) or scrape_only:
 											work = True
 									if not work:
 										continue
@@ -210,7 +203,7 @@ async def main():
 									except:
 										continue
 									comment = current_info[0].message
-									jeu_favori = 0
+									favorite_game = 0
 									username = ''
 									face = ''
 									if not comment.endswith(' '):
@@ -223,21 +216,23 @@ async def main():
 										face = obj.mii_studio()['data']
 
 										# Get user's favorite game
-										jeu_favori = current_info[0].game_key.title_id
+										favorite_game = current_info[0].game_key.title_id
 									else:
 										comment = ''
 
 									friend_code = str(convertPrincipalIdtoFriendCode(current_friend.pid)).zfill(12)
 									session.execute(
-										update(network_model)
-										.where(network_model.friend_code == friend_code)
+										update(Friend)
+										.where(Friend.friend_code == friend_code)
+										.where(Friend.network == network)
 										.values(
 											username=username,
 											message=comment,
 											mii=face,
-											jeu_favori=jeu_favori
+											favorite_game=favorite_game
 										)
 									)
+									session.commit()
 
 							for friend in rotation + cleanUp:
 								time.sleep(delay / quicker)

@@ -122,7 +122,7 @@ def createUser(friendCode:int, network:NetworkType, addNewInstance:bool = False)
                 last_accessed=time.time() + 300,
                 account_creation=time.time(),
                 last_online=time.time(),
-                jeu_favori=0
+                favorite_game=0
             ))
             session.commit()
     except Exception as e:
@@ -337,7 +337,7 @@ def index():
     results = session.scalars(stmt).all()
     num = len(results)
     data = sidenav()
-
+    print(results[0].network)
     data['active'] = [ ({
         'mii':MiiData().mii_studio_url(user.mii),
         'username':user.username,
@@ -668,13 +668,12 @@ def newAlias3(friendCode:int):
 def toggler(friendCode:int):
     network = NetworkType.NINTENDO
     if request.data.decode('utf-8').split(',')[2] != None:
-        network = nameToNetworkType(request.data.decode('utf-8').split(',')[2])
+        network = NetworkType(int(request.data.decode('utf-8').split(',')[2]))
     try:
         fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
     except:
         return 'failure!\nthat is not a real friendCode!'
     session = Session(engine)
-
     stmt = (
         select(Friend)
         .where(Friend.friend_code == fc)
@@ -703,28 +702,25 @@ def toggler(friendCode:int):
             return 'failure!\nyou can\'t have more than ten consoles added at one time!'
         
     if active:
-        stmt = (
+        session.execute(
             update(DiscordFriends)
             .where(DiscordFriends.active)
             .where(DiscordFriends.id == id)
             .values(active = False)
         )
-        session.execute(stmt)
     if result:
-        stmt = (
+        session.execute(
             update(DiscordFriends)
             .where(DiscordFriends.friend_code == fc)
             .where(DiscordFriends.network == network)
             .where(DiscordFriends.id == id)
             .values(active=active)
         )
-        session.execute(stmt)
     else:
-        stmt = (
+        session.execute(
             insert(DiscordFriends)
             .values(id=id, friend_code=fc, active=active, network=network)
         )
-        session.execute(stmt)
     session.commit()
     return 'success!'
 
