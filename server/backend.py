@@ -253,6 +253,11 @@ if __name__ == '__main__':
 		args = parser.parse_args()
 
 		network = NetworkType[args.network.upper()]
+
+		if network != NetworkType.NINTENDO:
+			# This delay is only needed for nintendo, and is unnessary for pretendo.
+			delay, quicker = 0, 1
+		
 		start_db_time(begun, network)
 		anyio.run(main)
 	except (KeyboardInterrupt, Exception) as e:
