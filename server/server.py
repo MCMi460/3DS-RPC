@@ -337,7 +337,6 @@ def index():
     results = session.scalars(stmt).all()
     num = len(results)
     data = sidenav()
-    print(results[0].network)
     data['active'] = [ ({
         'mii':MiiData().mii_studio_url(user.mii),
         'username':user.username,
@@ -359,7 +358,7 @@ def index():
     data['new'] = [ ({
         'mii':MiiData().mii_studio_url(user.mii),
         'username': user.username,
-        'game': getTitle(user.title_id, titlesToUID, titleDatabase) if bool(user[1]) and int(user[2]) != 0 else '',
+        'game': getTitle(user.title_id, titlesToUID, titleDatabase) if user.online and user.title_id != 0 else '',
         'friendCode': user.friend_code.zfill(12),
         'joinable': user.joinable,
         'network': user.network.lower_name(),
@@ -668,7 +667,7 @@ def newAlias3(friendCode:int):
 def toggler(friendCode:int):
     network = NetworkType.NINTENDO
     if request.data.decode('utf-8').split(',')[2] != None:
-        network = NetworkType(int(request.data.decode('utf-8').split(',')[2]))
+        network = nameToNetworkType(request.data.decode('utf-8').split(',')[2])
     try:
         fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
     except:
@@ -762,7 +761,11 @@ def deleter(friendCode:int):
         .where(DiscordFriends.network == network)
     )
     if result == None:
-        session.delete(result)
+        session.execute(
+            delete(Friend)
+            .where(Friend.friend_code == fc)
+            .where(Friend.network == network)
+        )
     # end of optional
     session.commit()
     return 'success!'
@@ -820,7 +823,7 @@ def login():
         newUser(fc, network, False)
     except:
         return redirect('/failure.html')
-    return redirect(f'/success.html?fc={fc}&network={network}')
+    return redirect(f'/success.html?fc={fc}&network={network.lower_name()}')
 
 # Discord route
 @app.route('/authorize')

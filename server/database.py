@@ -2,7 +2,7 @@ import os
 
 from sqlalchemy import create_engine, delete
 from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped, Session
-from sqlalchemy.types import Integer
+from sqlalchemy.types import Integer, TypeDecorator
 import sys
 
 sys.path.append('../')
@@ -19,11 +19,26 @@ class Config(Base):
     network: Mapped[NetworkType] = mapped_column("network", Integer(), primary_key=True)
     backend_uptime: Mapped[float] = mapped_column("BACKEND_UPTIME")
 
+class NetworkTypeValue(TypeDecorator):
+    impl = Integer
+
+    cache_ok = True
+    
+    def process_bind_param(self, value, dialect):
+        if isinstance(value, NetworkType):
+            return value.value
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            return NetworkType(value)
+        return value
+
 class Friend(Base):
     __tablename__ = "friends"
 
     friend_code: Mapped[str] = mapped_column("friendCode", primary_key=True, nullable=False, unique=True)
-    network: Mapped[NetworkType] = mapped_column("network", Integer())
+    network: Mapped[NetworkType] = mapped_column("network", NetworkTypeValue())
     online: Mapped[bool]
     title_id: Mapped[str] = mapped_column("titleID", nullable=False)
     upd_id: Mapped[str] = mapped_column("updID", nullable=False)
@@ -44,7 +59,7 @@ class DiscordFriends(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     friend_code: Mapped[str] = mapped_column("friendCode", primary_key=True, nullable=False)
-    network: Mapped[NetworkType] = mapped_column("network", Integer())
+    network: Mapped[NetworkType] = mapped_column("network", NetworkTypeValue())
     active: Mapped[bool] = mapped_column(nullable=False)
 
 class Discord(Base):

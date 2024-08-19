@@ -174,7 +174,7 @@ async def main():
 										.where(Friend.friend_code == friend_code)
 										.where(Friend.network == network)
 										.values(
-											online=True,
+											online=False,
 											title_id=0,
 											upd_id=0
 										)
