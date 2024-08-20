@@ -42,3 +42,13 @@ CLIENT_SECRET:str = "" # Taken from OAuth2 page
 HOST:str = ""
 # http(s)://subdomain.domain.extension
 # No ending slash!
+
+### DATABASE-SPECIFIC ###
+
+IS_SQLITE:bool = True # SQLite should generally only be used for testing. It is recommended to use MySQL software like MariaDB
+
+# MySQL specifc
+DB_HOST:str = "localhost"
+DB_NAME:str = "3dsrpc"
+DB_USERNAME:str = "username"
+DB_PASSWORD:str = "password"

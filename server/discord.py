@@ -7,7 +7,7 @@ from api.networks import NetworkType
 
 from sqlalchemy import create_engine, select, update, delete
 from sqlalchemy.orm import Session
-from database import DiscordFriends, Friend
+from database import get_db_url, DiscordFriends, Friend
 from database import Discord as DiscordTable
 
 API_ENDPOINT:str = 'https://discord.com/api/v10'
@@ -17,7 +17,7 @@ with open('./cache/databases.dat', 'rb') as file:
 	titleDatabase = t[0]
 	titlesToUID = t[1]
 
-engine = create_engine('sqlite:///' + os.path.abspath('sqlite/fcLibrary.db'))
+engine = create_engine(get_db_url())
 
 class DiscordSession():
 	def retire(self, refresh):

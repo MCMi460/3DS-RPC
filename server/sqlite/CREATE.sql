@@ -20,6 +20,9 @@ Create Table config(
   network tinyint NOT NULL
 );
 
+INSERT INTO config(BACKEND_UPTIME, network) VALUES (0, 0);
+INSERT INTO config(BACKEND_UPTIME, network) VALUES (0, 1);
+
 Create Table discord(
   ID bigint NOT NULL UNIQUE,
   refresh text NOT NULL,

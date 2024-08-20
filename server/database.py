@@ -3,10 +3,11 @@ import os
 from sqlalchemy import create_engine, delete
 from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped, Session
 from sqlalchemy.types import Integer, TypeDecorator
-import sys
+import sys, urllib, pymysql
 
 sys.path.append('../')
 from api.networks import NetworkType
+from api.private import DB_HOST, DB_NAME, DB_USERNAME, DB_PASSWORD, IS_SQLITE
 
 
 class Base(DeclarativeBase):
@@ -77,10 +78,16 @@ class Discord(Base):
 
 def start_db_time(time: float, network_type: NetworkType):
     """Updates the database to track the starting time for the specific backend."""
-    engine = create_engine('sqlite:///' + os.path.abspath('sqlite/fcLibrary.db'))
+    engine = create_engine(get_db_url())
     with Session(engine) as session:
         # TODO: This should be an upsert, not a deletion and insertion.
         session.execute(delete(Config).where(Config.network == network_type))
         new_time = Config(network=network_type, backend_uptime=time)
         session.add(new_time)
         session.commit()
+
+def get_db_url():
+    if IS_SQLITE:
+        return 'sqlite:///' + os.path.abspath('sqlite/fcLibrary.db')
+    else:
+        return 'mysql+pymysql://' + urllib.parse.quote_plus(DB_USERNAME) + ':' + urllib.parse.quote_plus(DB_PASSWORD) + '@' + DB_HOST + '/' + urllib.parse.quote_plus(DB_NAME)

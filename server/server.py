@@ -9,7 +9,7 @@ import sqlite3, requests, sys, os, time, json, multiprocessing, datetime, xmltod
 from sqlalchemy import create_engine, select, update, insert, delete
 from sqlalchemy.orm import Session
 
-from database import start_db_time, Friend, DiscordFriends, Discord, Config
+from database import start_db_time, get_db_url, Friend, DiscordFriends, Discord, Config
 
 sys.path.append('../')
 from api import *
@@ -19,11 +19,8 @@ from api.public import pretendoBotFC, nintendoBotFC
 from api.networks import NetworkType, nameToNetworkType
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.abspath('sqlite/fcLibrary.db')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
-#db1 = SQLAlchemy(app)
 
-engine = create_engine('sqlite:///' + os.path.abspath('sqlite/fcLibrary.db'))
+engine = create_engine(get_db_url())
 
 limiter = Limiter(app, key_func = lambda : request.access_route[-1])
 

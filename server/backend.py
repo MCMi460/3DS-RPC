@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, delete, select, update
 from sqlalchemy.orm import Session
 import anyio, sys, argparse
 
-from database import start_db_time, Friend, DiscordFriends
+from database import start_db_time, get_db_url, Friend, DiscordFriends
 
 sys.path.append('../')
 from api.private import SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME, REGION, LANGUAGE, NINTENDO_PID, PRETENDO_PID, PID_HMAC, NINTENDO_NEX_PASSWORD, PRETENDO_NEX_PASSWORD
@@ -28,7 +28,7 @@ network: NetworkType = NetworkType.NINTENDO
 
 
 async def main():
-	engine = create_engine('sqlite:///' + os.path.abspath('sqlite/fcLibrary.db'))
+	engine = create_engine(get_db_url())
 
 	while True:
 		time.sleep(1)
