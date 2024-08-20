@@ -16,7 +16,6 @@ app = Flask(__name__)
 if IS_SQLITE:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.abspath('sqlite/fcLibrary.db')
 else:
-    print('mysql+pymysql://' + urllib.parse.quote_plus(DB_USERNAME) + ':' + urllib.parse.quote_plus(DB_PASSWORD) + '@' + DB_HOST + '/' + urllib.parse.quote_plus(DB_NAME))
     app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://' + urllib.parse.quote_plus(DB_USERNAME) + ':' + urllib.parse.quote_plus(DB_PASSWORD) + '@' + DB_HOST + '/' + urllib.parse.quote_plus(DB_NAME)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
