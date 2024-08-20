@@ -113,6 +113,13 @@ def createUser(friendCode:int, network:NetworkType, addNewInstance:bool = False)
         if not addNewInstance:
             raise Exception('UNIQUE constraint failed: friends.friendCode')
         with Session(engine) as session:
+            already_added_check = session.scalar(
+                select(Friend)
+                .where(Friend.friend_code == str(friendCode).zfill(12))
+                .where(Friend.network == network)
+            )
+            if already_added_check != None:
+                raise Exception('UNIQUE constraint failed: friends.friendCode')
             session.add(Friend(
                 friend_code=str(friendCode).zfill(12),
                 network=network,
@@ -126,7 +133,7 @@ def createUser(friendCode:int, network:NetworkType, addNewInstance:bool = False)
             ))
             session.commit()
     except Exception as e:
-        if 'UNIQUE constraint failed: friends.friendCode' in str(e): # TODO: Make this check work with ORM & combined network friendslists
+        if 'UNIQUE constraint failed: friends.friendCode' in str(e):
             with Session(engine) as session:
                 stmt = (
                     select(Friend)
@@ -193,6 +200,12 @@ def createDiscordUser(code:str, response:dict = None):
     token = secrets.token_hex(20)
     try:
         with Session(engine) as session:
+            already_exist_check = session.scalar(
+                select(Discord)
+                .where(Discord.id == user['id'])
+            )
+            if already_exist_check != None:
+                raise Exception('UNIQUE constraint failed: discord.id')
             session.add(Discord(
                 id=user['id'],
                 refresh=response['refresh_token'],
@@ -204,7 +217,7 @@ def createDiscordUser(code:str, response:dict = None):
             ))
             session.commit()
     except Exception as e:
-        if 'UNIQUE constraint failed' in str(e): # TODO: Fix this constraint check to whatever ORM accepts
+        if 'UNIQUE constraint failed' in str(e):
             old_token = tokenFromID(user['id'])
 
             discord_user = userFromToken(old_token)
