@@ -1,10 +1,14 @@
-import time, sqlite3, sys, secrets, requests, json, pickle
-from enum import Enum
+import time, sys, secrets, requests, json, pickle
 sys.path.append('../')
 from api import *
 from api.love2 import *
 from api.private import CLIENT_ID, CLIENT_SECRET, HOST
 from api.networks import NetworkType
+
+from sqlalchemy import create_engine, select, update, delete
+from sqlalchemy.orm import Session
+from database import DiscordFriends, Friend
+from database import Discord as DiscordTable
 
 API_ENDPOINT:str = 'https://discord.com/api/v10'
 
@@ -13,32 +17,41 @@ with open('./cache/databases.dat', 'rb') as file:
 	titleDatabase = t[0]
 	titlesToUID = t[1]
 
-class Session():
-	def __init__(self, con, cursor):
-		self.con = con
-		self.cursor = cursor
+engine = create_engine('sqlite:///' + os.path.abspath('sqlite/fcLibrary.db'))
 
+class DiscordSession():
 	def retire(self, refresh):
-		self.cursor.execute('UPDATE discord SET session = ? WHERE refresh = ?', ('', refresh))
-		self.con.commit()
+		with Session(engine) as session:
+			session.execute(
+				update(DiscordTable)
+				.where(DiscordTable.refresh)
+				.values(refresh=refresh)
+			)
+			session.commit()
 
-	def create(self, refresh, session):
-		self.cursor.execute('UPDATE discord SET session = ? WHERE refresh = ?', (session, refresh))
-		self.con.commit()
-		return session
+	def create(self, refresh, discord_session):
+		with Session(engine) as session:
+			session.execute(
+				update(DiscordTable)
+				.where(DiscordTable.refresh)
+				.values(session=discord_session)
+			)
+			session.commit()
+		return discord_session
 
-	def update(self, session):
-		self.cursor.execute('UPDATE discord SET lastAccessed = ? WHERE session = ?', (time.time(), session))
-		self.con.commit()
+	def update(self, discord_session):
+		with Session(engine) as session:
+			session.execute(
+				update(DiscordTable)
+				.where(DiscordTable.last_accessed == time.time())
+				.values(discord_session)
+			)
+			session.commit()
 
 class Discord():
-	def __init__(self, con, cursor):
-		self.con = con
-		self.cursor = cursor
-
-	def updatePresence(self, bearer, refresh, session, lastAccessed, generationDate, userData, config, network):
+	def updatePresence(self, bearer:str, refresh:str, session:str, lastAccessed:int, generationDate:int, userData, config, network:NetworkType):
 		if time.time() - lastAccessed >= 1000:
-			session = Session(self.con, self.cursor).retire(refresh)
+			session = DiscordSession(self.con, self.cursor).retire(refresh)
 		elif time.time() - lastAccessed <= 30:
 			print('[MANUAL RATE LIMITED]')
 			return False
@@ -63,10 +76,10 @@ class Discord():
 			if presence['gameDescription']:
 				data['activities'][0]['details'] = presence['gameDescription']
 			if userData['User']['username'] and bool(config[0]):
-				data['activities'][0]['buttons'] = [{'label': 'Profile', 'url': HOST + '/user/' + userData['User']['friendCode'] + '/?network=' + NetworkType(network).name},]
+				data['activities'][0]['buttons'] = [{'label': 'Profile', 'url': HOST + '/user/' + userData['User']['friendCode'] + '/?network=' + network.lower_name()},]
 			if userData['User']['username'] and game['icon_url'] and bool(config[1]):
 				data['activities'][0]['assets']['small_image'] = userData['User']['mii']['face']
-				data['activities'][0]['assets']['small_text'] = '-'.join(userData['User']['friendCode'][i:i+4] for i in range(0, 12, 4)) + ' on ' + NetworkType(network).name.capitalize()
+				data['activities'][0]['assets']['small_text'] = '-'.join(userData['User']['friendCode'][i:i+4] for i in range(0, 12, 4)) + ' on ' + network.lower_name().capitalize()
 			if session:
 				data['token'] = session
 			headers = {
@@ -79,8 +92,8 @@ class Discord():
 						data['activities'][0][key] = data['activities'][0][key][:128]
 			r = requests.post('%s/users/@me/headless-sessions' % API_ENDPOINT, data = json.dumps(data), headers = headers)
 			r.raise_for_status()
-			Session(self.con, self.cursor).create(refresh, r.json()['token'])
-			Session(self.con, self.cursor).update(r.json()['token'])
+			DiscordSession(self.con, self.cursor).create(refresh, r.json()['token'])
+			DiscordSession(self.con, self.cursor).update(r.json()['token'])
 			return True
 
 	def resetPresence(self, bearer, refresh, session, lastAccessed, generationDate):
@@ -90,7 +103,7 @@ class Discord():
 		elif time.time() - lastAccessed <= 30:
 			print('[MANUAL RATE LIMITED]')
 			return False
-		Session(self.con, self.cursor).update(session)
+		DiscordSession(self.con, self.cursor).update(session)
 		headers = {
 		    'Authorization': 'Bearer %s' % bearer,
 			'Content-Type': 'application/json',
@@ -100,7 +113,7 @@ class Discord():
 		}
 		r = requests.post('%s/users/@me/headless-sessions/delete' % API_ENDPOINT, data = json.dumps(data), headers = headers)
 		r.raise_for_status()
-		Session(self.con, self.cursor).create(refresh, '') # Reset session
+		DiscordSession(self.con, self.cursor).create(refresh, '') # Reset session
 		return True
 
 	def refreshBearer(self, refresh:str, access:str, generationDate:int, ID:int):
@@ -116,74 +129,82 @@ class Discord():
 		headers = {
 			'Content-Type': 'application/x-www-form-urlencoded',
 		}
-		r = requests.post('%s/oauth2/token' % API_ENDPOINT, data = data, headers = headers)
-		r.raise_for_status()
-		response = r.json()
-		self.cursor = con.cursor()
-		self.cursor.execute('UPDATE discord SET refresh = ?, bearer = ?, generationDate = ? WHERE refresh = ?', (response['refresh_token'], response['access_token'], time.time(), refresh))
-		self.con.commit()
+		json_response = requests.post('%s/oauth2/token' % API_ENDPOINT, data = data, headers = headers)
+		json_response.raise_for_status()
+		response = json_response.json()
+
+		with Session(engine) as session:
+			session.execute(
+				update(DiscordTable)
+				.where(DiscordTable.refresh)
+				.values(
+					refresh=response['refresh_token'],
+					bearer=response['access_token'],
+					generationDate=time.time()
+				)
+			)
+			session.commit()
 		return True
 
 	def deleteDiscordUser(self, ID:int):
 		print('[DELETING %s]' % ID)
-		self.cursor.execute('DELETE FROM discord WHERE ID = ?', (ID,))
-		self.cursor.execute('DELETE FROM discordFriends WHERE ID = ?', (ID,))
-		self.con.commit()
+		with Session(engine) as session:
+			session.execute(delete(DiscordTable).where(DiscordTable.id == id))
+			session.execute(delete(DiscordFriends).where(DiscordFriends.id == id))
+			session.commit()
 
 	def deactivateDiscordUser(self, ID:int):
 		print('[DEACTIVATING %s]' % ID)
-		self.cursor.execute('DELETE FROM discord WHERE ID = ?', (ID,))
-		self.cursor.execute('DELETE FROM discordFriends WHERE ID = ?', (ID,))
-		self.con.commit()
+		with Session(engine) as session:
+			session.execute(delete(DiscordTable).where(DiscordTable.id == id))
+			session.execute(delete(DiscordFriends).where(DiscordFriends.id == id))
+			session.commit()
 
 delay = 2
 
 while True:
 	time.sleep(delay)
 
-	with sqlite3.connect('sqlite/fcLibrary.db') as con:
-		cursor = con.cursor()
+	with Session(engine) as session:
+		discord = Discord()
 
-		discord = Discord(con, cursor)
-
-		cursor.execute('SELECT * FROM discord')
-		group = cursor.fetchall()
+		
+		group = session.scalars(select(DiscordTable)).all()
 		for dn in group:
 			try:
-				if discord.refreshBearer(dn[1], dn[2], dn[6], dn[0]):
+				
+				if discord.refreshBearer(dn.refresh, dn.bearer, dn.generation_date, dn.id):
 					time.sleep(delay * 2)
 			except:
 				#discord.deleteDiscordUser(dn[0])
-				discord.deactivateDiscordUser(dn[0])
+				discord.deactivateDiscordUser(dn.id)
 
 		wait = time.time()
 
 		while time.time() - wait <= 1200:
+			discordFriends = session.scalars(select(DiscordFriends).where(DiscordFriends.active)).all()
+			discordUsers = session.scalars(select(DiscordTable)).all()
 
-			cursor.execute('SELECT * FROM discordFriends WHERE active = ?', (True,))
-			discordFriends = cursor.fetchall()
+			inactiveUsers:list[DiscordTable] = []
 
-			cursor.execute('SELECT * FROM discord')
-			discordUsers = cursor.fetchall()
-			b1 = []
-			for e in discordUsers:
-				if any(e[0] == i[0] for i in b1):
+			for user in discordUsers:
+				if any(user.id == inactive_user.id for inactive_user in inactiveUsers):
 					continue
 				fail = False
-				for oe in discordFriends:
-					if e[0] == oe[0]:
+				for associatedFriends in discordFriends:
+					if user.id == associatedFriends.id:
 						fail = True
 				if not fail:
-					b1.append(e)
-			print('[CLEARING INACTIVES; BATCH OF %s]' % len(b1))
+					inactiveUsers.append(user)
+			print('[CLEARING INACTIVES; BATCH OF %s]' % len(inactiveUsers))
 
-			for r in b1:
+			for inactive_user in inactiveUsers:
 				try:
-					print('[RESETTING %s]' % r[0])
-					if discord.resetPresence(r[2], r[1], r[3], r[5], r[6]):
+					print('[RESETTING %s]' % inactive_user.id)
+					if discord.resetPresence(inactive_user.bearer, inactive_user.refresh, inactive_user.session, inactive_user.last_accessed, inactive_user.generation_date):
 						time.sleep(delay)
 				except:
-					discord.deleteDiscordUser(r[0])
+					discord.deleteDiscordUser(inactive_user.id)
 
 			time.sleep(delay)
 
@@ -191,44 +212,48 @@ while True:
 			if len(discordFriends) < 1:
 				time.sleep(delay)
 				continue
-			for r in discordFriends:
-				print('[RUNNING %s - %s]' % (r[0], r[1]))
-				cursor.execute('SELECT * FROM ' + NetworkType(r[2]).column_name() + ' WHERE friendCode = ?', (r[1],))
-				v2 = cursor.fetchone()
-				cursor.execute('SELECT * FROM discord WHERE ID = ?', (r[0],))
-				v3 = cursor.fetchone()
-				if time.time() - v3[5] >= 60 and v2:
-					principalId = convertFriendCodeToPrincipalId(v2[0])
-					if not v2[1]:
+			for discord_friend in discordFriends:
+				print('[RUNNING %s - %s on %s]' % (discord_friend.id, discord_friend.friend_code, discord_friend.network.lower_name()))
+				
+				friend_data = session.scalar(
+					select(Friend)
+					.where(Friend.friend_code == discord_friend.friend_code)
+					.where(Friend.network == discord_friend.network)
+				)
+
+				discord_user = session.scalar(select(DiscordTable).where(DiscordTable.id == discord_friend.id))
+				if time.time() - discord_user.last_accessed >= 60 and friend_data:
+					principalId = convertFriendCodeToPrincipalId(friend_data.friend_code)
+					if not friend_data.online:
 						try:
-							print('[RESETTING %s]' % v2[0])
-							if discord.resetPresence(v3[2], v3[1], v3[3], v3[5], v3[6]):
+							print('[RESETTING %s on %s]' % (friend_data.friend_code, friend_data.network.lower_name()))
+							if discord.resetPresence(discord_user.bearer, discord_user.refresh, discord_user.session, discord_user.last_accessed, discord_user.generation_date):
 								time.sleep(delay)
 						except:
-							discord.deleteDiscordUser(v3[0])
+							discord.deleteDiscordUser(discord_user.id)
 					else:
 						presence = {
-							'gameDescription': v2[10],
-							'game': getTitle(v2[2], titlesToUID, titleDatabase),
+							'gameDescription': friend_data.game_description,
+							'game': getTitle(friend_data.title_id, titlesToUID, titleDatabase),
 						}
-						mii = v2[8]
+						mii = friend_data.mii
 						if mii:
 							mii = MiiData().mii_studio_url(mii)
-						print('[UPDATING %s]' % v2[0])
+						print('[UPDATING %s]' % friend_data.id)
 						try:
-							if discord.updatePresence(v3[2], v3[1], v3[3], v3[5], v3[6], {
+							if discord.updatePresence(discord_user.bearer, discord_user.refresh, discord_user.session, discord_user.last_accessed, discord_user.generation_date, {
 									'User': {
 										'friendCode': str(convertPrincipalIdtoFriendCode(principalId)).zfill(12),
-										'online': bool(v2[1]),
+										'online': friend_data.online,
 										'Presence': presence,
-										'username': v2[6],
+										'username': friend_data.username,
 										'mii': mii,
-										'lastAccessed': v2[4],
+										'lastAccessed': friend_data.last_accessed,
 									}
-								}, (v3[7], v3[8]), r[2]):
+								}, (discord_user.show_profile_button, discord_user.show_small_image), discord_friend.network):
 								time.sleep(delay)
 						except:
-							discord.deleteDiscordUser(v3[0])
+							discord.deleteDiscordUser(discord_user.id)
 				else:
 					print('[WAIT]')
 			time.sleep(delay)
