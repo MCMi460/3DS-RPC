@@ -28,7 +28,7 @@ API_ENDPOINT:str = 'https://discord.com/api/v10'
 
 local = False
 port = 2277
-version = 0.4
+version = 0.31
 agent = '3DS-RPC/'
 
 startTime = time.time() # Frontend
