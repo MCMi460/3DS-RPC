@@ -269,6 +269,7 @@ def userAgentCheck():
 
 def getPresence(friendCode:int, network:NetworkType, *, createAccount:bool = True, ignoreUserAgent = False, ignoreBackend = False):
     try:
+        print(network)
         if not ignoreUserAgent:
             userAgentCheck()
 
@@ -615,9 +616,12 @@ def newUser(friendCode:int, network:int=-1, userCheck:bool = True):
         if network == -1:
             network = NetworkType.NINTENDO
 
-            request_arg = request.data.decode('utf-8').split(',')[0]
-            if request_arg.isnumeric():
-                network = NetworkType(request_arg.upper())
+            try:
+                request_arg = request.data.decode('utf-8').split(',')[0]
+                network = nameToNetworkType(request_arg)
+            except:
+                pass            
+        print(network)
         createUser(friendCode, network, True)
         return {
             'Exception': False,
@@ -632,14 +636,19 @@ def newUser(friendCode:int, network:int=-1, userCheck:bool = True):
 # Grab presence from friendCode
 @app.route('/api/user/<int:friendCode>/', methods=['GET'])
 @limiter.limit(userPresenceLimit)
-def userPresence(friendCode:int, network:str="nintendo", *, createAccount:bool = True, ignoreUserAgent = False, ignoreBackend = False):
-    return getPresence(friendCode, nameToNetworkType(network), createAccount=createAccount, ignoreUserAgent = ignoreUserAgent, ignoreBackend = ignoreBackend)
+def userPresence(friendCode:int, network:NetworkType=None, *, createAccount:bool = True, ignoreUserAgent = False, ignoreBackend = False):
+    if network == None:
+        if request.args.get('network') != None:
+            network = nameToNetworkType(request.args.get('network'))
+        else:
+            network = NetworkType.NINTENDO
+    return getPresence(friendCode, network, createAccount=createAccount, ignoreUserAgent = ignoreUserAgent, ignoreBackend = ignoreBackend)
 
 # Alias
 @app.route('/api/u/<int:friendCode>/', methods=['GET'])
 @limiter.limit(userPresenceLimit)
 def userAlias(friendCode:int):
-    network = 0
+    network = NetworkType.NINTENDO
     if request.args.get('network') != None:
         network = nameToNetworkType(request.args.get('network'))
     return userPresence(friendCode, network)
@@ -764,19 +773,6 @@ def deleter(friendCode:int):
             .where(DiscordFriends.network == network)
             .where(DiscordFriends.id == id)
         )
-    # the following is optional, this deletes the friend data if you remove the console, and no one else is using the fc.
-    result = session.scalar(
-        select(DiscordFriends)
-        .where(DiscordFriends.friend_code == fc)
-        .where(DiscordFriends.network == network)
-    )
-    if result == None:
-        session.execute(
-            delete(Friend)
-            .where(Friend.friend_code == fc)
-            .where(Friend.network == network)
-        )
-    # end of optional
     session.commit()
     return 'success!'
 
