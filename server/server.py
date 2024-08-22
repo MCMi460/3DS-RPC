@@ -1,13 +1,10 @@
 # Created by Deltaion Lee (MCMi460) on Github
-
-from enum import IntEnum
 from flask import Flask, make_response, request, redirect, render_template, send_file
 from flask_limiter import Limiter
 from flask_sqlalchemy import SQLAlchemy
-import sqlite3, requests, sys, os, time, json, multiprocessing, datetime, xmltodict, pickle, secrets
+import requests, sys, os, time, datetime, xmltodict, pickle, secrets
 
 from sqlalchemy import create_engine, select, update, insert, delete
-from sqlalchemy.orm import Session
 
 from database import start_db_time, get_db_url, Friend, DiscordFriends, Discord, Config
 
