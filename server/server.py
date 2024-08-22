@@ -28,7 +28,7 @@ API_ENDPOINT:str = 'https://discord.com/api/v10'
 
 local = False
 port = 2277
-version = 0.31
+version = 0.4
 agent = '3DS-RPC/'
 
 startTime = time.time() # Frontend
@@ -413,7 +413,7 @@ def settingsRedirect():
 def roster():
     stmt = (
         select(Friend)
-        .where(Friend.username)
+        .where(Friend.username != None)
         .order_by(Friend.account_creation.desc())
         .limit(8)
     )
@@ -439,7 +439,7 @@ def roster():
 def active():
     stmt = (
         select(Friend)
-        .where(Friend.username)
+        .where(Friend.username != None)
         .where(Friend.online)
         .order_by(Friend.account_creation.desc())
     )
@@ -455,7 +455,7 @@ def active():
         'friendCode': user.friend_code.zfill(12),
         'joinable': user.joinable,
         'network': user.network.lower_name(),
-    }) for user in results if user[6] ]
+    }) for user in results if user.username ]
 
     response = make_response(render_template('dist/users.html', data = data))
     return response
