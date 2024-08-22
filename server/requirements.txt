@@ -8,3 +8,4 @@ Flask-SQLAlchemy>=3.1
 xmltodict
 Pillow
 pycryptodomex
+pymysql
