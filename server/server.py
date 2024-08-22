@@ -20,7 +20,10 @@ from api.networks import NetworkType, nameToNetworkType
 
 app = Flask(__name__)
 
-engine = create_engine(get_db_url())
+app.config["SQLALCHEMY_DATABASE_URI"] = get_db_url()
+
+db = SQLAlchemy()
+db.init_app(app)
 
 limiter = Limiter(app, key_func = lambda : request.access_route[-1])
 
@@ -109,37 +112,35 @@ def createUser(friendCode:int, network:NetworkType, addNewInstance:bool = False)
         convertFriendCodeToPrincipalId(friendCode)
         if not addNewInstance:
             raise Exception('UNIQUE constraint failed: friends.friendCode')
-        with Session(engine) as session:
-            already_added_check = session.scalar(
+        already_added_check = db.session.scalar(
+            select(Friend)
+            .where(Friend.friend_code == str(friendCode).zfill(12))
+            .where(Friend.network == network)
+        )
+        if already_added_check != None:
+            raise Exception('UNIQUE constraint failed: friends.friendCode')
+        db.session.add(Friend(
+            friend_code=str(friendCode).zfill(12),
+            network=network,
+            online=False,
+            title_id='0',
+            upd_id='0',
+            last_accessed=time.time() + 300,
+            account_creation=time.time(),
+            last_online=time.time(),
+            favorite_game=0
+        ))
+        db.session.commit()
+    except Exception as e:
+        if 'UNIQUE constraint failed: friends.friendCode' in str(e):
+            stmt = (
                 select(Friend)
                 .where(Friend.friend_code == str(friendCode).zfill(12))
                 .where(Friend.network == network)
-            )
-            if already_added_check != None:
-                raise Exception('UNIQUE constraint failed: friends.friendCode')
-            session.add(Friend(
-                friend_code=str(friendCode).zfill(12),
-                network=network,
-                online=False,
-                title_id='0',
-                upd_id='0',
-                last_accessed=time.time() + 300,
-                account_creation=time.time(),
-                last_online=time.time(),
-                favorite_game=0
-            ))
-            session.commit()
-    except Exception as e:
-        if 'UNIQUE constraint failed: friends.friendCode' in str(e):
-            with Session(engine) as session:
-                stmt = (
-                    select(Friend)
-                    .where(Friend.friend_code == str(friendCode).zfill(12))
-                    .where(Friend.network == network)
-                    )
-                friend = session.scalar(stmt)
-                friend.last_accessed = time.time()
-                session.commit()
+                )
+            friend = db.session.scalar(stmt)
+            friend.last_accessed = time.time()
+            db.session.commit()
 
 def fetchBearerToken(code:str):
     data = {
@@ -162,7 +163,7 @@ def refreshBearer(token:str):
         'client_id': '%s' % CLIENT_ID,
         'client_secret': '%s' % CLIENT_SECRET,
         'grant_type': 'refresh_token',
-        'refresh_token': user[1],
+        'refresh_token': user.refresh,
     }
     headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -173,15 +174,13 @@ def refreshBearer(token:str):
     return token, user, pfp
 
 def tokenFromID(ID:int):
-    with Session(engine) as session:
-        stmt = select(Discord).where(Discord.id == ID)
-        result = session.scalar(stmt)
+    stmt = select(Discord).where(Discord.id == ID)
+    result = db.session.scalar(stmt)
     return result.token
 
 def userFromToken(token:str):
-    with Session(engine) as session:
-        stmt = select(Discord).where(Discord.token == token)
-        result = session.scalar(stmt)
+    stmt = select(Discord).where(Discord.token == token)
+    result = db.session.scalar(stmt)
     if not result:
         raise Exception('invalid token!')
     return result
@@ -196,23 +195,22 @@ def createDiscordUser(code:str, response:dict = None):
     user = new.json()
     token = secrets.token_hex(20)
     try:
-        with Session(engine) as session:
-            already_exist_check = session.scalar(
-                select(Discord)
-                .where(Discord.id == user['id'])
-            )
-            if already_exist_check != None:
-                raise Exception('UNIQUE constraint failed: discord.id')
-            session.add(Discord(
-                id=user['id'],
-                refresh=response['refresh_token'],
-                bearer=response['access_token'],
-                session='',
-                token=token,
-                last_accessed=0,
-                generation_date=time.time()
-            ))
-            session.commit()
+        already_exist_check = db.session.scalar(
+            select(Discord)
+            .where(Discord.id == user['id'])
+        )
+        if already_exist_check != None:
+            raise Exception('UNIQUE constraint failed: discord.id')
+        db.session.add(Discord(
+            id=user['id'],
+            refresh=response['refresh_token'],
+            bearer=response['access_token'],
+            session='',
+            token=token,
+            last_accessed=0,
+            generation_date=time.time()
+        ))
+        db.session.commit()
     except Exception as e:
         if 'UNIQUE constraint failed' in str(e):
             old_token = tokenFromID(user['id'])
@@ -223,27 +221,23 @@ def createDiscordUser(code:str, response:dict = None):
             discord_user.generation_date = time.time()
             discord_user.token = token
 
-            session.commit()
+            db.session.commit()
     return token, user['username'], ('https://cdn.discordapp.com/avatars/%s/%s.%s' % (user['id'], user['avatar'], 'gif' if user['avatar'].startswith('a_') else 'png') if user['avatar'] else '')
 
 def deleteDiscordUser(ID:int):
-    with Session(engine) as session:
-        session.delete(session.get(Discord, ID))
-        session.delete(session.get(DiscordFriends, ID))
-        session.commit()
+    db.session.delete(db.session.get(Discord, ID))
+    db.session.delete(db.session.get(DiscordFriends, ID))
+    db.session.commit()
 
 def getConnectedConsoles(ID:int):
-    session = Session(engine)
-
     stmt = select(DiscordFriends).where(DiscordFriends.id == ID)
-    result = session.scalars(stmt).all()
+    result = db.session.scalars(stmt).all()
     
     return [ (result.friend_code, result.active, result.network) for result in result ]
 
 def sidenav():
-    session = Session(engine)
-    startTimeNintendo = session.get(Config, NetworkType.NINTENDO).backend_uptime
-    startTimePretendo = session.get(Config, NetworkType.PRETENDO).backend_uptime
+    startTimeNintendo = db.session.get(Config, NetworkType.NINTENDO).backend_uptime
+    startTimePretendo = db.session.get(Config, NetworkType.PRETENDO).backend_uptime
 
     status = 'Offline'
     if startTimeNintendo != 0 and startTimePretendo != 0:
@@ -269,13 +263,10 @@ def userAgentCheck():
 
 def getPresence(friendCode:int, network:NetworkType, *, createAccount:bool = True, ignoreUserAgent = False, ignoreBackend = False):
     try:
-        print(network)
         if not ignoreUserAgent:
             userAgentCheck()
 
-        session = Session(engine)
-
-        startTime = session.get(Config, network).backend_uptime
+        startTime = db.session.get(Config, network).backend_uptime
         if startTime == 0 and not ignoreBackend and not disableBackendWarnings:
             raise Exception('Backend currently offline. please try again later')
         
@@ -289,7 +280,7 @@ def getPresence(friendCode:int, network:NetworkType, *, createAccount:bool = Tru
             .where(Friend.friend_code == friendCode)
             .where(Friend.network == network)
             )
-        result = session.scalar(stmt)
+        result = db.session.scalar(stmt)
 
         if not result:
             raise Exception('friendCode not recognized\nHint: You may not have added the bot as a friend')
@@ -337,15 +328,13 @@ def getPresence(friendCode:int, network:NetworkType, *, createAccount:bool = Tru
 # Index page
 @app.route('/')
 def index():
-    session = Session(engine)
-
     stmt = (
         select(Friend)
         .where(Friend.online == True)
         .where(Friend.username != None)
         .order_by(Friend.last_accessed.desc())
         )
-    results = session.scalars(stmt).all()
+    results = db.session.scalars(stmt).all()
     num = len(results)
     data = sidenav()
     data['active'] = [ ({
@@ -364,7 +353,7 @@ def index():
         .order_by(Friend.account_creation.desc())
         .limit(6)
         )
-    results = session.scalars(stmt).all()
+    results = db.session.scalars(stmt).all()
 
     data['new'] = [ ({
         'mii':MiiData().mii_studio_url(user.mii),
@@ -401,10 +390,8 @@ def settings():
     }
     data = sidenav()
     try:
-        session = Session(engine)
-
         stmt = select(Discord).where(Discord.token == request.cookies['token'])
-        result = session.scalar(stmt)
+        result = db.session.scalar(stmt)
     except Exception as e:
         if 'invalid token' in str(e):
             response = make_response(redirect('/'))
@@ -427,15 +414,13 @@ def settingsRedirect():
 # Roster page
 @app.route('/roster')
 def roster():
-    session = Session(engine)
-
     stmt = (
         select(Friend)
         .where(Friend.username)
         .order_by(Friend.account_creation.desc())
         .limit(8)
     )
-    results = session.scalars(stmt).all()
+    results = db.session.scalars(stmt).all()
 
     data = sidenav()
 
@@ -455,15 +440,13 @@ def roster():
 # Active page
 @app.route('/active')
 def active():
-    session = Session(engine)
-
     stmt = (
         select(Friend)
         .where(Friend.username)
         .where(Friend.online)
         .order_by(Friend.account_creation.desc())
     )
-    results = session.scalars(stmt).all()
+    results = db.session.scalars(stmt).all()
 
     data = sidenav()
     data['title'] = 'Active Users'
@@ -545,7 +528,6 @@ def consoles():
             response.set_cookie('pfp', '', expires = 0)
             return response
         return redirect('/')
-    session = Session(engine)
     for console, active, network_type in getConnectedConsoles(id):
         network = NetworkType(network_type)
         stmt = (
@@ -553,7 +535,7 @@ def consoles():
             .where(Friend.friend_code == console)
             .where(Friend.network == network)
         )
-        result = session.scalar(stmt)
+        result = db.session.scalar(stmt)
         data['consoles'].append({
             'fc': '-'.join(console[i:i+4] for i in range(0, 12, 4)),
             'username': result.username,
@@ -621,7 +603,6 @@ def newUser(friendCode:int, network:int=-1, userCheck:bool = True):
                 network = nameToNetworkType(request_arg)
             except:
                 pass            
-        print(network)
         createUser(friendCode, network, True)
         return {
             'Exception': False,
@@ -691,13 +672,12 @@ def toggler(friendCode:int):
         fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
     except:
         return 'failure!\nthat is not a real friendCode!'
-    session = Session(engine)
     stmt = (
         select(Friend)
         .where(Friend.friend_code == fc)
         .where(Friend.network == network)
     )
-    result = session.scalar(stmt)
+    result = db.session.scalar(stmt)
     if not result:
         return 'failure!\nthat is not an existing friendCode!'
     
@@ -711,23 +691,23 @@ def toggler(friendCode:int):
         .where(DiscordFriends.friend_code == fc)
         .where(DiscordFriends.network == network)
     )
-    result = session.scalar(stmt)
+    result = db.session.scalar(stmt)
 
     if not result:
         stmt = select(DiscordFriends).where(DiscordFriends.id == id)
-        allFriends = session.scalars(stmt).all()
+        allFriends = db.session.scalars(stmt).all()
         if len(allFriends) >= 10:
             return 'failure!\nyou can\'t have more than ten consoles added at one time!'
         
     if active:
-        session.execute(
+        db.session.execute(
             update(DiscordFriends)
             .where(DiscordFriends.active)
             .where(DiscordFriends.id == id)
             .values(active = False)
         )
     if result:
-        session.execute(
+        db.session.execute(
             update(DiscordFriends)
             .where(DiscordFriends.friend_code == fc)
             .where(DiscordFriends.network == network)
@@ -735,30 +715,29 @@ def toggler(friendCode:int):
             .values(active=active)
         )
     else:
-        session.execute(
+        db.session.execute(
             insert(DiscordFriends)
             .values(id=id, friend_code=fc, active=active, network=network)
         )
-    session.commit()
+    db.session.commit()
     return 'success!'
 
 # Delete
 @app.route('/api/delete/<int:friendCode>/', methods=['POST'])
 @limiter.limit(togglerLimit)
 def deleter(friendCode:int):
-    session = Session(engine)
     fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
     if not ',' in request.data.decode('utf-8'): # Old API compatiblity. In the future this should be depercated.
         token = request.data.decode('utf-8')
         id = userFromToken(token).id
         
-        session.execute(
+        db.session.execute(
             delete(DiscordFriends)
             .where(DiscordFriends.friend_code == fc)
             .where(DiscordFriends.network == NetworkType.NINTENDO)
             .where(DiscordFriends.id == id)
         )
-        session.commit()
+        db.session.commit()
 
         return 'success!'
 
@@ -767,13 +746,13 @@ def deleter(friendCode:int):
     network = nameToNetworkType(data[1])
     id = userFromToken(token).id
 
-    session.execute(
+    db.session.execute(
             delete(DiscordFriends)
             .where(DiscordFriends.friend_code == fc)
             .where(DiscordFriends.network == network)
             .where(DiscordFriends.id == id)
         )
-    session.commit()
+    db.session.commit()
     return 'success!'
 
 # Toggle one
@@ -788,15 +767,13 @@ def settingsToggler(which:str):
     else:
         which = 'show_profile_button'
     try:
-        session = Session(engine)
-        
-        session.execute(
+        db.session.execute(
             update(Discord)
             .where(Discord.token == request.cookies['token'])
             .values({getattr(Discord, which): toggle})
         )
 
-        session.commit() 
+        db.session.commit() 
     except:
         return 'failure!'
     return 'success!'
