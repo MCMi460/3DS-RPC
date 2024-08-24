@@ -47,7 +47,7 @@ HOST:str = ""
 # The URL of the database to connect to.
 #
 # For example, with SQLite3, you would connect to the following:
-#    sqlite:///home/xyz/my_database.db
+#    sqlite:////home/xyz/my_database.db
 # With MySQL, you would use the following:
 #     mysql://DB_USERNAME:DB_PASSWORD@DB_HOST/DBNAME
 # SQLAlchemy supports many other databases.
