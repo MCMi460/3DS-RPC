@@ -3,11 +3,11 @@ import os
 from sqlalchemy import create_engine, delete
 from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped, Session
 from sqlalchemy.types import Integer, TypeDecorator
-import sys, urllib, pymysql
+import sys, urllib
 
 sys.path.append('../')
 from api.networks import NetworkType
-from api.private import DB_HOST, DB_NAME, DB_USERNAME, DB_PASSWORD, IS_SQLITE
+from api.private import DB_URL
 
 
 class Base(DeclarativeBase):
@@ -19,6 +19,7 @@ class Config(Base):
 
     network: Mapped[NetworkType] = mapped_column("network", Integer(), primary_key=True)
     backend_uptime: Mapped[float] = mapped_column("BACKEND_UPTIME")
+
 
 class NetworkTypeValue(TypeDecorator):
     impl = Integer
@@ -34,6 +35,7 @@ class NetworkTypeValue(TypeDecorator):
         if value is not None:
             return NetworkType(value)
         return value
+
 
 class Friend(Base):
     __tablename__ = "friends"
@@ -54,7 +56,6 @@ class Friend(Base):
     favorite_game: Mapped[int] = mapped_column("jeuFavori", nullable=False)
 
 
-
 class DiscordFriends(Base):
     __tablename__ = "discordFriends"
 
@@ -62,6 +63,7 @@ class DiscordFriends(Base):
     friend_code: Mapped[str] = mapped_column("friendCode", primary_key=True, nullable=False)
     network: Mapped[NetworkType] = mapped_column("network", NetworkTypeValue())
     active: Mapped[bool] = mapped_column(nullable=False)
+
 
 class Discord(Base):
     __tablename__ = "discord"
@@ -76,6 +78,7 @@ class Discord(Base):
     show_profile_button: Mapped[bool] = mapped_column("showProfileButton", nullable=False, default=True)
     show_small_image: Mapped[bool] = mapped_column("showSmallImage", nullable=False, default=True)
 
+
 def start_db_time(time: float, network_type: NetworkType):
     """Updates the database to track the starting time for the specific backend."""
     engine = create_engine(get_db_url())
@@ -86,7 +89,9 @@ def start_db_time(time: float, network_type: NetworkType):
         session.add(new_time)
         session.commit()
 
-def get_db_url():
+
+def get_db_url() -> str:
+    return DB_URL
     if IS_SQLITE:
         return 'sqlite:///' + os.path.abspath('sqlite/fcLibrary.db')
     else:

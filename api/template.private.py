@@ -44,11 +44,12 @@ HOST:str = ""
 # No ending slash!
 
 ### DATABASE-SPECIFIC ###
-
-IS_SQLITE:bool = True # SQLite should generally only be used for testing. It is recommended to use MySQL software like MariaDB
-
-# MySQL specifc
-DB_HOST:str = "localhost"
-DB_NAME:str = "3dsrpc"
-DB_USERNAME:str = "username"
-DB_PASSWORD:str = "password"
+# The URL of the database to connect to.
+#
+# For example, with SQLite3, you would connect to the following:
+#    sqlite:///home/xyz/my_database.db
+# With MySQL, you would use the following:
+#     mysql://DB_USERNAME:DB_PASSWORD@DB_HOST/DBNAME
+# SQLAlchemy supports many other databases.
+# Refer to https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls for format.
+DB_URL:str = "sqlite:///./sqlite/fcLibrary.db"
