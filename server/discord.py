@@ -146,14 +146,14 @@ class Discord():
 
 	def deleteDiscordUser(self, ID:int):
 		print('[DELETING %s]' % ID)
-		session.execute(delete(DiscordTable).where(DiscordTable.id == id))
-		session.execute(delete(DiscordFriends).where(DiscordFriends.id == id))
+		session.execute(delete(DiscordTable).where(DiscordTable.id == ID))
+		session.execute(delete(DiscordFriends).where(DiscordFriends.id == ID))
 		session.commit()
 
 	def deactivateDiscordUser(self, ID:int):
 		print('[DEACTIVATING %s]' % ID)
-		session.execute(delete(DiscordTable).where(DiscordTable.id == id))
-		session.execute(delete(DiscordFriends).where(DiscordFriends.id == id))
+		session.execute(delete(DiscordTable).where(DiscordTable.id == ID))
+		session.execute(delete(DiscordFriends).where(DiscordFriends.id == ID))
 		session.commit()
 
 delay = 2
