@@ -234,7 +234,7 @@ while True:
 					mii = friend_data.mii
 					if mii:
 						mii = MiiData().mii_studio_url(mii)
-					print('[UPDATING %s]' % friend_data.id)
+					print('[UPDATING %s]' % discord_user.id)
 					try:
 						if discord.updatePresence(discord_user.bearer, discord_user.refresh, discord_user.session, discord_user.last_accessed, discord_user.generation_date, {
 								'User': {
