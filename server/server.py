@@ -249,7 +249,7 @@ def sidenav():
         nintendo_status = 'Nintendo Backend: Offline'
 
     if pretendo_start_time is not None:
-        pretendo_status = 'Nintendo Backend has been up for %s...' % str(time_now - pretendo_start_time)[:-7]
+        pretendo_status = 'Pretendo Backend has been up for %s...' % str(time_now - pretendo_start_time)[:-7]
     else:
         pretendo_status = 'Pretendo Backend: Offline'
 
@@ -258,8 +258,8 @@ def sidenav():
 
     data = {
         'uptime': frontend_status,
-        'nintendo-uptime-backend': pretendo_status,
-        'pretendo-uptime-backend': nintendo_status,
+        'nintendo-uptime-backend': nintendo_status,
+        'pretendo-uptime-backend': pretendo_status,
         'status': status,
     }
     return data
