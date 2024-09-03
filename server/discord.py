@@ -27,7 +27,7 @@ class DiscordSession():
 		session.execute(
 			update(DiscordTable)
 			.where(DiscordTable.refresh == refresh)
-			.values(refresh=refresh)
+			.values(session='')
 		)
 		session.commit()
 
