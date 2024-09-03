@@ -140,7 +140,7 @@ class Discord():
 
 		session.execute(
 			update(DiscordTable)
-			.where(DiscordTable.refresh)
+			.where(DiscordTable.refresh == refresh)
 			.values(
 				refresh=response['refresh_token'],
 				bearer=response['access_token'],
