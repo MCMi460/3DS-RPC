@@ -1,9 +1,10 @@
-import os
+import datetime
+from typing import Optional
 
 from sqlalchemy import create_engine, delete
 from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped, Session
-from sqlalchemy.types import Integer, TypeDecorator
-import sys, urllib
+from sqlalchemy.types import DateTime, Integer, TypeDecorator
+import sys
 
 sys.path.append('../')
 from api.networks import NetworkType
@@ -18,7 +19,7 @@ class Config(Base):
     __tablename__ = "config"
 
     network: Mapped[NetworkType] = mapped_column("network", Integer(), primary_key=True)
-    backend_uptime: Mapped[float] = mapped_column("BACKEND_UPTIME")
+    backend_uptime: Mapped[datetime.datetime] = mapped_column("BACKEND_UPTIME", DateTime())
 
 
 class NetworkTypeValue(TypeDecorator):
@@ -79,13 +80,13 @@ class Discord(Base):
     show_small_image: Mapped[bool] = mapped_column("showSmallImage", nullable=False, default=True)
 
 
-def start_db_time(time: float, network_type: NetworkType):
+def start_db_time(uptime: Optional[datetime.datetime], network_type: NetworkType):
     """Updates the database to track the starting time for the specific backend."""
     engine = create_engine(get_db_url())
     with Session(engine) as session:
         # TODO: This should be an upsert, not a deletion and insertion.
         session.execute(delete(Config).where(Config.network == network_type))
-        new_time = Config(network=network_type, backend_uptime=time)
+        new_time = Config(network=network_type, backend_uptime=uptime)
         session.add(new_time)
         session.commit()
 

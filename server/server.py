@@ -2,9 +2,9 @@
 from flask import Flask, make_response, request, redirect, render_template, send_file
 from flask_limiter import Limiter
 from flask_sqlalchemy import SQLAlchemy
-import requests, sys, os, time, datetime, xmltodict, pickle, secrets
+import sys, datetime, xmltodict, pickle, secrets
 
-from sqlalchemy import create_engine, select, update, insert, delete
+from sqlalchemy import select, update, insert, delete
 
 from database import start_db_time, get_db_url, Friend, DiscordFriends, Discord, Config
 
@@ -31,11 +31,9 @@ port = 2277
 version = 0.31
 agent = '3DS-RPC/'
 
-startTime = time.time() # Frontend
-start_db_time(0, NetworkType.NINTENDO)
-start_db_time(0, NetworkType.PRETENDO)
-startTime2Nintendo = 0 # Nintendo Backend
-startTime2Pretendo = 0 # Pretendo Backend
+frontend_uptime = datetime.datetime.now()
+start_db_time(None, NetworkType.NINTENDO)
+start_db_time(None, NetworkType.PRETENDO)
 
 @app.errorhandler(404)
 def handler404(e):
@@ -232,23 +230,39 @@ def getConnectedConsoles(ID:int):
     
     return [ (result.friend_code, result.active, result.network) for result in result ]
 
+
 def sidenav():
-    startTimeNintendo = db.session.get(Config, NetworkType.NINTENDO).backend_uptime
-    startTimePretendo = db.session.get(Config, NetworkType.PRETENDO).backend_uptime
+    nintendo_start_time = db.session.get(Config, NetworkType.NINTENDO).backend_uptime
+    pretendo_start_time = db.session.get(Config, NetworkType.PRETENDO).backend_uptime
 
     status = 'Offline'
-    if startTimeNintendo != 0 and startTimePretendo != 0:
+    if nintendo_start_time is not None and pretendo_start_time is not None:
         status = 'Operational'
-    elif (startTimeNintendo != 0 and startTimePretendo == 0) or (startTimeNintendo == 0 and startTimePretendo != 0):
+    elif (nintendo_start_time is not None and pretendo_start_time is None) or (nintendo_start_time is None and pretendo_start_time is not None):
         status = 'Semi-Operational'
 
+    # Get a human-readable uptime.
+    time_now = datetime.datetime.now()
+    if nintendo_start_time is not None:
+        nintendo_status = 'Nintendo Backend has been up for %s...' % str(time_now - nintendo_start_time)
+    else:
+        nintendo_status = 'Nintendo Backend: Offline'
+
+    if pretendo_start_time is not None:
+        pretendo_status = 'Nintendo Backend has been up for %s...' % str(time_now - pretendo_start_time)
+    else:
+        pretendo_status = 'Pretendo Backend: Offline'
+
+    frontend_status = str(datetime.datetime.now() - frontend_uptime)
+
     data = {
-        'uptime': str(datetime.timedelta(seconds= int(time.time() - startTime))),
-        'nintendo-uptime-backend': ('Nintendo Backend has been up for %s...' % str(datetime.timedelta(seconds= int(time.time() - int(startTimeNintendo)))) if not startTimeNintendo == 0 else 'Nintendo Backend: Offline'),          
-        'pretendo-uptime-backend': ('Pretendo Backend has been up for %s...' % str(datetime.timedelta(seconds= int(time.time() - int(startTimePretendo)))) if not startTimePretendo == 0 else 'Pretendo Backend: Offline'),
+        'uptime': frontend_status,
+        'nintendo-uptime-backend': pretendo_status,
+        'pretendo-uptime-backend': nintendo_status,
         'status': status,
     }
     return data
+
 
 def userAgentCheck():
     userAgent = request.headers['User-Agent']
@@ -263,8 +277,8 @@ def getPresence(friendCode:int, network:NetworkType, *, createAccount:bool = Tru
         if not ignoreUserAgent:
             userAgentCheck()
 
-        startTime = db.session.get(Config, network).backend_uptime
-        if startTime == 0 and not ignoreBackend and not disableBackendWarnings:
+        network_start_time = db.session.get(Config, network).backend_uptime
+        if network_start_time is None and not ignoreBackend and not disableBackendWarnings:
             raise Exception('Backend currently offline. please try again later')
         
         friendCode = str(friendCode).zfill(12)
