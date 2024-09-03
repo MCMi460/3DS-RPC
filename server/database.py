@@ -54,7 +54,7 @@ class Friend(Base):
     joinable: Mapped[bool]
     game_description: Mapped[str] = mapped_column("game_description", nullable=False)
     last_online: Mapped[int] = mapped_column("last_online", nullable=False)
-    favorite_game: Mapped[int] = mapped_column("jeu_favori", nullable=False)
+    favorite_game: Mapped[int] = mapped_column("favorite_game", nullable=False)
 
 
 class DiscordFriends(Base):
