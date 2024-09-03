@@ -26,7 +26,7 @@ class DiscordSession():
 	def retire(self, refresh):
 		session.execute(
 			update(DiscordTable)
-			.where(DiscordTable.refresh)
+			.where(DiscordTable.refresh == refresh)
 			.values(refresh=refresh)
 		)
 		session.commit()
@@ -34,7 +34,7 @@ class DiscordSession():
 	def create(self, refresh, discord_session):
 		session.execute(
 			update(DiscordTable)
-			.where(DiscordTable.refresh)
+			.where(DiscordTable.refresh == refresh)
 			.values(session=discord_session)
 		)
 		session.commit()
