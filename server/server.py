@@ -244,16 +244,17 @@ def sidenav():
     # Get a human-readable uptime.
     time_now = datetime.datetime.now()
     if nintendo_start_time is not None:
-        nintendo_status = 'Nintendo Backend has been up for %s...' % str(time_now - nintendo_start_time)
+        nintendo_status = 'Nintendo Backend has been up for %s...' % str(time_now - nintendo_start_time)[:-7]
     else:
         nintendo_status = 'Nintendo Backend: Offline'
 
     if pretendo_start_time is not None:
-        pretendo_status = 'Nintendo Backend has been up for %s...' % str(time_now - pretendo_start_time)
+        pretendo_status = 'Nintendo Backend has been up for %s...' % str(time_now - pretendo_start_time)[:-7]
     else:
         pretendo_status = 'Pretendo Backend: Offline'
 
-    frontend_status = str(datetime.datetime.now() - frontend_uptime)
+    # Trim off microseconds
+    frontend_status = str(datetime.datetime.now() - frontend_uptime)[:-7]
 
     data = {
         'uptime': frontend_status,
