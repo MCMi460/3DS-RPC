@@ -92,7 +92,3 @@ def start_db_time(time: float, network_type: NetworkType):
 
 def get_db_url() -> str:
     return DB_URL
-    if IS_SQLITE:
-        return 'sqlite:///' + os.path.abspath('sqlite/fcLibrary.db')
-    else:
-        return 'mysql+pymysql://' + urllib.parse.quote_plus(DB_USERNAME) + ':' + urllib.parse.quote_plus(DB_PASSWORD) + '@' + DB_HOST + '/' + urllib.parse.quote_plus(DB_NAME)
