@@ -1,5 +1,6 @@
 # Created by Deltaion Lee (MCMi460) on Github
 # Based from NintendoClients' `examples/3ds/friends.py`
+import datetime
 
 from nintendo import nasc
 from nintendo.nex import backend, friends, settings
@@ -258,9 +259,9 @@ if __name__ == '__main__':
 			# This delay is only needed for nintendo, and is unnessary for pretendo.
 			delay, quicker = 0, 1
 		
-		start_db_time(begun, network)
+		start_db_time(datetime.datetime.now(), network)
 		anyio.run(main)
 	except (KeyboardInterrupt, Exception) as e:
 		if network is not None:
-			start_db_time(0, network)
+			start_db_time(None, network)
 		print(e)
