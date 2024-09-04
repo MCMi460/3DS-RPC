@@ -132,7 +132,7 @@ class Discord():
 		return True
 
 	def reset_presence(self, current_user: DiscordTable):
-		if not session:
+		if not current_user.session:
 			print('[NO SESSION TO RESET]')
 			return False
 		elif time.time() - current_user.last_accessed <= 30:
