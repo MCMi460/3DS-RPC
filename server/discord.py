@@ -143,7 +143,7 @@ class Discord():
 			'Content-Type': 'application/json',
 		}
 		data = {
-			'token': session,
+			'token': current_user.session,
 		}
 		r = requests.post('%s/users/@me/headless-sessions/delete' % API_ENDPOINT, data=json.dumps(data), headers=headers)
 		r.raise_for_status()
