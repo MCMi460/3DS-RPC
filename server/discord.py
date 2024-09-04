@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from database import get_db_url, DiscordFriends, Friend
 from database import Discord as DiscordTable
 from dataclasses import dataclass
+from requests.exceptions import HTTPError
 
 API_ENDPOINT: str = 'https://discord.com/api/v10'
 
@@ -201,7 +202,7 @@ while True:
 		try:
 			if discord.refresh_bearer(dn.refresh, dn.bearer, dn.generation_date, dn.id):
 				time.sleep(delay * 2)
-		except:
+		except HTTPError:
 			discord.delete_discord_user(dn.id)
 
 	wait = time.time()
@@ -228,7 +229,7 @@ while True:
 				print('[RESETTING %s]' % inactive_user.id)
 				if discord.reset_presence(inactive_user):
 					time.sleep(delay)
-			except:
+			except HTTPError:
 				discord.delete_discord_user(inactive_user.id)
 
 		time.sleep(delay)
@@ -254,7 +255,7 @@ while True:
 						print('[RESETTING %s on %s]' % (friend_data.friend_code, friend_data.network.lower_name()))
 						if discord.reset_presence(discord_user):
 							time.sleep(delay)
-					except:
+					except HTTPError:
 						discord.delete_discord_user(discord_user.id)
 				else:
 
@@ -278,7 +279,7 @@ while True:
 
 						if discord.update_presence(discord_user, discord_user_data, discord_friend.network):
 							time.sleep(delay)
-					except:
+					except HTTPError:
 						discord.delete_discord_user(discord_user.id)
 			else:
 				print('[WAIT]')
