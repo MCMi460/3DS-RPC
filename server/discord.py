@@ -58,7 +58,7 @@ class DiscordSession():
 		session.execute(
 			update(DiscordTable)
 			.where(DiscordTable.last_accessed == time.time())
-			.values(discord_session)
+			.values(session=discord_session)
 		)
 		session.commit()
 
