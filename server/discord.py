@@ -1,4 +1,6 @@
 import sys, pickle
+from typing import Optional
+
 sys.path.append('../')
 from api import *
 from api.love2 import *
@@ -9,8 +11,9 @@ from sqlalchemy import create_engine, select, update, delete
 from sqlalchemy.orm import Session
 from database import get_db_url, DiscordFriends, Friend
 from database import Discord as DiscordTable
+from dataclasses import dataclass
 
-API_ENDPOINT:str = 'https://discord.com/api/v10'
+API_ENDPOINT: str = 'https://discord.com/api/v10'
 
 with open('./cache/databases.dat', 'rb') as file:
 	t = pickle.loads(file.read())
@@ -20,6 +23,17 @@ with open('./cache/databases.dat', 'rb') as file:
 engine = create_engine(get_db_url())
 
 session = Session(engine)
+
+@dataclass
+class UserData:
+	"""Represents information about the current Discord user's game."""
+	friend_code: str
+	online: bool
+	game: dict
+	game_description: str
+	username: str
+	mii_urls: Optional[dict]
+	last_accessed: int
 
 
 class DiscordSession():
@@ -50,12 +64,14 @@ class DiscordSession():
 
 
 class Discord():
-	def update_presence(self, bearer: str, refresh: str, user_token: str, last_accessed: int, generation_date: int, userData, config, network: NetworkType):
+	def update_presence(self, current_user: DiscordTable, user_data: UserData, network: NetworkType):
+		last_accessed = user_data.last_accessed
 		if time.time() - last_accessed >= 1000:
-			DiscordSession().retire(refresh)
+			DiscordSession().retire(current_user.refresh)
 		elif time.time() - last_accessed <= 30:
 			print('[MANUAL RATE LIMITED]')
 			return False
+
 		data = {
 			'activities': [
 				{
@@ -67,57 +83,73 @@ class Discord():
 				},
 			],
 		}
-		presence = userData['User']['Presence']
-		if presence:
-			game = presence['game']
-			data['activities'][0]['name'] = game['name'] + ' (3DS)'
-			if game['icon_url']:
-				data['activities'][0]['assets']['large_image'] = game['icon_url'].replace('/cdn/', HOST + '/cdn/')
-				data['activities'][0]['assets']['large_text'] = game['name']
-			if presence['gameDescription']:
-				data['activities'][0]['details'] = presence['gameDescription']
-			if userData['User']['username'] and bool(config[0]):
-				data['activities'][0]['buttons'] = [{'label': 'Profile', 'url': HOST + '/user/' + userData['User']['friendCode'] + '/?network=' + network.lower_name()},]
-			if userData['User']['username'] and game['icon_url'] and bool(config[1]):
-				data['activities'][0]['assets']['small_image'] = userData['User']['mii']['face']
-				data['activities'][0]['assets']['small_text'] = '-'.join(userData['User']['friendCode'][i:i+4] for i in range(0, 12, 4)) + ' on ' + network.lower_name().capitalize()
-			if user_token:
-				data['token'] = user_token
 
-			headers = {
-				'Authorization': 'Bearer %s' % bearer,
-				'Content-Type': 'application/json',
-			}
-			for key in list(data['activities'][0]):
-				if isinstance(data['activities'][0][key], str) and not 'image' in key:
-					if len(data['activities'][0][key]) > 128:
-						data['activities'][0][key] = data['activities'][0][key][:128]
-			r = requests.post('%s/users/@me/headless-sessions' % API_ENDPOINT, data = json.dumps(data), headers = headers)
-			r.raise_for_status()
-			DiscordSession().create(refresh, r.json()['token'])
-			DiscordSession().update(r.json()['token'])
-			return True
+		game = user_data.game
+		data['activities'][0]['name'] = game['name'] + ' (3DS)'
+		if game['icon_url']:
+			data['activities'][0]['assets']['large_image'] = game['icon_url'].replace('/cdn/', HOST + '/cdn/')
+			data['activities'][0]['assets']['large_text'] = game['name']
+		if user_data.game_description:
+			data['activities'][0]['details'] = user_data.game_description
 
-	def reset_presence(self, bearer: str, refresh: str, session: str, last_accessed: int, generation_date: int):
+		# Only add a profile button if the user has enabled it.
+		if user_data.username and current_user.show_profile_button:
+			profile_url = HOST + '/user/' + user_data.friend_code + '/?network=' + network.lower_name()
+			data['activities'][0]['buttons'] = [{
+				'label': 'Profile',
+				'url': profile_url
+			}]
+
+		# Similarly, only show the user's Mii if enabled.
+		if user_data.username and game['icon_url'] and current_user.show_small_image:
+			# Format as a human-readable friend code (XXXX-XXXX-XXXX).
+			user_friend_code = '-'.join(user_data.friend_code[i:i+4] for i in range(0, 12, 4))
+			user_network_name = network.lower_name().capitalize()
+			small_text_detail = f"{user_friend_code} on {user_network_name}"
+
+			data['activities'][0]['assets']['small_image'] = user_data.mii_urls['face']
+			data['activities'][0]['assets']['small_text'] = small_text_detail
+		if discord_user.session:
+			data['token'] = discord_user.session
+
+		headers = {
+			'Authorization': 'Bearer %s' % current_user.bearer,
+			'Content-Type': 'application/json',
+		}
+		# Truncate any text exceeding the maximum field limit, 128 characters.
+		for key in list(data['activities'][0]):
+			if isinstance(data['activities'][0][key], str) and not 'image' in key:
+				if len(data['activities'][0][key]) > 128:
+					data['activities'][0][key] = data['activities'][0][key][:128]
+
+		r = requests.post('%s/users/@me/headless-sessions' % API_ENDPOINT, data=json.dumps(data), headers=headers)
+		r.raise_for_status()
+
+		response = r.json()
+		DiscordSession().create(current_user.refresh, response['token'])
+		DiscordSession().update(response['token'])
+		return True
+
+	def reset_presence(self, current_user: DiscordTable):
 		if not session:
 			print('[NO SESSION TO RESET]')
 			return False
-		elif time.time() - last_accessed <= 30:
+		elif time.time() - current_user.last_accessed <= 30:
 			print('[MANUAL RATE LIMITED]')
 			return False
-		DiscordSession().update(session)
+		DiscordSession().update(current_user.session)
 		headers = {
-			'Authorization': 'Bearer %s' % bearer,
+			'Authorization': 'Bearer %s' % current_user.bearer,
 			'Content-Type': 'application/json',
 		}
 		data = {
 			'token': session,
 		}
-		r = requests.post('%s/users/@me/headless-sessions/delete' % API_ENDPOINT, data = json.dumps(data), headers = headers)
+		r = requests.post('%s/users/@me/headless-sessions/delete' % API_ENDPOINT, data=json.dumps(data), headers=headers)
 		r.raise_for_status()
 
 		# Reset session
-		DiscordSession().create(refresh, '')
+		DiscordSession().create(current_user.refresh, '')
 		return True
 
 	def refresh_bearer(self, refresh: str, access: str, generation_date: int, user_id: int):
@@ -194,7 +226,7 @@ while True:
 		for inactive_user in inactive_users:
 			try:
 				print('[RESETTING %s]' % inactive_user.id)
-				if discord.reset_presence(inactive_user.bearer, inactive_user.refresh, inactive_user.session, inactive_user.last_accessed, inactive_user.generation_date):
+				if discord.reset_presence(inactive_user):
 					time.sleep(delay)
 			except:
 				discord.delete_discord_user(inactive_user.id)
@@ -208,42 +240,43 @@ while True:
 		for discord_friend in discord_friends:
 			print('[RUNNING %s - %s on %s]' % (discord_friend.id, discord_friend.friend_code, discord_friend.network.lower_name()))
 
-			friend_data = session.scalar(
+			friend_data: Friend = session.scalar(
 				select(Friend)
 				.where(Friend.friend_code == discord_friend.friend_code)
 				.where(Friend.network == discord_friend.network)
 			)
 
-			discord_user = session.scalar(select(DiscordTable).where(DiscordTable.id == discord_friend.id))
+			discord_user: DiscordTable = session.scalar(select(DiscordTable).where(DiscordTable.id == discord_friend.id))
 			if time.time() - discord_user.last_accessed >= 60 and friend_data:
 				principalId = convertFriendCodeToPrincipalId(friend_data.friend_code)
 				if not friend_data.online:
 					try:
 						print('[RESETTING %s on %s]' % (friend_data.friend_code, friend_data.network.lower_name()))
-						if discord.reset_presence(discord_user.bearer, discord_user.refresh, discord_user.session, discord_user.last_accessed, discord_user.generation_date):
+						if discord.reset_presence(discord_user):
 							time.sleep(delay)
 					except:
 						discord.delete_discord_user(discord_user.id)
 				else:
-					presence = {
-						'gameDescription': friend_data.game_description,
-						'game': getTitle(friend_data.title_id, titlesToUID, titleDatabase),
-					}
+
 					mii = friend_data.mii
 					if mii:
 						mii = MiiData().mii_studio_url(mii)
 					print('[UPDATING %s]' % discord_user.id)
 					try:
-						if discord.update_presence(discord_user.bearer, discord_user.refresh, discord_user.session, discord_user.last_accessed, discord_user.generation_date, {
-								'User': {
-									'friendCode': str(convertPrincipalIdtoFriendCode(principalId)).zfill(12),
-									'online': friend_data.online,
-									'Presence': presence,
-									'username': friend_data.username,
-									'mii': mii,
-									'lastAccessed': friend_data.last_accessed,
-								}
-							}, (discord_user.show_profile_button, discord_user.show_small_image), discord_friend.network):
+						friend_code = str(convertPrincipalIdtoFriendCode(principalId)).zfill(12)
+						title_data = getTitle(friend_data.title_id, titlesToUID, titleDatabase)
+
+						discord_user_data = UserData(
+							friend_code=friend_code,
+							online=friend_data.online,
+							game=title_data,
+							game_description=friend_data.game_description,
+							username=friend_data.username,
+							mii_urls=mii,
+							last_accessed=friend_data.last_accessed
+						)
+
+						if discord.update_presence(discord_user, discord_user_data, discord_friend.network):
 							time.sleep(delay)
 					except:
 						discord.delete_discord_user(discord_user.id)
