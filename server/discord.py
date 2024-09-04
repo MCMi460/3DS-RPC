@@ -41,25 +41,26 @@ class DiscordSession():
 	def retire(self, refresh):
 		session.execute(
 			update(DiscordTable)
-			.where(DiscordTable.refresh == refresh)
-			.values(session='')
+			.where(DiscordTable.refresh_token == refresh)
+			.values(rpc_session_token='')
 		)
 		session.commit()
 
-	def create(self, refresh, discord_session):
+	def create(self, refresh_token: str, session_token: str):
 		session.execute(
 			update(DiscordTable)
-			.where(DiscordTable.refresh == refresh)
-			.values(session=discord_session)
+			.where(DiscordTable.refresh_token == refresh_token)
+			.values(rpc_session_token=session_token)
 		)
 		session.commit()
-		return discord_session
 
-	def update(self, discord_session):
+	def update(self, session_token: str):
 		session.execute(
 			update(DiscordTable)
-			.where(DiscordTable.last_accessed == time.time())
-			.values(session=discord_session)
+			.where(DiscordTable.rpc_session_token == session_token)
+			.values(
+				last_accessed=time.time(),
+			)
 		)
 		session.commit()
 
@@ -68,7 +69,7 @@ class Discord():
 	def update_presence(self, current_user: DiscordTable, user_data: UserData, network: NetworkType):
 		last_accessed = user_data.last_accessed
 		if time.time() - last_accessed >= 1000:
-			DiscordSession().retire(current_user.refresh)
+			DiscordSession().retire(current_user.refresh_token)
 		elif time.time() - last_accessed <= 30:
 			print('[MANUAL RATE LIMITED]')
 			return False
@@ -110,11 +111,11 @@ class Discord():
 
 			data['activities'][0]['assets']['small_image'] = user_data.mii_urls['face']
 			data['activities'][0]['assets']['small_text'] = small_text_detail
-		if discord_user.session:
-			data['token'] = discord_user.session
+		if discord_user.rpc_session_token:
+			data['token'] = discord_user.rpc_session_token
 
 		headers = {
-			'Authorization': 'Bearer %s' % current_user.bearer,
+			'Authorization': 'Bearer %s' % current_user.bearer_token,
 			'Content-Type': 'application/json',
 		}
 		# Truncate any text exceeding the maximum field limit, 128 characters.
@@ -127,30 +128,30 @@ class Discord():
 		r.raise_for_status()
 
 		response = r.json()
-		DiscordSession().create(current_user.refresh, response['token'])
+		DiscordSession().create(current_user.refresh_token, response['token'])
 		DiscordSession().update(response['token'])
 		return True
 
 	def reset_presence(self, current_user: DiscordTable):
-		if not current_user.session:
+		if not current_user.rpc_session_token:
 			print('[NO SESSION TO RESET]')
 			return False
 		elif time.time() - current_user.last_accessed <= 30:
 			print('[MANUAL RATE LIMITED]')
 			return False
-		DiscordSession().update(current_user.session)
+		DiscordSession().update(current_user.rpc_session_token)
 		headers = {
-			'Authorization': 'Bearer %s' % current_user.bearer,
+			'Authorization': 'Bearer %s' % current_user.bearer_token,
 			'Content-Type': 'application/json',
 		}
 		data = {
-			'token': current_user.session,
+			'token': current_user.rpc_session_token,
 		}
 		r = requests.post('%s/users/@me/headless-sessions/delete' % API_ENDPOINT, data=json.dumps(data), headers=headers)
 		r.raise_for_status()
 
 		# Reset session
-		DiscordSession().create(current_user.refresh, '')
+		DiscordSession().create(current_user.rpc_session_token, '')
 		return True
 
 	def refresh_bearer(self, refresh: str, access: str, generation_date: int, user_id: int):
@@ -173,10 +174,10 @@ class Discord():
 
 		session.execute(
 			update(DiscordTable)
-			.where(DiscordTable.refresh == refresh)
+			.where(DiscordTable.refresh_token == refresh)
 			.values(
-				refresh=response['refresh_token'],
-				bearer=response['access_token'],
+				refresh_token=response['refresh_token'],
+				bearer_token=response['access_token'],
 				generation_date=time.time()
 			)
 		)
@@ -200,7 +201,7 @@ while True:
 	group = session.scalars(select(DiscordTable)).all()
 	for dn in group:
 		try:
-			if discord.refresh_bearer(dn.refresh, dn.bearer, dn.generation_date, dn.id):
+			if discord.refresh_bearer(dn.refresh_token, dn.bearer_token, dn.generation_date, dn.id):
 				time.sleep(delay * 2)
 		except HTTPError:
 			discord.delete_discord_user(dn.id)

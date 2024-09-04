@@ -70,10 +70,10 @@ class Discord(Base):
     __tablename__ = "discord"
 
     id: Mapped[int] = mapped_column("id", primary_key=True, nullable=False, unique=True)
-    refresh: Mapped[str] = mapped_column("refresh", nullable=False)
-    bearer: Mapped[str] = mapped_column("bearer", nullable=False)
-    session: Mapped[str] = mapped_column("session")
-    token: Mapped[str] = mapped_column("token", unique=True)
+    refresh_token: Mapped[str] = mapped_column("refresh", nullable=False)
+    bearer_token: Mapped[str] = mapped_column("bearer", nullable=False)
+    rpc_session_token: Mapped[str] = mapped_column("session")
+    site_session_token: Mapped[str] = mapped_column("token", unique=True)
     last_accessed: Mapped[int] = mapped_column("last_accessed", nullable=False)
     generation_date: Mapped[int] = mapped_column("generation_date", nullable=False)
     show_profile_button: Mapped[bool] = mapped_column("show_profile_button", nullable=False, default=True)

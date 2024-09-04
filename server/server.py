@@ -158,7 +158,7 @@ def refreshBearer(token:str):
         'client_id': '%s' % CLIENT_ID,
         'client_secret': '%s' % CLIENT_SECRET,
         'grant_type': 'refresh_token',
-        'refresh_token': user.refresh,
+        'refresh_token': user.refresh_token,
     }
     headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -168,13 +168,13 @@ def refreshBearer(token:str):
     token, user, pfp = createDiscordUser('', r.json())
     return token, user, pfp
 
-def tokenFromID(ID:int):
+def tokenFromID(ID:int) -> str:
     stmt = select(Discord).where(Discord.id == ID)
     result = db.session.scalar(stmt)
-    return result.token
+    return result.site_session_token
 
-def userFromToken(token:str):
-    stmt = select(Discord).where(Discord.token == token)
+def userFromToken(token: str) -> Discord:
+    stmt = select(Discord).where(Discord.site_session_token == token)
     result = db.session.scalar(stmt)
     if not result:
         raise Exception('invalid token!')
@@ -198,10 +198,10 @@ def createDiscordUser(code:str, response:dict = None):
             raise Exception('UNIQUE constraint failed: discord.id')
         db.session.add(Discord(
             id=user['id'],
-            refresh=response['refresh_token'],
-            bearer=response['access_token'],
-            session='',
-            token=token,
+            refresh_token=response['refresh_token'],
+            bearer_token=response['access_token'],
+            rpc_session_token='',
+            site_session_token=token,
             last_accessed=0,
             generation_date=time.time()
         ))
@@ -211,10 +211,10 @@ def createDiscordUser(code:str, response:dict = None):
             old_token = tokenFromID(user['id'])
 
             discord_user = userFromToken(old_token)
-            discord_user.refresh = response['refresh_token']
-            discord_user.bearer = response['access_token']
+            discord_user.refresh_token = response['refresh_token']
+            discord_user.bearer_token = response['access_token']
             discord_user.generation_date = time.time()
-            discord_user.token = token
+            discord_user.site_session_token = token
 
             db.session.commit()
     return token, user['username'], ('https://cdn.discordapp.com/avatars/%s/%s.%s' % (user['id'], user['avatar'], 'gif' if user['avatar'].startswith('a_') else 'png') if user['avatar'] else '')
@@ -402,7 +402,7 @@ def settings():
     }
     data = sidenav()
     try:
-        stmt = select(Discord).where(Discord.token == request.cookies['token'])
+        stmt = select(Discord).where(Discord.site_session_token == request.cookies['token'])
         result = db.session.scalar(stmt)
     except Exception as e:
         if 'invalid token' in str(e):
@@ -781,7 +781,7 @@ def settingsToggler(which:str):
     try:
         db.session.execute(
             update(Discord)
-            .where(Discord.token == request.cookies['token'])
+            .where(Discord.site_session_token == request.cookies['token'])
             .values({getattr(Discord, which): toggle})
         )
 
