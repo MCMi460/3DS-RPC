@@ -250,7 +250,7 @@ while True:
 
 			discord_user: DiscordTable = session.scalar(select(DiscordTable).where(DiscordTable.id == discord_friend.id))
 			if time.time() - discord_user.last_accessed >= 60 and friend_data:
-				principalId = convertFriendCodeToPrincipalId(friend_data.friend_code)
+				principalId = friend_code_to_principal_id(friend_data.friend_code)
 				if not friend_data.online:
 					try:
 						print('[RESETTING %s on %s]' % (friend_data.friend_code, friend_data.network.lower_name()))
@@ -265,7 +265,7 @@ while True:
 						mii = MiiData().mii_studio_url(mii)
 					print('[UPDATING %s]' % discord_user.id)
 					try:
-						friend_code = str(convertPrincipalIdtoFriendCode(principalId)).zfill(12)
+						friend_code = str(principal_id_to_friend_code(principalId)).zfill(12)
 						title_data = getTitle(friend_data.title_id, titlesToUID, titleDatabase)
 
 						discord_user_data = UserData(

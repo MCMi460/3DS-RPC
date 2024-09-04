@@ -23,7 +23,7 @@ if local:
 ## The below contains 3dsrpc.com-specific information
 ## You will have to provide your own 'bot' FC if you are planning
 ## on running your own front and backend.
-convertFriendCodeToPrincipalId(nintendoBotFC) # A quick verification check
+friend_code_to_principal_id(nintendoBotFC) # A quick verification check
 
 _REGION = typing.Literal['ALL', 'US', 'JP', 'GB', 'KR', 'TW']
 path = getAppPath()
@@ -47,7 +47,7 @@ def log(text:str):
 class Client():
     def __init__(self, friendCode: str, config:dict, *, GUI = None):
         ### Maintain typing ###
-        friendCode = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12) # Friend Code check
+        friendCode = str(principal_id_to_friend_code(friend_code_to_principal_id(friendCode))).zfill(12) # Friend Code check
         with open(privateFile, 'w') as file: # Save FC and config to file
             js = configTemplate
             js['friendCode'] = friendCode

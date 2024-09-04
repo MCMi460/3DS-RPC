@@ -40,7 +40,7 @@ async def main():
 		if not queried_friends:
 			continue
 
-		all_friends = [ (convertFriendCodeToPrincipalId(f.friend_code), f.last_accessed) for f in queried_friends ]
+		all_friends = [(friend_code_to_principal_id(f.friend_code), f.last_accessed) for f in queried_friends]
 		friend_codes = [ f[0] for f in all_friends ]
 
 		for i in range(0, len(friend_codes), 100):
@@ -127,7 +127,7 @@ async def main():
 								cleanUp.append(t1.pid)
 
 						for removed_friend in removal_list:
-							removed_friend_code = str(convertPrincipalIdtoFriendCode(removed_friend)).zfill(12)
+							removed_friend_code = str(principal_id_to_friend_code(removed_friend)).zfill(12)
 
 							# Remove this friend code from both our tracked network friends and Discord friend codes.
 							session.execute(delete(Friend).where(Friend.friend_code == removed_friend_code).where(Friend.network == network))
@@ -152,7 +152,7 @@ async def main():
 									game_description = ''
 								joinable = bool(game.presence.join_availability_flag)
 
-								friend_code = str(convertPrincipalIdtoFriendCode(users[-1])).zfill(12)
+								friend_code = str(principal_id_to_friend_code(users[-1])).zfill(12)
 								session.execute(
 									update(Friend)
 									.where(Friend.friend_code == friend_code)
@@ -169,7 +169,7 @@ async def main():
 								session.commit()
 
 							for user in [ h for h in rotation if not h in users ]:
-								friend_code = str(convertPrincipalIdtoFriendCode(user)).zfill(12)
+								friend_code = str(principal_id_to_friend_code(user)).zfill(12)
 								session.execute(
 									update(Friend)
 									.where(Friend.friend_code == friend_code)
@@ -221,7 +221,7 @@ async def main():
 								else:
 									comment = ''
 
-								friend_code = str(convertPrincipalIdtoFriendCode(current_friend.pid)).zfill(12)
+								friend_code = str(principal_id_to_friend_code(current_friend.pid)).zfill(12)
 								session.execute(
 									update(Friend)
 									.where(Friend.friend_code == friend_code)

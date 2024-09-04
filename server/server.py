@@ -104,7 +104,7 @@ def createUser(friendCode:int, network:NetworkType, addNewInstance:bool = False)
     if int(friendCode) == int(nintendoBotFC):
         raise Exception('invalid FC')
     try:
-        convertFriendCodeToPrincipalId(friendCode)
+        friend_code_to_principal_id(friendCode)
         if not addNewInstance:
             raise Exception('UNIQUE constraint failed: friends.friendCode')
         already_added_check = db.session.scalar(
@@ -285,7 +285,7 @@ def getPresence(friendCode:int, network:NetworkType, *, createAccount:bool = Tru
         friendCode = str(friendCode).zfill(12)
         if createAccount:
             createUser(friendCode, network, False)
-        principalId = convertFriendCodeToPrincipalId(friendCode)
+        principalId = friend_code_to_principal_id(friendCode)
 
         stmt = (
             select(Friend)
@@ -314,7 +314,7 @@ def getPresence(friendCode:int, network:NetworkType, *, createAccount:bool = Tru
             'Exception': False,
             'User': {
                 'principalId': principalId,
-                'friendCode': str(convertPrincipalIdtoFriendCode(principalId)).zfill(12),
+                'friendCode': str(principal_id_to_friend_code(principalId)).zfill(12),
                 'online': result.online,
                 'Presence': presence,
                 'username': result.username,
@@ -681,7 +681,7 @@ def toggler(friendCode:int):
     if request.data.decode('utf-8').split(',')[2] != None:
         network = nameToNetworkType(request.data.decode('utf-8').split(',')[2])
     try:
-        fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
+        fc = str(principal_id_to_friend_code(friend_code_to_principal_id(friendCode))).zfill(12)
     except:
         return 'failure!\nthat is not a real friendCode!'
     stmt = (
@@ -738,7 +738,7 @@ def toggler(friendCode:int):
 @app.route('/api/delete/<int:friendCode>/', methods=['POST'])
 @limiter.limit(togglerLimit)
 def deleter(friendCode:int):
-    fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(friendCode))).zfill(12)
+    fc = str(principal_id_to_friend_code(friend_code_to_principal_id(friendCode))).zfill(12)
     if not ',' in request.data.decode('utf-8'): # Old API compatiblity. In the future this should be depercated.
         token = request.data.decode('utf-8')
         id = userFromToken(token).id
@@ -810,7 +810,7 @@ def localImageCdn(file:str):
 @limiter.limit(newUserLimit)
 def login():
     try:
-        fc = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(request.form['fc']))).zfill(12)
+        fc = str(principal_id_to_friend_code(friend_code_to_principal_id(request.form['fc']))).zfill(12)
         if request.form['network'] is None:
             network = NetworkType.NINTENDO
         else:

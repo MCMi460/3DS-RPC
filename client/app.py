@@ -143,14 +143,14 @@ class GUI(Ui_MainWindow):
         global friendCode
         if friendCode:
             return
-        friendCode = str(convertPrincipalIdtoFriendCode(convertFriendCodeToPrincipalId(self.waitUntil()))).zfill(12)
+        friendCode = str(principal_id_to_friend_code(friend_code_to_principal_id(self.waitUntil()))).zfill(12)
 
     def waitUntil(self):
         while True:
             while not self.state:
                 pass
             try:
-                convertFriendCodeToPrincipalId(self.fcInput.text().strip())
+                friend_code_to_principal_id(self.fcInput.text().strip())
                 break
             except:
                 self.state = False
