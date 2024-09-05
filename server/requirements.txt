@@ -9,3 +9,4 @@ xmltodict
 Pillow
 pycryptodomex
 pymysql
+anyio>=4.0

@@ -1,0 +1,15 @@
+{
+    "display_name": "",
+    "friend_code": "123412341234",
+    "device_info": {
+        "serial_number": "",
+        "mac_address": "",
+        "device_cert": "",
+        "device_name": ""
+    },
+    "credentials": {
+        "pid": 1234,
+        "pid_hmac": "",
+        "nex_password": ""
+    }
+}
