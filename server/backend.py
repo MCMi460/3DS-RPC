@@ -140,19 +140,19 @@ async def main():
 						if len(network_friends) > 0:
 							time.sleep(delay)
 							tracked_presences = await friends_client.get_friend_presence([ e.pid for e in network_friends ])
-							users = []
+							online_users = []
 							for game in tracked_presences:
 								# Set all to offline if scraping
 								if scrape_only:
 									break
 
-								users.append(game.pid)
+								online_users.append(game.pid)
 								game_description = game.presence.game_mode_description
 								if not game_description:
 									game_description = ''
 								joinable = bool(game.presence.join_availability_flag)
 
-								friend_code = str(principal_id_to_friend_code(users[-1])).zfill(12)
+								friend_code = str(principal_id_to_friend_code(game.pid)).zfill(12)
 								session.execute(
 									update(Friend)
 									.where(Friend.friend_code == friend_code)
@@ -168,8 +168,8 @@ async def main():
 								)
 								session.commit()
 
-							for user in [ h for h in rotation if not h in users ]:
-								friend_code = str(principal_id_to_friend_code(user)).zfill(12)
+							for offline_user in [ h for h in rotation if not h in online_users ]:
+								friend_code = str(principal_id_to_friend_code(offline_user)).zfill(12)
 								session.execute(
 									update(Friend)
 									.where(Friend.friend_code == friend_code)
