@@ -10,6 +10,7 @@ private*.*
 private*/
 *key*.*
 cache/
+server/accounts/*/*.json
 
 # Tests
 test*.*
