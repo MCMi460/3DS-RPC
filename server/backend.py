@@ -11,7 +11,7 @@ import anyio, sys, argparse
 from database import start_db_time, get_db_url, Friend, DiscordFriends
 
 sys.path.append('../')
-from api.private import SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME, REGION, LANGUAGE, NINTENDO_PID, PRETENDO_PID, PID_HMAC, NINTENDO_NEX_PASSWORD, PRETENDO_NEX_PASSWORD
+from api.private import NINTENDO_NEX_PASSWORD, NINTENDO_SERIAL_NUMBER, NINTENDO_MAC_ADDRESS, NINTENDO_DEVICE_CERT, NINTENDO_DEVICE_NAME, NINTENDO_REGION, NINTENDO_LANGUAGE, PRETENDO_NEX_PASSWORD, NINTENDO_PID, NINTENDO_PID_HMAC, PRETENDO_SERIAL_NUMBER, PRETENDO_MAC_ADDRESS, PRETENDO_DEVICE_CERT, PRETENDO_DEVICE_NAME, PRETENDO_REGION, PRETENDO_LANGUAGE, PRETENDO_PID, PRETENDO_PID_HMAC 
 from api import *
 from api.love2 import *
 from api.networks import NetworkType, InvalidNetworkError
@@ -52,24 +52,30 @@ async def main():
 				# TODO: This should be separate between networks.
 				# E.g. if the friend code was is banned on one network,
 				# you'd still be able to keep the friend code for the other network.
-				client.set_title(0x0004013000003202, 20)
-				client.set_locale(REGION, LANGUAGE)
+				match network:
+					case NetworkType.NINTENDO:
+						client.set_locale(NINTENDO_REGION, NINTENDO_LANGUAGE)
+						client.set_url("nasc.nintendowifi.net")
+						PID = NINTENDO_PID
+						NEX_PASSWORD = NINTENDO_NEX_PASSWORD
+							
+						
+						client.set_device(NINTENDO_SERIAL_NUMBER, NINTENDO_MAC_ADDRESS, NINTENDO_DEVICE_CERT, NINTENDO_DEVICE_NAME)
+						client.set_user(PID, NINTENDO_PID_HMAC)
+					case NetworkType.PRETENDO:
+						client.set_locale(PRETENDO_REGION, PRETENDO_LANGUAGE)
 
-				if network == NetworkType.NINTENDO:
-					client.set_url("nasc.nintendowifi.net")
-					PID = NINTENDO_PID
-					NEX_PASSWORD = NINTENDO_NEX_PASSWORD
-				elif network == NetworkType.PRETENDO:
-					client.set_url("nasc.pretendo.cc")
-					client.context.set_authority(None)
-					PID = PRETENDO_PID
-					NEX_PASSWORD = PRETENDO_NEX_PASSWORD
-				else:
-					raise InvalidNetworkError(f"Network type {network} is not configured for querying")
-				
-				client.set_device(SERIAL_NUMBER, MAC_ADDRESS, DEVICE_CERT, DEVICE_NAME)
-				client.set_user(PID, PID_HMAC)
-				
+						client.set_url("nasc.pretendo.cc")
+						client.context.set_authority(None)
+						PID = PRETENDO_PID
+						NEX_PASSWORD = PRETENDO_NEX_PASSWORD
+						
+						client.set_device(PRETENDO_SERIAL_NUMBER, PRETENDO_MAC_ADDRESS, PRETENDO_DEVICE_CERT, PRETENDO_DEVICE_NAME)
+						client.set_user(PID, PRETENDO_PID_HMAC)
+					case _:
+						raise InvalidNetworkError(f"Network type {network} is not configured for querying")
+					
+				client.set_title(0x0004013000003202, 20)
 				response = await client.login(0x3200)
 
 				s = settings.load('friends')
