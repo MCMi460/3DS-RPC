@@ -2,26 +2,47 @@
 # This is my private file, but with all of the dangerous stuff removed
 # You can use it as a template for yours
 
-SERIAL_NUMBER:str = "" # Serial number on console minus the last digit
-MAC_ADDRESS:str = "" # Console MAC address (see WiFi settings), all lowercase with no colons
-DEVICE_CERT:bytes = bytes.fromhex("") # Unique console certificate. Get from sniffing traffic or from the LocalSeedFriendCode file
-DEVICE_NAME:str = "" # Doesn't matter
+###### NINTENDO INFO ##########
+
+NINTENDO_SERIAL_NUMBER:str = "" # Serial number on console minus the last digit
+NINTENDO_MAC_ADDRESS:str = "" # Console MAC address (see WiFi settings), all lowercase with no colons
+NINTENDO_DEVICE_CERT:bytes = bytes.fromhex("") # Unique console certificate. Get from sniffing traffic or from LocalSeedFriendCode
+NINTENDO_DEVICE_NAME:str = "" # Doesn't matter
 
 # 3DS does NOT send NEX credentials over NASC
 # They are generated once when the account is created and stored on the device
 # Homebrew like https://github.com/Stary2001/nex-dissector/tree/master/get_3ds_pid_password
 # can be used to dump the PID and password
-# You must redump these keys for each network.
+# You must dump the nex keys for each network.
+
 NINTENDO_PID:int = 0
-NINTENDO_NEX_PASSWORD:str = ""
+NINTENDO_NEX_PASSWORD:str = ''
+
+NINTENDO_PID_HMAC:str = "" # Sniff console traffic or dump from friends title save (bytes 66-84)
+
+NINTENDO_REGION:int = 1 # USA
+NINTENDO_LANGUAGE:int = 1 # English
+
+##### PRETENDO INFO #######
+
+PRETENDO_SERIAL_NUMBER:str = "" # Serial number on console minus the last digit
+PRETENDO_MAC_ADDRESS:str = "" # Console MAC address (see WiFi settings), all lowercase with no colons
+PRETENDO_DEVICE_CERT:bytes = bytes.fromhex("") # Unique console certificate. Get from sniffing traffic or from LocalSeedFriendCode
+PRETENDO_DEVICE_NAME:str = "" # Doesn't matter
+
+# 3DS does NOT send NEX credentials over NASC
+# They are generated once when the account is created and stored on the device
+# Homebrew like https://github.com/Stary2001/nex-dissector/tree/master/get_3ds_pid_password
+# can be used to dump the PID and password
+# You must dump the nex keys for each network.
 
 PRETENDO_PID:int = 0
-PRETENDO_NEX_PASSWORD:str = ""
+PRETENDO_NEX_PASSWORD:str = ''
 
-PID_HMAC:str = "" # Sniff console traffic or dump from friends title save (bytes 66-84) somewhere im the file
+PRETENDO_PID_HMAC:str = "" # Sniff console traffic or dump from friends title save (bytes 66-84)
 
-REGION:int = 1 # USA
-LANGUAGE:int = 1 # English
+PRETENDO_REGION:int = 1 # USA
+PRETENDO_LANGUAGE:int = 1 # English
 
 #########################
 # Now, Discord secrets! #
