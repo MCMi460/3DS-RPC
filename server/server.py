@@ -296,6 +296,7 @@ def get_presence(friend_code: int, network: NetworkType, is_api: bool):
         if network_start_time is None and not disableBackendWarnings:
             raise Exception('Backend currently offline. please try again later')
 
+        friend_code = str(friend_code).zfill(12)
         principal_id = friend_code_to_principal_id(friend_code)
         stmt = (
             select(Friend)
