@@ -645,43 +645,6 @@ def userPresence(friend_code: int):
     return get_presence(friend_code, network, True)
 
 
-# Alias
-@app.route('/api/u/<int:friend_code>/', methods=['GET'])
-@limiter.limit(userPresenceLimit)
-def userAlias(friend_code:int):
-    network = NetworkType.NINTENDO
-    if request.args.get('network'):
-        network = nameToNetworkType(request.args.get('network'))
-    return userPresence(friend_code, network)
-
-
-# Alias
-@app.route('/api/u/c/<int:friendCode>/', methods=['POST'])
-@limiter.limit(newUserLimit)
-def newAlias1(friendCode:int):
-    network = NetworkType.NINTENDO
-    if (request.data.decode('utf-8').split(','))[0] != None:
-        network = nameToNetworkType((request.data.decode('utf-8').split(','))[0])
-    return newUser(friendCode, network)
-
-# Alias
-@app.route('/api/user/c/<int:friendCode>/', methods=['POST'])
-@limiter.limit(newUserLimit)
-def newAlias2(friendCode:int):
-    network = NetworkType.NINTENDO
-    if (request.data.decode('utf-8').split(','))[0] != None:
-        network = nameToNetworkType((request.data.decode('utf-8').split(','))[0])
-    return newUser(friendCode, network)
-
-# Alias
-@app.route('/api/u/create/<int:friendCode>/', methods=['POST'])
-@limiter.limit(newUserLimit)
-def newAlias3(friendCode:int):
-    network = NetworkType.NINTENDO
-    if (request.data.decode('utf-8').split(','))[0] != None:
-        network = nameToNetworkType((request.data.decode('utf-8').split(','))[0])
-    return newUser(friendCode, network)
-
 # Toggle
 @app.route('/api/toggle/<int:friendCode>/', methods=['POST'])
 @limiter.limit(togglerLimit)
