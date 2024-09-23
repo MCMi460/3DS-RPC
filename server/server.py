@@ -273,29 +273,24 @@ def userAgentCheck():
     except:
         raise Exception('this client is invalid')
 
-def getPresence(friendCode:int, network:NetworkType, *, createAccount:bool = True, ignoreUserAgent = False, ignoreBackend = False):
-    try:
-        if not ignoreUserAgent:
-            userAgentCheck()
 
+def get_presence(friend_code: int, network: NetworkType):
+    try:
         network_start_time = db.session.get(Config, network).backend_uptime
-        if network_start_time is None and not ignoreBackend and not disableBackendWarnings:
+        if network_start_time is None and not disableBackendWarnings:
             raise Exception('Backend currently offline. please try again later')
-        
-        friendCode = str(friendCode).zfill(12)
-        if createAccount:
-            createUser(friendCode, network, False)
-        principalId = friend_code_to_principal_id(friendCode)
+
+        principal_id = friend_code_to_principal_id(friend_code)
 
         stmt = (
             select(Friend)
-            .where(Friend.friend_code == friendCode)
+            .where(Friend.friend_code == friend_code)
             .where(Friend.network == network)
-            )
+        )
         result = db.session.scalar(stmt)
 
         if not result:
-            raise Exception('friendCode not recognized\nHint: You may not have added the bot as a friend')
+            raise Exception('Friend code not recognized!\nHint: You may not have added the bot as a friend')
         if result.online:
             presence = {
                 'titleID': result.title_id,
@@ -313,8 +308,8 @@ def getPresence(friendCode:int, network:NetworkType, *, createAccount:bool = Tru
         return {
             'Exception': False,
             'User': {
-                'principalId': principalId,
-                'friendCode': str(principal_id_to_friend_code(principalId)).zfill(12),
+                'principalId': principal_id,
+                'friendCode': str(friend_code).zfill(12),
                 'online': result.online,
                 'Presence': presence,
                 'username': result.username,
@@ -565,7 +560,8 @@ def userPage(friendCode:str):
     try:
         network = nameToNetworkType(request.args.get('network'))
 
-        userData = getPresence(int(friendCode.replace('-', '')), network, createAccount= False, ignoreUserAgent = True, ignoreBackend = True)
+        friend_code_int = int(friendCode.replace('-', ''))
+        userData = get_presence(friend_code_int, network)
         if userData['Exception'] or not userData['User']['username']:
             raise Exception(userData['Exception'])
     except:
@@ -626,25 +622,37 @@ def newUser(friendCode:int, network:int=-1, userCheck:bool = True):
             }
         }
 
+
 # Grab presence from friendCode
-@app.route('/api/user/<int:friendCode>/', methods=['GET'])
+@app.route('/api/user/<int:friend_code>/', methods=['GET'])
 @limiter.limit(userPresenceLimit)
-def userPresence(friendCode:int, network:NetworkType=None, *, createAccount:bool = True, ignoreUserAgent = False, ignoreBackend = False):
-    if network == None:
-        if request.args.get('network') != None:
-            network = nameToNetworkType(request.args.get('network'))
-        else:
-            network = NetworkType.NINTENDO
-    return getPresence(friendCode, network, createAccount=createAccount, ignoreUserAgent = ignoreUserAgent, ignoreBackend = ignoreBackend)
+def userPresence(friend_code: int):
+    # First, run 3DS-RPC client checks.
+    userAgentCheck()
+
+    # Check if a specific network is being specified as a query parameter.
+    network_name = request.args.get('network')
+    if network_name:
+        network = nameToNetworkType(network_name)
+    else:
+        network = NetworkType.NINTENDO
+
+    # Create a user for this friend code, or update its last access date.
+    # TODO(spotlightishere): This should be restructured!
+    createUser(friend_code, network, False)
+
+    return get_presence(friend_code, network)
+
 
 # Alias
-@app.route('/api/u/<int:friendCode>/', methods=['GET'])
+@app.route('/api/u/<int:friend_code>/', methods=['GET'])
 @limiter.limit(userPresenceLimit)
-def userAlias(friendCode:int):
+def userAlias(friend_code:int):
     network = NetworkType.NINTENDO
-    if request.args.get('network') != None:
+    if request.args.get('network'):
         network = nameToNetworkType(request.args.get('network'))
-    return userPresence(friendCode, network)
+    return userPresence(friend_code, network)
+
 
 # Alias
 @app.route('/api/u/c/<int:friendCode>/', methods=['POST'])
