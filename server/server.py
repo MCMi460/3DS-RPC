@@ -128,13 +128,12 @@ def createUser(friendCode:int, network:NetworkType, addNewInstance:bool = False)
         db.session.commit()
     except Exception as e:
         if 'UNIQUE constraint failed: friends.friendCode' in str(e):
-            stmt = (
-                select(Friend)
+            db.session.execute(
+                update(Friend)
                 .where(Friend.friend_code == str(friendCode).zfill(12))
                 .where(Friend.network == network)
-                )
-            friend = db.session.scalar(stmt)
-            friend.last_accessed = time.time()
+                .values(last_accessed=time.time())
+            )
             db.session.commit()
 
 def fetchBearerToken(code:str):
