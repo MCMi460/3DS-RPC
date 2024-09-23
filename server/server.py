@@ -9,7 +9,6 @@ from sqlalchemy import select, update, insert, delete
 from database import start_db_time, get_db_url, Friend, DiscordFriends, Discord, Config
 
 sys.path.append('../')
-from api import *
 from api.love2 import *
 from api.private import CLIENT_ID, CLIENT_SECRET, HOST
 from api.public import pretendoBotFC, nintendoBotFC
@@ -22,9 +21,9 @@ app.config["SQLALCHEMY_DATABASE_URI"] = get_db_url()
 db = SQLAlchemy()
 db.init_app(app)
 
-limiter = Limiter(app, key_func = lambda : request.access_route[-1])
+limiter = Limiter(app, key_func=lambda: request.access_route[-1])
 
-API_ENDPOINT:str = 'https://discord.com/api/v10'
+API_ENDPOINT: str = 'https://discord.com/api/v10'
 
 local = False
 port = 2277
@@ -35,65 +34,73 @@ frontend_uptime = datetime.datetime.now()
 start_db_time(None, NetworkType.NINTENDO)
 start_db_time(None, NetworkType.PRETENDO)
 
+
 @app.errorhandler(404)
 def handler404(e):
     return render_template('dist/404.html')
 
-disableBackendWarnings = False
+
+disable_backend_warnings = False
 try:
     if sys.argv[1] == 'ignoreBackend' and local:
-        disableBackendWarnings = True
-except:pass
+        disable_backend_warnings = True
+except:
+    pass
+
 if local:
     HOST = 'http://localhost:2277'
 
 # Limiter limits
-userPresenceLimit = '3/minute'
-newUserLimit = '2/minute'
-cdnLimit = '60/minute'
-togglerLimit = '5/minute'
+user_presence_limit = '3/minute'
+new_user_limit = '2/minute'
+cdn_limit = '60/minute'
+toggler_limit = '5/minute'
 
 # Database files
-titleDatabase = []
-titlesToUID = []
+title_database = []
+titles_to_uid = []
 
 requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
+
 # Create title cache
-def cacheTitles():
-    global titleDatabase, titlesToUID
+def cache_titles():
+    global title_database, titles_to_uid
 
     # Pull databases
-    databasePath = './cache/'
-    if not os.path.exists(databasePath):
-        os.mkdir(databasePath)
-    databasePath = os.path.join(databasePath, 'databases.dat')
-    if os.path.isfile(databasePath):
-        with open(databasePath, 'rb') as file:
+    database_path = './cache/'
+    if not os.path.exists(database_path):
+        os.mkdir(database_path)
+    database_path = os.path.join(database_path, 'databases.dat')
+    if os.path.isfile(database_path):
+        with open(database_path, 'rb') as file:
             t = pickle.loads(file.read())
-            titleDatabase = t[0]
-            titlesToUID = t[1]
+            title_database = t[0]
+            titles_to_uid = t[1]
     else:
-        titleDatabase = []
-        titlesToUID = []
+        title_database = []
+        titles_to_uid = []
 
-        bar = ProgressBar() # Create progress bar
+        # Create progress bar
+        bar = ProgressBar()
 
         for region in ['US', 'JP', 'GB', 'KR', 'TW']:
-            titleDatabase.append(
+            title_database.append(
                 xmltodict.parse(requests.get('https://samurai.ctr.shop.nintendo.net/samurai/ws/%s/titles?shop_id=1&limit=5000&offset=0' % region, verify = False).text)
             )
-            bar.update(.5 / 5) # Update progress bar
-            titlesToUID += requests.get('https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_%s.json' % region).json()
-            bar.update(.5 / 5) # Update progress bar
+
+            # Update progress bar as database requests complete
+            bar.update(.5 / 5)
+            titles_to_uid += requests.get('https://raw.githubusercontent.com/hax0kartik/3dsdb/master/jsons/list_%s.json' % region).json()
+            bar.update(.5 / 5)
 
         bar.end() # End the progress bar
 
         # Save databases to file
-        with open(databasePath, 'wb') as file:
+        with open(database_path, 'wb') as file:
             file.write(pickle.dumps(
-                (titleDatabase,
-                titlesToUID)
+                (title_database,
+                 titles_to_uid)
             ))
         print('[Saved database to file]')
 
@@ -139,7 +146,7 @@ def create_user(friend_code: int, network: NetworkType, add_new_instance: bool):
             db.session.commit()
 
 
-def fetchBearerToken(code:str):
+def fetch_bearer_token(code: str):
     data = {
         'client_id': '%s' % CLIENT_ID,
         'client_secret': '%s' % CLIENT_SECRET,
@@ -150,13 +157,13 @@ def fetchBearerToken(code:str):
     headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
     }
-    r = requests.post('%s/oauth2/token' % API_ENDPOINT, data = data, headers = headers)
+    r = requests.post('%s/oauth2/token' % API_ENDPOINT, data=data, headers=headers)
     r.raise_for_status()
     return r.json()
 
 
-def refreshBearer(token:str):
-    user = userFromToken(token)
+def refresh_bearer(token: str):
+    user = user_from_token(token)
     data = {
         'client_id': '%s' % CLIENT_ID,
         'client_secret': '%s' % CLIENT_SECRET,
@@ -166,19 +173,19 @@ def refreshBearer(token:str):
     headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
     }
-    r = requests.post('%s/oauth2/token' % API_ENDPOINT, data = data, headers = headers)
+    r = requests.post('%s/oauth2/token' % API_ENDPOINT, data=data, headers=headers)
     r.raise_for_status()
-    token, user, pfp = createDiscordUser('', r.json())
+    token, user, pfp = create_discord_user('', r.json())
     return token, user, pfp
 
 
-def tokenFromID(ID:int) -> str:
-    stmt = select(Discord).where(Discord.id == ID)
+def token_from_id(discord_id: int) -> str:
+    stmt = select(Discord).where(Discord.id == discord_id)
     result = db.session.scalar(stmt)
     return result.site_session_token
 
 
-def userFromToken(token: str) -> Discord:
+def user_from_token(token: str) -> Discord:
     stmt = select(Discord).where(Discord.site_session_token == token)
     result = db.session.scalar(stmt)
     if not result:
@@ -186,13 +193,13 @@ def userFromToken(token: str) -> Discord:
     return result
 
 
-def createDiscordUser(code:str, response:dict = None):
+def create_discord_user(code: str, response: dict = None):
     if not response:
-        response = fetchBearerToken(code)
+        response = fetch_bearer_token(code)
     headers = {
         'Authorization': 'Bearer %s' % response['access_token'],
     }
-    new = requests.get('https://discord.com/api/users/@me', headers = headers)
+    new = requests.get('https://discord.com/api/users/@me', headers=headers)
     user = new.json()
     token = secrets.token_hex(20)
     try:
@@ -200,7 +207,7 @@ def createDiscordUser(code:str, response:dict = None):
             select(Discord)
             .where(Discord.id == user['id'])
         )
-        if already_exist_check != None:
+        if already_exist_check:
             raise Exception('UNIQUE constraint failed: discord.id')
         db.session.add(Discord(
             id=user['id'],
@@ -214,29 +221,39 @@ def createDiscordUser(code:str, response:dict = None):
         db.session.commit()
     except Exception as e:
         if 'UNIQUE constraint failed' in str(e):
-            old_token = tokenFromID(user['id'])
+            old_token = token_from_id(user['id'])
 
-            discord_user = userFromToken(old_token)
+            discord_user = user_from_token(old_token)
             discord_user.refresh_token = response['refresh_token']
             discord_user.bearer_token = response['access_token']
             discord_user.generation_date = time.time()
             discord_user.site_session_token = token
 
             db.session.commit()
-    return token, user['username'], ('https://cdn.discordapp.com/avatars/%s/%s.%s' % (user['id'], user['avatar'], 'gif' if user['avatar'].startswith('a_') else 'png') if user['avatar'] else '')
+
+    if user['avatar']:
+        if user['avatar'].startswith('a_'):
+            avatar_extension = 'gif'
+        else:
+            avatar_extension = 'png'
+        avatar_url = 'https://cdn.discordapp.com/avatars/%s/%s.%s' % (user['id'], user['avatar'], avatar_extension)
+    else:
+        avatar_url = ''
+
+    return token, user['username'], avatar_url
 
 
-def deleteDiscordUser(ID:int):
-    db.session.delete(db.session.get(Discord, ID))
-    db.session.delete(db.session.get(DiscordFriends, ID))
+def delete_discord_user(discord_id: int):
+    db.session.delete(db.session.get(Discord, discord_id))
+    db.session.delete(db.session.get(DiscordFriends, discord_id))
     db.session.commit()
 
 
-def getConnectedConsoles(ID:int):
-    stmt = select(DiscordFriends).where(DiscordFriends.id == ID)
+def get_connected_consoles(discord_id: int):
+    stmt = select(DiscordFriends).where(DiscordFriends.id == discord_id)
     result = db.session.scalars(stmt).all()
     
-    return [ (result.friend_code, result.active, result.network) for result in result ]
+    return [(result.friend_code, result.active, result.network) for result in result]
 
 
 def sidenav():
@@ -273,10 +290,10 @@ def sidenav():
     return data
 
 
-def userAgentCheck():
-    userAgent = request.headers['User-Agent']
+def user_agent_check():
+    user_agent = request.headers['User-Agent']
     try:
-        if float(userAgent.replace(agent, '')) != version:
+        if float(user_agent.replace(agent, '')) != version:
             raise Exception('client is not v%s' % version)
     except:
         raise Exception('this client is invalid')
@@ -286,14 +303,14 @@ def get_presence(friend_code: int, network: NetworkType, is_api: bool):
     try:
         if is_api:
             # First, run 3DS-RPC client checks.
-            userAgentCheck()
+            user_agent_check()
 
             # Create a user for this friend code, or update its last access date.
             # TODO(spotlightishere): This should be restructured!
             create_user(friend_code, network, False)
 
         network_start_time = db.session.get(Config, network).backend_uptime
-        if network_start_time is None and not disableBackendWarnings:
+        if network_start_time is None and not disable_backend_warnings:
             raise Exception('Backend currently offline. please try again later')
 
         friend_code = str(friend_code).zfill(12)
@@ -313,7 +330,7 @@ def get_presence(friend_code: int, network: NetworkType, is_api: bool):
                 'updateID': result.upd_id,
                 'joinable': result.joinable,
                 'gameDescription': result.game_description,
-                'game': getTitle(result.title_id, titlesToUID, titleDatabase),
+                'game': getTitle(result.title_id, titles_to_uid, title_database),
                 'disclaimer': 'all information regarding the title (User/Presence/game) is downloaded from Nintendo APIs',
             }
         else:
@@ -348,6 +365,7 @@ def get_presence(friend_code: int, network: NetworkType, is_api: bool):
 # NON-API ROUTES #
 ##################
 
+
 # Index page
 @app.route('/')
 def index():
@@ -360,14 +378,14 @@ def index():
     results = db.session.scalars(stmt).all()
     num = len(results)
     data = sidenav()
-    data['active'] = [ ({
-        'mii':MiiData().mii_studio_url(user.mii),
-        'username':user.username,
-        'game': getTitle(user.title_id, titlesToUID, titleDatabase),
+    data['active'] = [({
+        'mii': MiiData().mii_studio_url(user.mii),
+        'username': user.username,
+        'game': getTitle(user.title_id, titles_to_uid, title_database),
         'friendCode': user.friend_code.zfill(12),
         'joinable': user.joinable,
         'network': user.network.lower_name(),
-    }) for user in results if user.username ]
+    }) for user in results if user.username]
     data['active'] = data['active'][:2]
 
     stmt = (
@@ -378,25 +396,25 @@ def index():
         )
     results = db.session.scalars(stmt).all()
 
-    data['new'] = [ ({
-        'mii':MiiData().mii_studio_url(user.mii),
+    data['new'] = [({
+        'mii': MiiData().mii_studio_url(user.mii),
         'username': user.username,
-        'game': getTitle(user.title_id, titlesToUID, titleDatabase) if user.online and user.title_id != 0 else '',
+        'game': getTitle(user.title_id, titles_to_uid, title_database) if user.online and user.title_id != 0 else '',
         'friendCode': user.friend_code.zfill(12),
         'joinable': user.joinable,
         'network': user.network.lower_name(),
-    }) for user in results if user.username ]
+    }) for user in results if user.username]
     data['new'] = data['new'][:2]
 
     data['num'] = num
 
-    response = make_response(render_template('dist/index.html', data = data))
+    response = make_response(render_template('dist/index.html', data=data))
     return response
 
 
 # Index page
 @app.route('/index.html')
-def indexHTML():
+def index_html():
     return index()
 
 
@@ -416,26 +434,29 @@ def settings():
     }
     data = sidenav()
     try:
-        stmt = select(Discord).where(Discord.site_session_token == request.cookies['token'])
+        stmt = (
+            select(Discord)
+            .where(Discord.site_session_token == request.cookies['token'])
+        )
         result = db.session.scalar(stmt)
     except Exception as e:
         if 'invalid token' in str(e):
             response = make_response(redirect('/'))
-            response.set_cookie('token', '', expires = 0)
-            response.set_cookie('user', '', expires = 0)
-            response.set_cookie('pfp', '', expires = 0)
+            response.set_cookie('token', '', expires=0)
+            response.set_cookie('user', '', expires=0)
+            response.set_cookie('pfp', '', expires=0)
             return response
         return redirect('/')
 
     data['profileButton'] = result.show_profile_button
     data['smallImage'] = result.show_small_image
 
-    response = make_response(render_template('dist/settings.html', data = data))
+    response = make_response(render_template('dist/settings.html', data=data))
     return response
 
 
 @app.route('/settings.html')
-def settingsRedirect():
+def settings_redirect():
     return redirect('/settings')
 
 
@@ -453,17 +474,18 @@ def roster():
     data = sidenav()
 
     data['title'] = 'New Users'
-    data['users'] = [ ({
-        'mii':MiiData().mii_studio_url(user.mii),
-        'username':user.username,
-        'game': getTitle(user.title_id, titlesToUID, titleDatabase),
+    data['users'] = [({
+        'mii': MiiData().mii_studio_url(user.mii),
+        'username': user.username,
+        'game': getTitle(user.title_id, titles_to_uid, title_database),
         'friendCode': user.friend_code.zfill(12),
         'joinable': user.joinable,
         'network': user.network.lower_name(),
-    }) for user in results if user.username ]
+    }) for user in results if user.username]
 
-    response = make_response(render_template('dist/users.html', data = data))
+    response = make_response(render_template('dist/users.html', data=data))
     return response
+
 
 # Active page
 @app.route('/active')
@@ -479,22 +501,22 @@ def active():
     data = sidenav()
     data['title'] = 'Active Users'
 
-    data['users'] = [ ({
-        'mii':MiiData().mii_studio_url(user.mii),
-        'username':user.username,
-        'game': getTitle(user.title_id, titlesToUID, titleDatabase),
+    data['users'] = [({
+        'mii': MiiData().mii_studio_url(user.mii),
+        'username': user.username,
+        'game': getTitle(user.title_id, titles_to_uid, title_database),
         'friendCode': user.friend_code.zfill(12),
         'joinable': user.joinable,
         'network': user.network.lower_name(),
-    }) for user in results if user.username ]
+    }) for user in results if user.username]
 
-    response = make_response(render_template('dist/users.html', data = data))
+    response = make_response(render_template('dist/users.html', data=data))
     return response
+
 
 # Register page
 @app.route('/register.html')
 def register():
-    
     network = request.args.get('network')
     if network is None:
         return make_response(render_template('dist/registerselectnetwork.html'))
@@ -509,24 +531,29 @@ def register():
     except:
         return make_response(render_template('dist/registerselectnetwork.html'))
 
+
 # Register page redirect
 @app.route('/register')
-def registerPage():
+def register_page():
     return register()
+
 
 # Connection page
 @app.route('/connect')
 def connect():
-    return render_template('dist/connect.html', data = {'local':local})
+    return render_template('dist/connect.html', data={'local': local})
+
 
 @app.route('/discord')
-def discordConnect():
+def discord_connect():
     return redirect('/connect')
+
 
 # Failure page
 @app.route('/failure.html')
 def failure():
     return render_template('dist/failure.html')
+
 
 # Success page
 @app.route('/success.html')
@@ -536,7 +563,8 @@ def success():
         'fc': request.args.get('fc'),
         'network': request.args.get('network')
     }
-    return render_template('dist/success.html', data = data)
+    return render_template('dist/success.html', data=data)
+
 
 # Consoles page
 @app.route('/consoles')
@@ -547,16 +575,16 @@ def consoles():
         'consoles': [],
     }
     try:
-        id = userFromToken(request.cookies['token']).id
+        discord_id = user_from_token(request.cookies['token']).discord_id
     except Exception as e:
         if 'invalid token' in str(e):
             response = make_response(redirect('/'))
-            response.set_cookie('token', '', expires = 0)
-            response.set_cookie('user', '', expires = 0)
-            response.set_cookie('pfp', '', expires = 0)
+            response.set_cookie('token', '', expires=0)
+            response.set_cookie('user', '', expires=0)
+            response.set_cookie('pfp', '', expires=0)
             return response
         return redirect('/')
-    for console, active, network_type in getConnectedConsoles(id):
+    for console, active, network_type in get_connected_consoles(discord_id):
         network = NetworkType(network_type)
         stmt = (
             select(Friend)
@@ -571,43 +599,46 @@ def consoles():
             'network': network.lower_name()
         })
     data.update(sidenav())
-    response = render_template('dist/consoles.html', data = data)
+    response = render_template('dist/consoles.html', data=data)
     return response
 
-@app.route('/user/<string:friendCode>/')
-def userPage(friendCode:str):
+
+@app.route('/user/<string:friend_code>/')
+def user_page(friend_code: str):
     network: NetworkType
 
     try:
         network = nameToNetworkType(request.args.get('network'))
 
-        friend_code_int = int(friendCode.replace('-', ''))
-        userData = get_presence(friend_code_int, network, False)
-        if userData['Exception'] or not userData['User']['username']:
-            raise Exception(userData['Exception'])
+        friend_code_int = int(friend_code.replace('-', ''))
+        user_data = get_presence(friend_code_int, network, False)
+        if user_data['Exception'] or not user_data['User']['username']:
+            raise Exception(user_data['Exception'])
     except:
         return render_template('dist/404.html')
 
-    if not userData['User']['online'] or not userData['User']['Presence']:
-        userData['User']['Presence']['game'] = None
-    userData['User']['favoriteGame'] = getTitle(userData['User']['favoriteGame'], titlesToUID, titleDatabase)
-    userData['User']['network'] = network.lower_name()
-    if userData['User']['favoriteGame']['name'] == 'Home Screen':
-        userData['User']['favoriteGame'] = None
-    for i in ('accountCreation','lastAccessed','lastOnline'):
-        if userData['User'][i] == 0:
-            userData['User'][i] = 'Never'
-        elif time.time() - userData['User'][i] > 86400:
-            userData['User'][i] = datetime.datetime.fromtimestamp(userData['User'][i]).strftime('%b %d, %Y')
-        elif time.time() - userData['User'][i] > 600:
-            s = str(datetime.timedelta(seconds = int(time.time() - userData['User'][i]))).split(':')
-            userData['User'][i] = s[0] + 'h, ' + s[1] + 'm, ' + s[2] + 's ago'
+    if not user_data['User']['online'] or not user_data['User']['Presence']:
+        user_data['User']['Presence']['game'] = None
+    user_data['User']['favoriteGame'] = getTitle(user_data['User']['favoriteGame'], titles_to_uid, title_database)
+    user_data['User']['network'] = network.lower_name()
+    if user_data['User']['favoriteGame']['name'] == 'Home Screen':
+        user_data['User']['favoriteGame'] = None
+    for i in ('accountCreation', 'lastAccessed', 'lastOnline'):
+        if user_data['User'][i] == 0:
+            user_data['User'][i] = 'Never'
+        elif time.time() - user_data['User'][i] > 86400:
+            user_data['User'][i] = datetime.datetime.fromtimestamp(user_data['User'][i]).strftime('%b %d, %Y')
+        elif time.time() - user_data['User'][i] > 600:
+            s = str(datetime.timedelta(seconds=int(time.time() - user_data['User'][i]))).split(':')
+            user_data['User'][i] = s[0] + 'h, ' + s[1] + 'm, ' + s[2] + 's ago'
         else:
-            userData['User'][i] = 'Just now'
-    #print(userData) # COMMENT/DELETE THIS BEFORE COMMITTING
-    userData.update(sidenav())
-    response = make_response(render_template('dist/user.html', data = userData))
+            user_data['User'][i] = 'Just now'
+    # COMMENT/DELETE THIS BEFORE COMMITTING
+    # print(user_data)
+    user_data.update(sidenav())
+    response = make_response(render_template('dist/user.html', data = user_data))
     return response
+
 
 @app.route('/terms')
 def terms():
@@ -617,13 +648,14 @@ def terms():
 # API ROUTES #
 ##############
 
+
 # Create entry in database with friendCode
-@app.route('/api/user/create/<int:friendCode>/', methods=['POST'])
-@limiter.limit(newUserLimit)
-def newUser(friendCode:int, network:int=-1, userCheck:bool = True):
+@app.route('/api/user/create/<int:friend_code>/', methods=['POST'])
+@limiter.limit(new_user_limit)
+def new_user(friend_code: int, network: int = -1, user_check: bool = True):
     try:
-        if userCheck:
-            userAgentCheck()
+        if user_check:
+            user_agent_check()
         if network == -1:
             network = NetworkType.NINTENDO
 
@@ -632,7 +664,7 @@ def newUser(friendCode:int, network:int=-1, userCheck:bool = True):
                 network = nameToNetworkType(request_arg)
             except:
                 pass            
-        create_user(friendCode, network, True)
+        create_user(friend_code, network, True)
         return {
             'Exception': False,
         }
@@ -646,8 +678,8 @@ def newUser(friendCode:int, network:int=-1, userCheck:bool = True):
 
 # Grab presence from friendCode
 @app.route('/api/user/<int:friend_code>/', methods=['GET'])
-@limiter.limit(userPresenceLimit)
-def userPresence(friend_code: int):
+@limiter.limit(user_presence_limit)
+def user_presence(friend_code: int):
     # Check if a specific network is being specified as a query parameter.
     network_name = request.args.get('network')
     if network_name:
@@ -659,14 +691,14 @@ def userPresence(friend_code: int):
 
 
 # Toggle
-@app.route('/api/toggle/<int:friendCode>/', methods=['POST'])
-@limiter.limit(togglerLimit)
-def toggler(friendCode:int):
+@app.route('/api/toggle/<int:friend_code>/', methods=['POST'])
+@limiter.limit(toggler_limit)
+def toggler(friend_code: int):
     network = NetworkType.NINTENDO
-    if request.data.decode('utf-8').split(',')[2] != None:
+    if request.data.decode('utf-8').split(',')[2]:
         network = nameToNetworkType(request.data.decode('utf-8').split(',')[2])
     try:
-        fc = str(principal_id_to_friend_code(friend_code_to_principal_id(friendCode))).zfill(12)
+        fc = str(principal_id_to_friend_code(friend_code_to_principal_id(friend_code))).zfill(12)
     except:
         return 'failure!\nthat is not a real friendCode!'
     stmt = (
@@ -681,17 +713,17 @@ def toggler(friendCode:int):
     f = request.data.decode('utf-8').split(',')
     token = f[0]
     active = bool(int(f[1]))
-    id = userFromToken(token).id
+    discord_id = user_from_token(token).id
     stmt = (
         select(DiscordFriends)
-        .where(DiscordFriends.id == id)
+        .where(DiscordFriends.id == discord_id)
         .where(DiscordFriends.friend_code == fc)
         .where(DiscordFriends.network == network)
     )
     result = db.session.scalar(stmt)
 
     if not result:
-        stmt = select(DiscordFriends).where(DiscordFriends.id == id)
+        stmt = select(DiscordFriends).where(DiscordFriends.id == discord_id)
         allFriends = db.session.scalars(stmt).all()
         if len(allFriends) >= 10:
             return 'failure!\nyou can\'t have more than ten consoles added at one time!'
@@ -700,7 +732,7 @@ def toggler(friendCode:int):
         db.session.execute(
             update(DiscordFriends)
             .where(DiscordFriends.active)
-            .where(DiscordFriends.id == id)
+            .where(DiscordFriends.id == discord_id)
             .values(active = False)
         )
     if result:
@@ -708,32 +740,32 @@ def toggler(friendCode:int):
             update(DiscordFriends)
             .where(DiscordFriends.friend_code == fc)
             .where(DiscordFriends.network == network)
-            .where(DiscordFriends.id == id)
+            .where(DiscordFriends.id == discord_id)
             .values(active=active)
         )
     else:
         db.session.execute(
             insert(DiscordFriends)
-            .values(id=id, friend_code=fc, active=active, network=network)
+            .values(id=discord_id, friend_code=fc, active=active, network=network)
         )
     db.session.commit()
     return 'success!'
 
 
 # Delete
-@app.route('/api/delete/<int:friendCode>/', methods=['POST'])
-@limiter.limit(togglerLimit)
-def deleter(friendCode:int):
-    fc = str(principal_id_to_friend_code(friend_code_to_principal_id(friendCode))).zfill(12)
+@app.route('/api/delete/<int:friend_code>/', methods=['POST'])
+@limiter.limit(toggler_limit)
+def deleter(friend_code: int):
+    fc = str(principal_id_to_friend_code(friend_code_to_principal_id(friend_code))).zfill(12)
     if not ',' in request.data.decode('utf-8'): # Old API compatiblity. In the future this should be depercated.
         token = request.data.decode('utf-8')
-        id = userFromToken(token).id
+        discord_id = user_from_token(token).id
         
         db.session.execute(
             delete(DiscordFriends)
             .where(DiscordFriends.friend_code == fc)
             .where(DiscordFriends.network == NetworkType.NINTENDO)
-            .where(DiscordFriends.id == id)
+            .where(DiscordFriends.id == discord_id)
         )
         db.session.commit()
 
@@ -742,13 +774,13 @@ def deleter(friendCode:int):
     data = request.data.decode('utf-8').split(',')
     token = data[0]
     network = nameToNetworkType(data[1])
-    id = userFromToken(token).id
+    discord_id = user_from_token(token).id
 
     db.session.execute(
             delete(DiscordFriends)
             .where(DiscordFriends.friend_code == fc)
             .where(DiscordFriends.network == network)
-            .where(DiscordFriends.id == id)
+            .where(DiscordFriends.id == discord_id)
         )
     db.session.commit()
     return 'success!'
@@ -756,8 +788,8 @@ def deleter(friendCode:int):
 
 # Toggle one
 @app.route('/api/settings/<string:which>/', methods=['POST'])
-@limiter.limit(togglerLimit)
-def settingsToggler(which:str):
+@limiter.limit(toggler_limit)
+def settings_toggler(which: str):
     toggle = bool(int(request.data.decode('utf-8')))
     if not which in ('smallImage', 'profileButton'):
         return 'failure!'
@@ -780,24 +812,24 @@ def settingsToggler(which:str):
 
 # Make Nintendo's cert a 'secure' cert
 @app.route('/cdn/i/<string:file>/', methods=['GET'])
-@limiter.limit(cdnLimit)
-def cdnImage(file:str):
-    response = make_response(requests.get('https://kanzashi-ctr.cdn.nintendo.net/i/%s' % file, verify = False).content)
+@limiter.limit(cdn_limit)
+def cdn_image(file: str):
+    response = make_response(requests.get('https://kanzashi-ctr.cdn.nintendo.net/i/%s' % file, verify=False).content)
     response.headers['Content-Type'] = 'image/jpeg'
     return response
 
 
 # Local image cache
 @app.route('/cdn/l/<string:file>/', methods=['GET'])
-@limiter.limit(cdnLimit)
-def localImageCdn(file:str):
+@limiter.limit(cdn_limit)
+def local_image_cdn(file: str):
     file = hex(int(file, 16)).replace('0x', '').zfill(16).upper()
     return send_file('cache/' + file + '.png')
 
 
 # Login route
 @app.route('/login', methods=['POST'])
-@limiter.limit(newUserLimit)
+@limiter.limit(new_user_limit)
 def login():
     try:
         fc = str(principal_id_to_friend_code(friend_code_to_principal_id(request.form['fc']))).zfill(12)
@@ -805,7 +837,7 @@ def login():
             network = NetworkType.NINTENDO
         else:
             network = NetworkType(int(request.form['network']))
-        newUser(fc, network, False)
+        new_user(fc, network, False)
     except:
         return redirect('/failure.html')
     return redirect(f'/success.html?fc={fc}&network={network.lower_name()}')
@@ -813,15 +845,15 @@ def login():
 
 # Discord route
 @app.route('/authorize')
-@limiter.limit(newUserLimit)
+@limiter.limit(new_user_limit)
 def authorize():
     if not request.args.get('code'):
         return render_template('dist/404.html')
-    token, user, pfp = createDiscordUser(request.args['code'])
+    token, user, pfp = create_discord_user(request.args['code'])
     response = make_response(redirect('/consoles'))
-    response.set_cookie('token', token, expires = datetime.datetime.now() + datetime.timedelta(days = 30))
-    response.set_cookie('user', user, expires = datetime.datetime.now() + datetime.timedelta(days = 30))
-    response.set_cookie('pfp', pfp, expires = datetime.datetime.now() + datetime.timedelta(days = 30))
+    response.set_cookie('token', token, expires=datetime.datetime.now() + datetime.timedelta(days=30))
+    response.set_cookie('user', user, expires=datetime.datetime.now() + datetime.timedelta(days=30))
+    response.set_cookie('pfp', pfp, expires=datetime.datetime.now() + datetime.timedelta(days=30))
     return response
 
 
@@ -829,21 +861,21 @@ def authorize():
 def refresh():
     if local:
         try:
-            token, user, pfp = refreshBearer(request.cookies['token'])
+            token, user, pfp = refresh_bearer(request.cookies['token'])
             response = make_response(redirect('/consoles'))
-            response.set_cookie('token', token, expires = datetime.datetime.now() + datetime.timedelta(days = 30))
-            response.set_cookie('user', user, expires = datetime.datetime.now() + datetime.timedelta(days = 30))
-            response.set_cookie('pfp', pfp, expires = datetime.datetime.now() + datetime.timedelta(days = 30))
+            response.set_cookie('token', token, expires=datetime.datetime.now() + datetime.timedelta(days=30))
+            response.set_cookie('user', user, expires=datetime.datetime.now() + datetime.timedelta(days=30))
+            response.set_cookie('pfp', pfp, expires=datetime.datetime.now() + datetime.timedelta(days=30))
             return response
         except:
-            deleteDiscordUser(userFromToken(request.cookies['token']).id)
+            delete_discord_user(user_from_token(request.cookies['token']).id)
     return redirect('/404.html')
 
 
 if __name__ == '__main__':
-    cacheTitles()
+    cache_titles()
     if local:
-        app.run(host = '0.0.0.0', port = port)
+        app.run(host='0.0.0.0', port=port)
     else:
         import gevent.pywsgi
         server = gevent.pywsgi.WSGIServer(('0.0.0.0', port), app)
