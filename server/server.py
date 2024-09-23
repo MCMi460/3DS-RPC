@@ -274,8 +274,16 @@ def userAgentCheck():
         raise Exception('this client is invalid')
 
 
-def get_presence(friend_code: int, network: NetworkType):
+def get_presence(friend_code: int, network: NetworkType, is_api: bool):
     try:
+        if is_api:
+            # First, run 3DS-RPC client checks.
+            userAgentCheck()
+
+            # Create a user for this friend code, or update its last access date.
+            # TODO(spotlightishere): This should be restructured!
+            createUser(friend_code, network, False)
+
         network_start_time = db.session.get(Config, network).backend_uptime
         if network_start_time is None and not disableBackendWarnings:
             raise Exception('Backend currently offline. please try again later')
@@ -561,7 +569,7 @@ def userPage(friendCode:str):
         network = nameToNetworkType(request.args.get('network'))
 
         friend_code_int = int(friendCode.replace('-', ''))
-        userData = get_presence(friend_code_int, network)
+        userData = get_presence(friend_code_int, network, False)
         if userData['Exception'] or not userData['User']['username']:
             raise Exception(userData['Exception'])
     except:
@@ -627,9 +635,6 @@ def newUser(friendCode:int, network:int=-1, userCheck:bool = True):
 @app.route('/api/user/<int:friend_code>/', methods=['GET'])
 @limiter.limit(userPresenceLimit)
 def userPresence(friend_code: int):
-    # First, run 3DS-RPC client checks.
-    userAgentCheck()
-
     # Check if a specific network is being specified as a query parameter.
     network_name = request.args.get('network')
     if network_name:
@@ -637,11 +642,7 @@ def userPresence(friend_code: int):
     else:
         network = NetworkType.NINTENDO
 
-    # Create a user for this friend code, or update its last access date.
-    # TODO(spotlightishere): This should be restructured!
-    createUser(friend_code, network, False)
-
-    return get_presence(friend_code, network)
+    return get_presence(friend_code, network, True)
 
 
 # Alias
