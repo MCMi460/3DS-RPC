@@ -97,25 +97,27 @@ def cacheTitles():
             ))
         print('[Saved database to file]')
 
+
 # Create entry in database with friendCode
-def createUser(friendCode:int, network:NetworkType, addNewInstance:bool = False):
-    if int(friendCode) == int(pretendoBotFC):
+def create_user(friend_code: int, network: NetworkType, add_new_instance: bool):
+    # Make sure the user isn't trying to create any registered bot friend code.
+    if int(friend_code) == int(pretendoBotFC):
         raise Exception('invalid FC')
-    if int(friendCode) == int(nintendoBotFC):
+    if int(friend_code) == int(nintendoBotFC):
         raise Exception('invalid FC')
+
     try:
-        friend_code_to_principal_id(friendCode)
-        if not addNewInstance:
+        if not add_new_instance:
             raise Exception('UNIQUE constraint failed: friends.friendCode')
         already_added_check = db.session.scalar(
             select(Friend)
-            .where(Friend.friend_code == str(friendCode).zfill(12))
+            .where(Friend.friend_code == str(friend_code).zfill(12))
             .where(Friend.network == network)
         )
-        if already_added_check != None:
+        if already_added_check:
             raise Exception('UNIQUE constraint failed: friends.friendCode')
         db.session.add(Friend(
-            friend_code=str(friendCode).zfill(12),
+            friend_code=str(friend_code).zfill(12),
             network=network,
             online=False,
             title_id='0',
@@ -130,11 +132,12 @@ def createUser(friendCode:int, network:NetworkType, addNewInstance:bool = False)
         if 'UNIQUE constraint failed: friends.friendCode' in str(e):
             db.session.execute(
                 update(Friend)
-                .where(Friend.friend_code == str(friendCode).zfill(12))
+                .where(Friend.friend_code == str(friend_code).zfill(12))
                 .where(Friend.network == network)
                 .values(last_accessed=time.time())
             )
             db.session.commit()
+
 
 def fetchBearerToken(code:str):
     data = {
@@ -150,6 +153,7 @@ def fetchBearerToken(code:str):
     r = requests.post('%s/oauth2/token' % API_ENDPOINT, data = data, headers = headers)
     r.raise_for_status()
     return r.json()
+
 
 def refreshBearer(token:str):
     user = userFromToken(token)
@@ -167,10 +171,12 @@ def refreshBearer(token:str):
     token, user, pfp = createDiscordUser('', r.json())
     return token, user, pfp
 
+
 def tokenFromID(ID:int) -> str:
     stmt = select(Discord).where(Discord.id == ID)
     result = db.session.scalar(stmt)
     return result.site_session_token
+
 
 def userFromToken(token: str) -> Discord:
     stmt = select(Discord).where(Discord.site_session_token == token)
@@ -178,6 +184,7 @@ def userFromToken(token: str) -> Discord:
     if not result:
         raise Exception('invalid token!')
     return result
+
 
 def createDiscordUser(code:str, response:dict = None):
     if not response:
@@ -218,10 +225,12 @@ def createDiscordUser(code:str, response:dict = None):
             db.session.commit()
     return token, user['username'], ('https://cdn.discordapp.com/avatars/%s/%s.%s' % (user['id'], user['avatar'], 'gif' if user['avatar'].startswith('a_') else 'png') if user['avatar'] else '')
 
+
 def deleteDiscordUser(ID:int):
     db.session.delete(db.session.get(Discord, ID))
     db.session.delete(db.session.get(DiscordFriends, ID))
     db.session.commit()
+
 
 def getConnectedConsoles(ID:int):
     stmt = select(DiscordFriends).where(DiscordFriends.id == ID)
@@ -281,14 +290,13 @@ def get_presence(friend_code: int, network: NetworkType, is_api: bool):
 
             # Create a user for this friend code, or update its last access date.
             # TODO(spotlightishere): This should be restructured!
-            createUser(friend_code, network, False)
+            create_user(friend_code, network, False)
 
         network_start_time = db.session.get(Config, network).backend_uptime
         if network_start_time is None and not disableBackendWarnings:
             raise Exception('Backend currently offline. please try again later')
 
         principal_id = friend_code_to_principal_id(friend_code)
-
         stmt = (
             select(Friend)
             .where(Friend.friend_code == friend_code)
@@ -384,15 +392,18 @@ def index():
     response = make_response(render_template('dist/index.html', data = data))
     return response
 
+
 # Index page
 @app.route('/index.html')
 def indexHTML():
     return index()
 
+
 # Favicon
 @app.route('/favicon.ico')
 def favicon():
     return send_file('static/assets/img/favicon.ico')
+
 
 # Settings page
 @app.route('/settings')
@@ -421,9 +432,11 @@ def settings():
     response = make_response(render_template('dist/settings.html', data = data))
     return response
 
+
 @app.route('/settings.html')
 def settingsRedirect():
     return redirect('/settings')
+
 
 # Roster page
 @app.route('/roster')
@@ -618,7 +631,7 @@ def newUser(friendCode:int, network:int=-1, userCheck:bool = True):
                 network = nameToNetworkType(request_arg)
             except:
                 pass            
-        createUser(friendCode, network, True)
+        create_user(friendCode, network, True)
         return {
             'Exception': False,
         }
@@ -705,6 +718,7 @@ def toggler(friendCode:int):
     db.session.commit()
     return 'success!'
 
+
 # Delete
 @app.route('/api/delete/<int:friendCode>/', methods=['POST'])
 @limiter.limit(togglerLimit)
@@ -738,6 +752,7 @@ def deleter(friendCode:int):
     db.session.commit()
     return 'success!'
 
+
 # Toggle one
 @app.route('/api/settings/<string:which>/', methods=['POST'])
 @limiter.limit(togglerLimit)
@@ -761,6 +776,7 @@ def settingsToggler(which:str):
         return 'failure!'
     return 'success!'
 
+
 # Make Nintendo's cert a 'secure' cert
 @app.route('/cdn/i/<string:file>/', methods=['GET'])
 @limiter.limit(cdnLimit)
@@ -769,12 +785,14 @@ def cdnImage(file:str):
     response.headers['Content-Type'] = 'image/jpeg'
     return response
 
+
 # Local image cache
 @app.route('/cdn/l/<string:file>/', methods=['GET'])
 @limiter.limit(cdnLimit)
 def localImageCdn(file:str):
     file = hex(int(file, 16)).replace('0x', '').zfill(16).upper()
     return send_file('cache/' + file + '.png')
+
 
 # Login route
 @app.route('/login', methods=['POST'])
@@ -791,6 +809,7 @@ def login():
         return redirect('/failure.html')
     return redirect(f'/success.html?fc={fc}&network={network.lower_name()}')
 
+
 # Discord route
 @app.route('/authorize')
 @limiter.limit(newUserLimit)
@@ -803,6 +822,7 @@ def authorize():
     response.set_cookie('user', user, expires = datetime.datetime.now() + datetime.timedelta(days = 30))
     response.set_cookie('pfp', pfp, expires = datetime.datetime.now() + datetime.timedelta(days = 30))
     return response
+
 
 @app.route('/refresh')
 def refresh():
@@ -817,6 +837,7 @@ def refresh():
         except:
             deleteDiscordUser(userFromToken(request.cookies['token']).id)
     return redirect('/404.html')
+
 
 if __name__ == '__main__':
     cacheTitles()
