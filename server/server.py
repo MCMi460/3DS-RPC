@@ -7,7 +7,7 @@ import sys, datetime, xmltodict, pickle, secrets
 
 from sqlalchemy import select, update, insert, delete
 
-from database import start_db_time, get_db_url, Friend, DiscordFriends, Discord, Config
+from database import *
 
 sys.path.append('../')
 from api.love2 import *
@@ -22,7 +22,10 @@ app.config["SQLALCHEMY_DATABASE_URI"] = get_db_url()
 db = SQLAlchemy()
 db.init_app(app)
 
-migrate = Migrate(app, db)
+# We need to manually specify our base model's metadata after
+# importing all other models using it as the declarative base.
+# (See above with `from database import *`)
+migrate = Migrate(app, db, target_metadata=Base.metadata)
 
 limiter = Limiter(app, key_func=lambda: request.access_route[-1])
 
