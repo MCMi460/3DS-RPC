@@ -51,8 +51,8 @@ class Friend(Base):
     username: Mapped[Optional[str]]
     message: Mapped[Optional[str]]
     mii: Mapped[Optional[str]]
-    joinable: Mapped[bool]
-    game_description: Mapped[Optional[str]] = mapped_column("game_description", nullable=False)
+    joinable: Mapped[Optional[bool]]
+    game_description: Mapped[Optional[str]] = mapped_column("game_description")
     last_online: Mapped[int] = mapped_column("last_online", BigInteger(), nullable=False)
     favorite_game: Mapped[int] = mapped_column("favorite_game", BigInteger(), nullable=False)
 
@@ -60,7 +60,7 @@ class Friend(Base):
 class DiscordFriends(Base):
     __tablename__ = "discord_friends"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger(), primary_key=True)
     friend_code: Mapped[str] = mapped_column("friend_code", primary_key=True, nullable=False)
     network: Mapped[NetworkType] = mapped_column("network", NetworkTypeValue())
     active: Mapped[bool] = mapped_column(nullable=False)
