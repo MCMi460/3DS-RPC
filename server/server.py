@@ -1,6 +1,7 @@
 # Created by Deltaion Lee (MCMi460) on Github
 from flask import Flask, make_response, request, redirect, render_template, send_file
 from flask_limiter import Limiter
+from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 import sys, datetime, xmltodict, pickle, secrets
 
@@ -20,6 +21,8 @@ app.config["SQLALCHEMY_DATABASE_URI"] = get_db_url()
 
 db = SQLAlchemy()
 db.init_app(app)
+
+migrate = Migrate(app, db)
 
 limiter = Limiter(app, key_func=lambda: request.access_route[-1])
 

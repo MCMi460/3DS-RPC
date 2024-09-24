@@ -5,6 +5,7 @@ flask-limiter<=2.9.2 # Until 3.0 fixes "multiple values for argument 'key_func'"
 gevent
 SQLAlchemy>=2.0
 Flask-SQLAlchemy>=3.1
+Flask-Migrate>=4.0
 xmltodict
 Pillow
 pycryptodomex
