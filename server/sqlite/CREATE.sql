@@ -20,8 +20,8 @@ Create Table config(
   network tinyint NOT NULL
 );
 
-INSERT INTO config(backend_uptime, network) VALUES (0, 0);
-INSERT INTO config(backend_uptime, network) VALUES (0, 1);
+INSERT INTO config(backend_uptime, network) VALUES (NULL, 0);
+INSERT INTO config(backend_uptime, network) VALUES (NULL, 1);
 
 Create Table discord(
   ID bigint NOT NULL UNIQUE,

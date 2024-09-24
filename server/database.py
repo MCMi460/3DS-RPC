@@ -19,7 +19,7 @@ class Config(Base):
     __tablename__ = "config"
 
     network: Mapped[NetworkType] = mapped_column("network", Integer(), primary_key=True)
-    backend_uptime: Mapped[datetime.datetime] = mapped_column("backend_uptime", DateTime())
+    backend_uptime: Mapped[Optional[datetime.datetime]] = mapped_column("backend_uptime", DateTime())
 
 
 class NetworkTypeValue(TypeDecorator):
@@ -48,11 +48,11 @@ class Friend(Base):
     upd_id: Mapped[str] = mapped_column("upd_id", nullable=False)
     last_accessed: Mapped[int] = mapped_column("last_accessed", BigInteger(), nullable=False)
     account_creation: Mapped[int] = mapped_column("account_creation", BigInteger(), nullable=False)
-    username: Mapped[str]
-    message: Mapped[str]
-    mii: Mapped[str]
+    username: Mapped[Optional[str]]
+    message: Mapped[Optional[str]]
+    mii: Mapped[Optional[str]]
     joinable: Mapped[bool]
-    game_description: Mapped[str] = mapped_column("game_description", nullable=False)
+    game_description: Mapped[Optional[str]] = mapped_column("game_description", nullable=False)
     last_online: Mapped[int] = mapped_column("last_online", BigInteger(), nullable=False)
     favorite_game: Mapped[int] = mapped_column("favorite_game", BigInteger(), nullable=False)
 
@@ -72,8 +72,8 @@ class Discord(Base):
     id: Mapped[int] = mapped_column("id", BigInteger(), primary_key=True, nullable=False, unique=True)
     refresh_token: Mapped[str] = mapped_column("refresh", nullable=False)
     bearer_token: Mapped[str] = mapped_column("bearer", nullable=False)
-    rpc_session_token: Mapped[str] = mapped_column("session")
-    site_session_token: Mapped[str] = mapped_column("token", unique=True)
+    rpc_session_token: Mapped[Optional[str]] = mapped_column("session")
+    site_session_token: Mapped[Optional[str]] = mapped_column("token", unique=True)
     last_accessed: Mapped[int] = mapped_column("last_accessed", BigInteger(), nullable=False)
     generation_date: Mapped[int] = mapped_column("generation_date", BigInteger(), nullable=False)
     show_profile_button: Mapped[bool] = mapped_column("show_profile_button", nullable=False, default=True)
