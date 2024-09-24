@@ -3,7 +3,7 @@ from typing import Optional
 
 from sqlalchemy import create_engine, delete
 from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped, Session
-from sqlalchemy.types import DateTime, Integer, TypeDecorator
+from sqlalchemy.types import DateTime, Integer, TypeDecorator, BigInteger
 import sys
 
 sys.path.append('../')
@@ -46,15 +46,15 @@ class Friend(Base):
     online: Mapped[bool]
     title_id: Mapped[str] = mapped_column("title_id", nullable=False)
     upd_id: Mapped[str] = mapped_column("upd_id", nullable=False)
-    last_accessed: Mapped[int] = mapped_column("last_accessed", nullable=False)
-    account_creation: Mapped[int] = mapped_column("account_creation", nullable=False)
+    last_accessed: Mapped[int] = mapped_column("last_accessed", BigInteger(), nullable=False)
+    account_creation: Mapped[int] = mapped_column("account_creation", BigInteger(), nullable=False)
     username: Mapped[str]
     message: Mapped[str]
     mii: Mapped[str]
     joinable: Mapped[bool]
     game_description: Mapped[str] = mapped_column("game_description", nullable=False)
-    last_online: Mapped[int] = mapped_column("last_online", nullable=False)
-    favorite_game: Mapped[int] = mapped_column("favorite_game", nullable=False)
+    last_online: Mapped[int] = mapped_column("last_online", BigInteger(), nullable=False)
+    favorite_game: Mapped[int] = mapped_column("favorite_game", BigInteger(), nullable=False)
 
 
 class DiscordFriends(Base):
@@ -69,13 +69,13 @@ class DiscordFriends(Base):
 class Discord(Base):
     __tablename__ = "discord"
 
-    id: Mapped[int] = mapped_column("id", primary_key=True, nullable=False, unique=True)
+    id: Mapped[int] = mapped_column("id", BigInteger(), primary_key=True, nullable=False, unique=True)
     refresh_token: Mapped[str] = mapped_column("refresh", nullable=False)
     bearer_token: Mapped[str] = mapped_column("bearer", nullable=False)
     rpc_session_token: Mapped[str] = mapped_column("session")
     site_session_token: Mapped[str] = mapped_column("token", unique=True)
-    last_accessed: Mapped[int] = mapped_column("last_accessed", nullable=False)
-    generation_date: Mapped[int] = mapped_column("generation_date", nullable=False)
+    last_accessed: Mapped[int] = mapped_column("last_accessed", BigInteger(), nullable=False)
+    generation_date: Mapped[int] = mapped_column("generation_date", BigInteger(), nullable=False)
     show_profile_button: Mapped[bool] = mapped_column("show_profile_button", nullable=False, default=True)
     show_small_image: Mapped[bool] = mapped_column("show_small_image", nullable=False, default=True)
 
