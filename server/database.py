@@ -42,7 +42,7 @@ class Friend(Base):
     __tablename__ = "friends"
 
     friend_code: Mapped[str] = mapped_column("friend_code", primary_key=True, nullable=False, unique=True)
-    network: Mapped[NetworkType] = mapped_column("network", NetworkTypeValue())
+    network: Mapped[NetworkType] = mapped_column("network", NetworkTypeValue(), index=True)
     online: Mapped[bool]
     title_id: Mapped[str] = mapped_column("title_id", nullable=False)
     upd_id: Mapped[str] = mapped_column("upd_id", nullable=False)
