@@ -1,3 +1,3 @@
 rm fcLibrary.db
-printf 'Please copy and paste:\n\n.open fcLibrary.db\n.read CREATE.sql\n.exit\n\n'
-sqlite3
+sqlite3 fcLibrary.db < CREATE.sql
+echo "Reset!"
