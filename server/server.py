@@ -581,7 +581,7 @@ def consoles():
         'consoles': [],
     }
     try:
-        discord_id = user_from_token(request.cookies['token']).discord_id
+        discord_id = user_from_token(request.cookies['token']).id
     except Exception as e:
         if 'invalid token' in str(e):
             response = make_response(redirect('/'))
