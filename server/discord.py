@@ -2,7 +2,6 @@ import sys, pickle
 from typing import Optional
 
 sys.path.append('../')
-from api import *
 from api.love2 import *
 from api.private import CLIENT_ID, CLIENT_SECRET, HOST
 from api.networks import NetworkType
@@ -65,7 +64,7 @@ class DiscordSession():
 		session.commit()
 
 
-class Discord():
+class APIClient():
 	def update_presence(self, current_user: DiscordTable, user_data: UserData, network: NetworkType):
 		last_accessed = user_data.last_accessed
 		if time.time() - last_accessed >= 1000:
@@ -196,15 +195,15 @@ delay = 2
 while True:
 	time.sleep(delay)
 
-	discord = Discord()
+	api_client = APIClient()
 	
 	group = session.scalars(select(DiscordTable)).all()
 	for dn in group:
 		try:
-			if discord.refresh_bearer(dn.refresh_token, dn.bearer_token, dn.generation_date, dn.id):
+			if api_client.refresh_bearer(dn.refresh_token, dn.bearer_token, dn.generation_date, dn.id):
 				time.sleep(delay * 2)
 		except HTTPError:
-			discord.delete_discord_user(dn.id)
+			api_client.delete_discord_user(dn.id)
 
 	wait = time.time()
 
@@ -228,10 +227,10 @@ while True:
 		for inactive_user in inactive_users:
 			try:
 				print('[RESETTING %s]' % inactive_user.id)
-				if discord.reset_presence(inactive_user):
+				if api_client.reset_presence(inactive_user):
 					time.sleep(delay)
 			except HTTPError:
-				discord.delete_discord_user(inactive_user.id)
+				api_client.delete_discord_user(inactive_user.id)
 
 		time.sleep(delay)
 
@@ -254,10 +253,10 @@ while True:
 				if not friend_data.online:
 					try:
 						print('[RESETTING %s on %s]' % (friend_data.friend_code, friend_data.network.lower_name()))
-						if discord.reset_presence(discord_user):
+						if api_client.reset_presence(discord_user):
 							time.sleep(delay)
 					except HTTPError:
-						discord.delete_discord_user(discord_user.id)
+						api_client.delete_discord_user(discord_user.id)
 				else:
 
 					mii = friend_data.mii
@@ -278,10 +277,10 @@ while True:
 							last_accessed=friend_data.last_accessed
 						)
 
-						if discord.update_presence(discord_user, discord_user_data, discord_friend.network):
+						if api_client.update_presence(discord_user, discord_user_data, discord_friend.network):
 							time.sleep(delay)
 					except HTTPError:
-						discord.delete_discord_user(discord_user.id)
+						api_client.delete_discord_user(discord_user.id)
 			else:
 				print('[WAIT]')
 			time.sleep(delay)
