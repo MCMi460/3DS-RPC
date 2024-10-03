@@ -83,9 +83,6 @@ class APIClient:
 			'application_id': CLIENT_ID,
 			'assets': {},
 			'name': game['name'] + ' (3DS)',
-			'timestamps': {
-				'start': last_accessed
-			},
 			'platform': 'desktop'
 		}
 
