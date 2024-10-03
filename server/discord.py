@@ -36,11 +36,11 @@ class UserData:
 	last_accessed: int
 
 
-class DiscordSession():
-	def retire(self, refresh):
+class DiscordSession:
+	def retire(self, refresh_token: str):
 		session.execute(
 			update(DiscordTable)
-			.where(DiscordTable.refresh_token == refresh)
+			.where(DiscordTable.refresh_token == refresh_token)
 			.values(
 				rpc_session_token=None,
 				last_accessed=time.time()
@@ -147,6 +147,7 @@ class APIClient:
 		elif time.time() - self.current_user.last_accessed <= 30:
 			print('[MANUAL RATE LIMITED]')
 			return False
+
 		headers = {
 			'Authorization': 'Bearer %s' % self.current_user.bearer_token,
 			'Content-Type': 'application/json',
@@ -158,7 +159,7 @@ class APIClient:
 		r.raise_for_status()
 
 		# Reset session
-		DiscordSession().create(self.current_user.rpc_session_token, None)
+		DiscordSession().retire(self.current_user.rpc_session_token)
 
 
 	def refresh_bearer(self):
@@ -231,12 +232,12 @@ while True:
 	inactive_users = session.scalars(inactive_query).all()
 
 	if len(inactive_users) > 0:
-		print('[INACTIVES; BATCH OF %s]' % len(inactive_users))
+		print('[INACTIVES] Handling %s' % len(inactive_users))
 
 	for inactive_user in inactive_users:
 		api_client = APIClient(inactive_user)
 		try:
-			print('[RESETTING %s]' % inactive_user.id)
+			print('[INACTIVES] Resetting %s' % inactive_user.id)
 			api_client.reset_presence()
 			time.sleep(delay)
 		except HTTPError:
@@ -276,14 +277,14 @@ while True:
 
 			# Remove our presence for this now-offline user.
 			try:
-				print('[RESETTING %s on %s]' % (friend_data.friend_code, friend_data.network.lower_name()))
+				print('[FRIENDS] Resetting presence for %s on %s' % (friend_data.friend_code, friend_data.network.lower_name()))
 				api_client.reset_presence()
 				time.sleep(delay)
 			except HTTPError:
 				api_client.delete_discord_user()
 			continue
 
-		print('[RUNNING %s - %s on %s]' % (discord_friend.id, discord_friend.friend_code, discord_friend.network.lower_name()))
+		print('[FRIENDS] Creating RPC for Discord ID %s - %s on %s]' % (discord_friend.id, discord_friend.friend_code, discord_friend.network.lower_name()))
 		principal_id = friend_code_to_principal_id(friend_data.friend_code)
 		mii = friend_data.mii
 		if mii:
