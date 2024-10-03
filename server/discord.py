@@ -253,12 +253,9 @@ while True:
 			continue
 
 		for discord_friend in discord_friends:
-			print('[RUNNING %s - %s on %s]' % (discord_friend.id, discord_friend.friend_code, discord_friend.network.lower_name()))
-
 			# If we've updated this user within the past minute, there's no need to update again.
 			discord_user = session.scalar(select(DiscordTable).where(DiscordTable.id == discord_friend.id))
 			if time.time() - discord_user.last_accessed < 60:
-				print("[SKIPPING %s] User recently updated" % discord_friend.id)
 				continue
 
 			# If this user has no friend data, we cannot process them.
@@ -268,7 +265,6 @@ while True:
 				.where(Friend.network == discord_friend.network)
 			)
 			if not friend_data:
-				print("[SKIPPING %s] User has no friend data" % discord_friend.id)
 				continue
 
 			api_client = APIClient(discord_user)
@@ -288,11 +284,12 @@ while True:
 					api_client.delete_discord_user()
 				continue
 
+			print('[RUNNING %s - %s on %s]' % (discord_friend.id, discord_friend.friend_code, discord_friend.network.lower_name()))
 			principal_id = friend_code_to_principal_id(friend_data.friend_code)
 			mii = friend_data.mii
 			if mii:
 				mii = MiiData().mii_studio_url(mii)
-			print('[UPDATING %s]' % discord_user.id)
+
 			try:
 				friend_code = str(principal_id_to_friend_code(principal_id)).zfill(12)
 				title_data = getTitle(friend_data.title_id, titlesToUID, titleDatabase)
