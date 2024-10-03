@@ -135,7 +135,6 @@ class APIClient:
 		response = r.json()
 		DiscordSession().create(self.current_user.refresh_token, response['token'])
 		DiscordSession().update(response['token'])
-		return True
 
 
 	def reset_presence(self):
@@ -158,14 +157,9 @@ class APIClient:
 
 		# Reset session
 		DiscordSession().create(self.current_user.rpc_session_token, None)
-		return True
 
 
 	def refresh_bearer(self):
-		# We only need to refresh 30 minutes before the token expires.
-		if time.time() - self.current_user.generation_date < 604800 - 1800:
-			return False
-
 		print('[REFRESH BEARER %s]' % self.current_user.id)
 		current_refresh_token = self.current_user.refresh_token
 		data = {
@@ -191,7 +185,6 @@ class APIClient:
 			)
 		)
 		session.commit()
-		return True
 
 
 	def delete_discord_user(self):
@@ -205,15 +198,20 @@ class APIClient:
 delay = 2
 
 while True:
-	time.sleep(delay)
-
-	# First, refresh all OAuth2 bearer tokens.
+	# First, refresh all OAuth2 bearer tokens if necessary.
 	all_users = session.scalars(select(DiscordTable)).all()
 	for oauth_user in all_users:
+		# We only need to refresh 30 minutes before the token expires.
+		if time.time() - oauth_user.generation_date < 604800 - 1800:
+			continue
+
+		# Any HTTP error expected here is a 403.
+		# This would mean that the refresh token is now invalid,
+		# likely due to the user removing access via Discord.
 		api_client = APIClient(oauth_user)
 		try:
-			if api_client.refresh_bearer():
-				time.sleep(delay * 2)
+			api_client.refresh_bearer()
+			time.sleep(delay * 2)
 		except HTTPError:
 			api_client.delete_discord_user()
 
@@ -237,8 +235,8 @@ while True:
 		api_client = APIClient(inactive_user)
 		try:
 			print('[RESETTING %s]' % inactive_user.id)
-			if api_client.reset_presence():
-				time.sleep(delay)
+			api_client.reset_presence()
+			time.sleep(delay)
 		except HTTPError:
 			api_client.delete_discord_user()
 
@@ -277,8 +275,8 @@ while True:
 			# Remove our presence for this now-offline user.
 			try:
 				print('[RESETTING %s on %s]' % (friend_data.friend_code, friend_data.network.lower_name()))
-				if api_client.reset_presence():
-					time.sleep(delay)
+				api_client.reset_presence()
+				time.sleep(delay)
 			except HTTPError:
 				api_client.delete_discord_user()
 			continue
@@ -303,8 +301,8 @@ while True:
 				last_accessed=friend_data.last_accessed
 			)
 
-			if api_client.update_presence(discord_user_data, discord_friend.network):
-				time.sleep(delay)
+			api_client.update_presence(discord_user_data, discord_friend.network)
+			time.sleep(delay)
 		except HTTPError:
 			api_client.delete_discord_user()
 		time.sleep(delay)
