@@ -75,30 +75,30 @@ class APIClient:
 			print('[MANUAL RATE LIMITED]')
 			return False
 
-		data = {
-			'activities': [
-				{
-					'type': 0,
-					'application_id': CLIENT_ID,
-					'assets': {
-					},
-					'platform': 'desktop',
-				},
-			],
+		game = user_data.game
+
+		# This ends up in an array of activities - see `data` below.
+		activity_data = {
+			'type': 0,
+			'application_id': CLIENT_ID,
+			'assets': {},
+			'name': game['name'] + ' (3DS)',
+			'timestamps': {
+				'start': last_accessed
+			},
+			'platform': 'desktop'
 		}
 
-		game = user_data.game
-		data['activities'][0]['name'] = game['name'] + ' (3DS)'
 		if game['icon_url']:
-			data['activities'][0]['assets']['large_image'] = game['icon_url'].replace('/cdn/', HOST + '/cdn/')
-			data['activities'][0]['assets']['large_text'] = game['name']
+			activity_data['assets']['large_image'] = game['icon_url'].replace('/cdn/', HOST + '/cdn/')
+			activity_data['assets']['large_text'] = game['name']
 		if user_data.game_description:
-			data['activities'][0]['details'] = user_data.game_description
+			activity_data['details'] = user_data.game_description
 
 		# Only add a profile button if the user has enabled it.
 		if user_data.username and self.current_user.show_profile_button:
 			profile_url = HOST + '/user/' + user_data.friend_code + '/?network=' + network.lower_name()
-			data['activities'][0]['buttons'] = [{
+			activity_data['buttons'] = [{
 				'label': 'Profile',
 				'url': profile_url
 			}]
@@ -110,8 +110,21 @@ class APIClient:
 			user_network_name = network.lower_name().capitalize()
 			small_text_detail = f"{user_friend_code} on {user_network_name}"
 
-			data['activities'][0]['assets']['small_image'] = user_data.mii_urls['face']
-			data['activities'][0]['assets']['small_text'] = small_text_detail
+			activity_data['assets']['small_image'] = user_data.mii_urls['face']
+			activity_data['assets']['small_text'] = small_text_detail
+
+		# Quickly sanitize our activity data by truncating
+		# any text exceeding the maximum field limit, 128 characters.
+		for key_name in list(activity_data):
+			# However, don't modify image assets as they can go over 128.
+			if 'image' in key_name:
+				continue
+
+			if isinstance(activity_data[key_name], str):
+				if len(activity_data[key_name]) > 128:
+					activity_data[key_name] = activity_data[key_name][:128]
+
+		data = {'activities': [activity_data]}
 		if discord_user.rpc_session_token:
 			data['token'] = discord_user.rpc_session_token
 
@@ -119,11 +132,6 @@ class APIClient:
 			'Authorization': 'Bearer %s' % self.current_user.bearer_token,
 			'Content-Type': 'application/json',
 		}
-		# Truncate any text exceeding the maximum field limit, 128 characters.
-		for key in list(data['activities'][0]):
-			if isinstance(data['activities'][0][key], str) and not 'image' in key:
-				if len(data['activities'][0][key]) > 128:
-					data['activities'][0][key] = data['activities'][0][key][:128]
 
 		r = requests.post('%s/users/@me/headless-sessions' % API_ENDPOINT, data=json.dumps(data), headers=headers)
 		r.raise_for_status()
