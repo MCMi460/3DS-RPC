@@ -69,9 +69,7 @@ class APIClient:
 
 	def update_presence(self, user_data: UserData, network: NetworkType):
 		last_accessed = user_data.last_accessed
-		if time.time() - last_accessed >= 1000:
-			DiscordSession().retire(self.current_user.refresh_token)
-		elif time.time() - last_accessed <= 30:
+		if time.time() - last_accessed <= 30:
 			print('[MANUAL RATE LIMITED]')
 			return False
 
@@ -153,10 +151,16 @@ class APIClient:
 			'token': self.current_user.rpc_session_token,
 		}
 		r = requests.post('%s/users/@me/headless-sessions/delete' % API_ENDPOINT, data=json.dumps(data), headers=headers)
-		r.raise_for_status()
 
-		# Reset session
-		DiscordSession().retire(self.current_user.rpc_session_token)
+		try:
+			r.raise_for_status()
+		except HTTPError as e:
+			# If we encounter 400, we assume that this session has already expired.
+			# Let's go ahead and reset the session anyway.
+			if e.response.status_code == 400:
+				DiscordSession().retire(self.current_user.rpc_session_token)
+			else:
+				raise e
 
 
 	def refresh_bearer(self):
