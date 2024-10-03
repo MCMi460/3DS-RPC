@@ -41,7 +41,10 @@ class DiscordSession():
 		session.execute(
 			update(DiscordTable)
 			.where(DiscordTable.refresh_token == refresh)
-			.values(rpc_session_token='')
+			.values(
+				rpc_session_token=None,
+				last_accessed=time.time()
+			)
 		)
 		session.commit()
 
@@ -49,16 +52,9 @@ class DiscordSession():
 		session.execute(
 			update(DiscordTable)
 			.where(DiscordTable.refresh_token == refresh_token)
-			.values(rpc_session_token=session_token)
-		)
-		session.commit()
-
-	def update(self, session_token: str):
-		session.execute(
-			update(DiscordTable)
-			.where(DiscordTable.rpc_session_token == session_token)
 			.values(
-				last_accessed=time.time(),
+				rpc_session_token=session_token,
+				last_accessed=time.time()
 			)
 		)
 		session.commit()
@@ -134,7 +130,6 @@ class APIClient:
 
 		response = r.json()
 		DiscordSession().create(self.current_user.refresh_token, response['token'])
-		DiscordSession().update(response['token'])
 
 
 	def reset_presence(self):
@@ -144,7 +139,6 @@ class APIClient:
 		elif time.time() - self.current_user.last_accessed <= 30:
 			print('[MANUAL RATE LIMITED]')
 			return False
-		DiscordSession().update(self.current_user.rpc_session_token)
 		headers = {
 			'Authorization': 'Bearer %s' % self.current_user.bearer_token,
 			'Content-Type': 'application/json',
