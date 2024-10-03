@@ -45,7 +45,7 @@ class DiscordSession():
 		)
 		session.commit()
 
-	def create(self, refresh_token: str, session_token: str):
+	def create(self, refresh_token: str, session_token: Optional[str]):
 		session.execute(
 			update(DiscordTable)
 			.where(DiscordTable.refresh_token == refresh_token)
@@ -157,7 +157,7 @@ class APIClient:
 		r.raise_for_status()
 
 		# Reset session
-		DiscordSession().create(self.current_user.rpc_session_token, '')
+		DiscordSession().create(self.current_user.rpc_session_token, None)
 		return True
 
 
@@ -218,13 +218,15 @@ while True:
 			api_client.delete_discord_user()
 
 	# Inactive users have removed our bot: the backend removed them
-	# from both `friends` and `discord_friends`, but not `discord`.
+	# from both `friends` and `discord_friends`, but they still
+	# have an account (i.e. they exist with credentials in `discord`).
 	#
-	# Find these users and reset their presence.
+	# Find these users with ongoing sessions and reset their presence.
 	inactive_query = (
 		select(DiscordTable)
 			.outerjoin(DiscordFriends, DiscordFriends.id == DiscordTable.id)
 			.filter(DiscordFriends.id == None)
+			.filter(DiscordTable.rpc_session_token != None)
 	)
 	inactive_users = session.scalars(inactive_query).all()
 
@@ -249,50 +251,64 @@ while True:
 		if len(discord_friends) < 1:
 			time.sleep(delay)
 			continue
+
 		for discord_friend in discord_friends:
 			print('[RUNNING %s - %s on %s]' % (discord_friend.id, discord_friend.friend_code, discord_friend.network.lower_name()))
 
+			# If we've updated this user within the past minute, there's no need to update again.
+			discord_user = session.scalar(select(DiscordTable).where(DiscordTable.id == discord_friend.id))
+			if time.time() - discord_user.last_accessed < 60:
+				print("[SKIPPING %s] User recently updated" % discord_friend.id)
+				continue
+
+			# If this user has no friend data, we cannot process them.
 			friend_data: Friend = session.scalar(
 				select(Friend)
 				.where(Friend.friend_code == discord_friend.friend_code)
 				.where(Friend.network == discord_friend.network)
 			)
+			if not friend_data:
+				print("[SKIPPING %s] User has no friend data" % discord_friend.id)
+				continue
 
-			discord_user: DiscordTable = session.scalar(select(DiscordTable).where(DiscordTable.id == discord_friend.id))
 			api_client = APIClient(discord_user)
-			if time.time() - discord_user.last_accessed >= 60 and friend_data:
-				principalId = friend_code_to_principal_id(friend_data.friend_code)
-				if not friend_data.online:
-					try:
-						print('[RESETTING %s on %s]' % (friend_data.friend_code, friend_data.network.lower_name()))
-						if api_client.reset_presence():
-							time.sleep(delay)
-					except HTTPError:
-						api_client.delete_discord_user()
-				else:
 
-					mii = friend_data.mii
-					if mii:
-						mii = MiiData().mii_studio_url(mii)
-					print('[UPDATING %s]' % discord_user.id)
-					try:
-						friend_code = str(principal_id_to_friend_code(principalId)).zfill(12)
-						title_data = getTitle(friend_data.title_id, titlesToUID, titleDatabase)
+			if not friend_data.online:
+				# If the user is offline, and they lack an RPC session,
+				# there's nothing for us to do.
+				if not discord_user.rpc_session_token:
+					continue
 
-						discord_user_data = UserData(
-							friend_code=friend_code,
-							online=friend_data.online,
-							game=title_data,
-							game_description=friend_data.game_description,
-							username=friend_data.username,
-							mii_urls=mii,
-							last_accessed=friend_data.last_accessed
-						)
+				# Remove our presence for this now-offline user.
+				try:
+					print('[RESETTING %s on %s]' % (friend_data.friend_code, friend_data.network.lower_name()))
+					if api_client.reset_presence():
+						time.sleep(delay)
+				except HTTPError:
+					api_client.delete_discord_user()
+				continue
 
-						if api_client.update_presence(discord_user_data, discord_friend.network):
-							time.sleep(delay)
-					except HTTPError:
-						api_client.delete_discord_user()
-			else:
-				print('[WAIT]')
+			principal_id = friend_code_to_principal_id(friend_data.friend_code)
+			mii = friend_data.mii
+			if mii:
+				mii = MiiData().mii_studio_url(mii)
+			print('[UPDATING %s]' % discord_user.id)
+			try:
+				friend_code = str(principal_id_to_friend_code(principal_id)).zfill(12)
+				title_data = getTitle(friend_data.title_id, titlesToUID, titleDatabase)
+
+				discord_user_data = UserData(
+					friend_code=friend_code,
+					online=friend_data.online,
+					game=title_data,
+					game_description=friend_data.game_description,
+					username=friend_data.username,
+					mii_urls=mii,
+					last_accessed=friend_data.last_accessed
+				)
+
+				if api_client.update_presence(discord_user_data, discord_friend.network):
+					time.sleep(delay)
+			except HTTPError:
+				api_client.delete_discord_user()
 			time.sleep(delay)
