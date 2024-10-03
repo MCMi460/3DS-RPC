@@ -237,8 +237,9 @@ while True:
 			print('[INACTIVES] Resetting %s' % inactive_user.id)
 			api_client.reset_presence()
 			time.sleep(delay)
-		except HTTPError:
-			api_client.delete_discord_user()
+		except HTTPError as e:
+			print(f"[INACTIVE RESET FAILURE] {e}")
+			# api_client.delete_discord_user()
 
 	time.sleep(delay)
 
@@ -277,8 +278,9 @@ while True:
 				print('[FRIENDS] Resetting presence for %s on %s' % (friend_data.friend_code, friend_data.network.lower_name()))
 				api_client.reset_presence()
 				time.sleep(delay)
-			except HTTPError:
-				api_client.delete_discord_user()
+			except HTTPError as e:
+				print(f"[FRIEND RESET FAILURE] {e}")
+				# api_client.delete_discord_user()
 			continue
 
 		print('[FRIENDS] Creating RPC for Discord ID %s - %s on %s]' % (discord_friend.id, discord_friend.friend_code, discord_friend.network.lower_name()))
@@ -303,8 +305,9 @@ while True:
 
 			api_client.update_presence(discord_user_data, discord_friend.network)
 			time.sleep(delay)
-		except HTTPError:
-			api_client.delete_discord_user()
+		except HTTPError as e:
+			print(f"[FRIEND PRESENCE FAILURE] {e}")
+			# api_client.delete_discord_user()
 		time.sleep(delay)
 
 	# Sleep for 5x our delay.
