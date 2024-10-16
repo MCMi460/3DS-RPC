@@ -158,7 +158,7 @@ class APIClient:
 			# If we encounter 400, we assume that this session has already expired.
 			# Let's go ahead and reset the session anyway.
 			if e.response.status_code == 400:
-				DiscordSession().retire(self.current_user.rpc_session_token)
+				DiscordSession().retire(self.current_user.refresh_token)
 			else:
 				raise e
 
