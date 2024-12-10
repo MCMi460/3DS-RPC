@@ -2,6 +2,8 @@
 // Default dashboard layout
 // 
 
+@use "../variables" as *;
+
 // Default behavior for the sidenav layout
 // The default positioning for the sidenav is a static position
 
@@ -26,7 +28,7 @@
         justify-content: space-between;
         min-width: 0;
         flex-grow: 1;
-        min-height: calc(100vh - #{$topnav-base-height});
+        min-height: calc(100vh - $topnav-base-height);
         margin-left: -$sidenav-base-width;
     }
 }
@@ -47,7 +49,7 @@
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: $black;
+                background: black;
                 z-index: $zindex-content;
                 opacity: 0.5;
                 transition: opacity 0.3s ease-in-out;

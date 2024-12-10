@@ -1,56 +1,29 @@
 {
-    "title": "SB Admin",
-    "name": "startbootstrap-sb-admin",
+    "name": "3ds-rpc-server",
+    "title": "3DS-RPC Frontend",
+    "description": "The web frontend for 3dsrpc.com.",
     "version": "7.0.5",
-    "scripts": {
-        "build": "npm run clean && npm run build:pug && npm run build:scss && npm run build:scripts && npm run build:assets",
-        "build:assets": "node scripts/build-assets.js",
-        "build:pug": "node scripts/build-pug.js",
-        "build:scripts": "node scripts/build-scripts.js",
-        "build:scss": "node scripts/build-scss.js",
-        "clean": "node scripts/clean.js",
-        "start": "npm run build && node scripts/start.js",
-        "start:debug": "npm run build && node scripts/start-debug.js"
+    "type": "module",
+    "engines": {
+        "node": ">=20.0.0"
     },
-    "description": "A free admin dashboard template based on Bootstrap 4, created by Start Bootstrap.",
-    "keywords": [
-        "css",
-        "sass",
-        "html",
-        "responsive",
-        "theme",
-        "template",
-        "admin",
-        "app",
-        "dashboard"
-    ],
-    "homepage": "https://startbootstrap.com/template/sb-admin",
-    "bugs": {
-        "url": "https://github.com/StartBootstrap/startbootstrap-sb-admin/issues",
-        "email": "feedback@startbootstrap.com"
+    "scripts": {
+        "build": "node scripts/build.js",
+        "clean": "node scripts/clean.js"
     },
     "license": "MIT",
     "author": "MCMi460",
     "contributors": [
         "David Miller (https://davidmiller.io/)"
     ],
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/StartBootstrap/startbootstrap-sb-admin.git"
-    },
     "dependencies": {
         "bootstrap": "5.3.3"
     },
     "devDependencies": {
         "autoprefixer": "10.4.20",
-        "browser-sync": "^3.0.2",
-        "chokidar": "3.6.0",
-        "concurrently": "8.2.2",
-        "postcss": "8.4.41",
+        "postcss": "8.4.49",
         "prettier": "3.3.3",
         "pug": "3.0.3",
-        "sass": "1.77.8",
-        "shelljs": "0.8.5",
-        "upath": "2.0.1"
+        "sass": "1.82.0"
     }
 }
