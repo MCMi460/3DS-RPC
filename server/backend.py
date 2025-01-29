@@ -120,25 +120,13 @@ async def main_friends_loop(friends_client: friends.FriendsClientV1, session: Se
 		time.sleep(delay)
 		await friends_client.update_comment('3dsrpc.com')
 
-	print('Cleaning friends list out from previous runs...')
-	removables = await friends_client.get_all_friends()
-	for friend in removables:
-		time.sleep(delay / quicker)
-		await friends_client.remove_friend_by_principal_id(friend.pid)
-	print('Removed %s friends' % str(len(removables)))
-
-	# Add our current roster of friends.
+	# Synchronize our current roster of friends.
 	#
-	# The add_friend_by_principal_ids method is not yet
-	# implemented on Pretendo, so this is a hotfix for now.
+	# We expect the remote NEX implementation to remove all existing
+	# relationships, and replace them with the 100 PIDs specified.
+	# As of writing, both Nintendo and Pretendo support this.
 	all_friend_pids: list[int] = [ f.pid for f in current_rotation ]
-	if network == NetworkType.PRETENDO:
-		for friend_pid in all_friend_pids:
-			time.sleep(delay / quicker)
-			await friends_client.add_friend_by_principal_id(0, friend_pid)
-	else:
-		time.sleep(delay)
-		await friends_client.add_friend_by_principal_ids(0, all_friend_pids)
+	await friends_client.sync_friend(0, all_friend_pids, [])
 
 	# Query all successful friends.
 	current_friends_list: [friends.FriendRelationship] = await friends_client.get_all_friends()
@@ -272,11 +260,6 @@ async def main_friends_loop(friends_client: friends.FriendsClientV1, session: Se
 			)
 		)
 		session.commit()
-
-	# Lastly, remove all of our added friends.
-	for friend in added_friends:
-		time.sleep(delay / quicker)
-		await friends_client.remove_friend_by_principal_id(friend.pid)
 
 
 if __name__ == '__main__':
