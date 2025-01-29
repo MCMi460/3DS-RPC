@@ -20,8 +20,6 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 delay = 2
-since = 0
-quicker = 15
 backend_start_time = time.time()
 scrape_only = False
 
@@ -127,6 +125,8 @@ async def main_friends_loop(friends_client: friends.FriendsClientV1, session: Se
 	# As of writing, both Nintendo and Pretendo support this.
 	all_friend_pids: list[int] = [ f.pid for f in current_rotation ]
 	await friends_client.sync_friend(0, all_friend_pids, [])
+
+	time.sleep(delay)
 
 	# Query all successful friends.
 	current_friends_list: [friends.FriendRelationship] = await friends_client.get_all_friends()
@@ -270,10 +270,6 @@ if __name__ == '__main__':
 
 		network = NetworkType[args.network.upper()]
 
-		if network != NetworkType.NINTENDO:
-			# This delay is only needed for nintendo, and is unnessary for pretendo.
-			delay, quicker = 0, 1
-		
 		start_db_time(datetime.datetime.now(), network)
 		anyio.run(main)
 	except (KeyboardInterrupt, Exception) as e:
