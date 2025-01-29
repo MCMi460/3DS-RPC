@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.INFO)
 delay = 2
 since = 0
 quicker = 15
-begun = time.time()
+backend_start_time = time.time()
 scrape_only = False
 
 network: NetworkType = NetworkType.NINTENDO
@@ -83,175 +83,178 @@ async def main():
 
 				async with backend.connect(s, response.host, response.port) as be:
 					async with be.login(str(PID), NEX_PASSWORD) as client:
+						# Begin!
 						friends_client = friends.FriendsClientV1(client)
-						if time.time() - begun < 30:
-							time.sleep(delay)
-							await friends_client.update_comment('3dsrpc.com')
-						since = time.time()
+						await main_friends_loop(friends_client, session, all_friends, rotation)
 
-						if time.time() - since > 3600:
-							break
-
-						time.sleep(delay)
-						print('Cleaning out to zero')
-						removables = await friends_client.get_all_friends()
-						for friend in removables:
-							time.sleep(delay / quicker)
-							await friends_client.remove_friend_by_principal_id(friend.pid)
-						print('Removed %s friends' % str(len(removables)))
-
-						removal_list = []
-						cleanUp = []
-
-						# The add_friend_by_principal_ids method is not yet
-						# implemented on Pretendo, so this is a fix for now.
-						if network == NetworkType.PRETENDO:
-							for friend_pid in rotation:
-								time.sleep(delay / quicker)
-								await friends_client.add_friend_by_principal_id(0, friend_pid)
-						else:
-							time.sleep(delay)
-							await friends_client.add_friend_by_principal_ids(0, rotation)
-
-						time.sleep(delay)
-
-						# Determine which remote friends failed to add, and thus have unfriended us.
-						network_friends = await friends_client.get_all_friends()
-						if len(network_friends) < len(rotation):
-							for current_pid in rotation:
-								if current_pid not in [ f.pid for f in network_friends ]:
-									removal_list.append(current_pid)
-
-						# Keep track of which current friends are within our current rotation.
-						# We'll remove them once game presences are updated.
-						x = network_friends
-						network_friends = []
-						for t1 in x:
-							if t1.pid in rotation:
-								network_friends.append(t1)
-							else:
-								cleanUp.append(t1.pid)
-
-						for removed_friend in removal_list:
-							removed_friend_code = str(principal_id_to_friend_code(removed_friend)).zfill(12)
-
-							# Remove this friend code from both our tracked network friends and Discord friend codes.
-							session.execute(delete(Friend).where(Friend.friend_code == removed_friend_code).where(Friend.network == network))
-							session.execute(delete(DiscordFriends).where(
-								DiscordFriends.friend_code == removed_friend_code,
-								DiscordFriends.network == network)
-							)
-							session.commit()
-
-						if len(network_friends) > 0:
-							time.sleep(delay)
-							tracked_presences = await friends_client.get_friend_presence([ e.pid for e in network_friends ])
-							online_users = []
-							for game in tracked_presences:
-								# Set all to offline if scraping
-								if scrape_only:
-									break
-
-								online_users.append(game.pid)
-								game_description = game.presence.game_mode_description
-								if not game_description:
-									game_description = ''
-								joinable = bool(game.presence.join_availability_flag)
-
-								friend_code = str(principal_id_to_friend_code(game.pid)).zfill(12)
-								session.execute(
-									update(Friend)
-									.where(Friend.friend_code == friend_code)
-									.where(Friend.network == network)
-									.values(
-										online=True,
-										title_id=game.presence.game_key.title_id,
-										upd_id=game.presence.game_key.title_version,
-										joinable=joinable,
-										game_description=game_description,
-										last_online=time.time()
-									)
-								)
-								session.commit()
-
-							for offline_user in [ h for h in rotation if not h in online_users ]:
-								friend_code = str(principal_id_to_friend_code(offline_user)).zfill(12)
-								session.execute(
-									update(Friend)
-									.where(Friend.friend_code == friend_code)
-									.where(Friend.network == network)
-									.values(
-										online=False,
-										title_id=0,
-										upd_id=0
-									)
-								)
-								session.commit()
-
-							# I just do not understand what I'm doing wrong with get_friend_mii_list
-							# The docs do not specify much
-							# And no matter how many trials I do with varying inputs, nothing works
-							# I do not give up, but until I figure it out, the slower method (get_friend_mii)
-							# will have to do.
-
-							for current_friend in network_friends:
-								work = False
-								for l in all_friends:
-									if (l[0] == current_friend.pid and time.time() - l[1] <= 600000) or scrape_only:
-										work = True
-								if not work:
-									continue
-
-								time.sleep(delay)
-
-								current_friend.friend_code = 0 # A cursed (but operable) 'hack'
-								try:
-									current_info = await friends_client.get_friend_persistent_info([current_friend.pid,])
-								except:
-									continue
-								comment = current_info[0].message
-								favorite_game = 0
-								username = ''
-								face = ''
-								if not comment.endswith(' '):
-									# Get user's mii + username from mii
-									m = await friends_client.get_friend_mii([current_friend,])
-									username = m[0].mii.name
-									mii_data = m[0].mii.mii_data
-									obj = MiiData()
-									obj.decode(obj.convert(io.BytesIO(mii_data)))
-									face = obj.mii_studio()['data']
-
-									# Get user's favorite game
-									favorite_game = current_info[0].game_key.title_id
-								else:
-									comment = ''
-
-								friend_code = str(principal_id_to_friend_code(current_friend.pid)).zfill(12)
-								session.execute(
-									update(Friend)
-									.where(Friend.friend_code == friend_code)
-									.where(Friend.network == network)
-									.values(
-										username=username,
-										message=comment,
-										mii=face,
-										favorite_game=favorite_game
-									)
-								)
-								session.commit()
-
-						for friend in rotation + cleanUp:
-							time.sleep(delay / quicker)
-							await friends_client.remove_friend_by_principal_id(friend)
 			except Exception as e:
 				print('An error occurred!\n%s' % e)
 				print(traceback.format_exc())
 				time.sleep(2)
-		
+
 		if scrape_only:
 			print('Done scraping.')
 			break
+
+
+async def main_friends_loop(friends_client: friends.FriendsClientV1, session: Session, all_friends, rotation: [str]):
+	if time.time() - backend_start_time < 30:
+		time.sleep(delay)
+		await friends_client.update_comment('3dsrpc.com')
+
+	time.sleep(delay)
+	print('Cleaning out to zero')
+	removables = await friends_client.get_all_friends()
+	for friend in removables:
+		time.sleep(delay / quicker)
+		await friends_client.remove_friend_by_principal_id(friend.pid)
+	print('Removed %s friends' % str(len(removables)))
+
+	removal_list = []
+	cleanUp = []
+
+	# The add_friend_by_principal_ids method is not yet
+	# implemented on Pretendo, so this is a fix for now.
+	if network == NetworkType.PRETENDO:
+		for friend_pid in rotation:
+			time.sleep(delay / quicker)
+			await friends_client.add_friend_by_principal_id(0, friend_pid)
+	else:
+		time.sleep(delay)
+		await friends_client.add_friend_by_principal_ids(0, rotation)
+
+	time.sleep(delay)
+
+	# Determine which remote friends failed to add, and thus have unfriended us.
+	network_friends = await friends_client.get_all_friends()
+	if len(network_friends) < len(rotation):
+		for current_pid in rotation:
+			if current_pid not in [ f.pid for f in network_friends ]:
+				removal_list.append(current_pid)
+
+	# Keep track of which current friends are within our current rotation.
+	# We'll remove them once game presences are updated.
+	x = network_friends
+	network_friends = []
+	for t1 in x:
+		if t1.pid in rotation:
+			network_friends.append(t1)
+		else:
+			cleanUp.append(t1.pid)
+
+	for removed_friend in removal_list:
+		removed_friend_code = str(principal_id_to_friend_code(removed_friend)).zfill(12)
+
+		# Remove this friend code from both our tracked network friends and Discord friend codes.
+		session.execute(delete(Friend).where(Friend.friend_code == removed_friend_code).where(Friend.network == network))
+		session.execute(delete(DiscordFriends).where(
+			DiscordFriends.friend_code == removed_friend_code,
+			DiscordFriends.network == network)
+		)
+		session.commit()
+
+	if len(network_friends) > 0:
+		time.sleep(delay)
+		tracked_presences = await friends_client.get_friend_presence([ e.pid for e in network_friends ])
+		online_users = []
+		for game in tracked_presences:
+			# Set all to offline if scraping
+			if scrape_only:
+				break
+
+			online_users.append(game.pid)
+			game_description = game.presence.game_mode_description
+			if not game_description:
+				game_description = ''
+			joinable = bool(game.presence.join_availability_flag)
+
+			friend_code = str(principal_id_to_friend_code(game.pid)).zfill(12)
+			session.execute(
+				update(Friend)
+				.where(Friend.friend_code == friend_code)
+				.where(Friend.network == network)
+				.values(
+					online=True,
+					title_id=game.presence.game_key.title_id,
+					upd_id=game.presence.game_key.title_version,
+					joinable=joinable,
+					game_description=game_description,
+					last_online=time.time()
+				)
+			)
+			session.commit()
+
+		for offline_user in [ h for h in rotation if not h in online_users ]:
+			friend_code = str(principal_id_to_friend_code(offline_user)).zfill(12)
+			session.execute(
+				update(Friend)
+				.where(Friend.friend_code == friend_code)
+				.where(Friend.network == network)
+				.values(
+					online=False,
+					title_id=0,
+					upd_id=0
+				)
+			)
+			session.commit()
+
+		# I just do not understand what I'm doing wrong with get_friend_mii_list
+		# The docs do not specify much
+		# And no matter how many trials I do with varying inputs, nothing works
+		# I do not give up, but until I figure it out, the slower method (get_friend_mii)
+		# will have to do.
+
+		for current_friend in network_friends:
+			work = False
+			for l in all_friends:
+				if (l[0] == current_friend.pid and time.time() - l[1] <= 600000) or scrape_only:
+					work = True
+			if not work:
+				continue
+
+			time.sleep(delay)
+
+			current_friend.friend_code = 0 # A cursed (but operable) 'hack'
+			try:
+				current_info = await friends_client.get_friend_persistent_info([current_friend.pid,])
+			except:
+				continue
+			comment = current_info[0].message
+			favorite_game = 0
+			username = ''
+			face = ''
+			if not comment.endswith(' '):
+				# Get user's mii + username from mii
+				m = await friends_client.get_friend_mii([current_friend,])
+				username = m[0].mii.name
+				mii_data = m[0].mii.mii_data
+				obj = MiiData()
+				obj.decode(obj.convert(io.BytesIO(mii_data)))
+				face = obj.mii_studio()['data']
+
+				# Get user's favorite game
+				favorite_game = current_info[0].game_key.title_id
+			else:
+				comment = ''
+
+			friend_code = str(principal_id_to_friend_code(current_friend.pid)).zfill(12)
+			session.execute(
+				update(Friend)
+				.where(Friend.friend_code == friend_code)
+				.where(Friend.network == network)
+				.values(
+					username=username,
+					message=comment,
+					mii=face,
+					favorite_game=favorite_game
+				)
+			)
+			session.commit()
+
+	for friend in rotation + cleanUp:
+		time.sleep(delay / quicker)
+		await friends_client.remove_friend_by_principal_id(friend)
+
 
 if __name__ == '__main__':
 	try:
